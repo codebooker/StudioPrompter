@@ -2,7 +2,7 @@
 
 ## Build
 
-Use a recent Swift toolchain or Xcode on macOS. Use Swift 6.0 or newer for the pinned dependency graph (the app manifest itself declares Swift tools 5.9). Development currently uses Swift 6.4. The app deployment target is macOS 13. Apple silicon is the initial distribution target; Intel and the minimum OS still need runtime validation.
+Use a recent Swift toolchain or Xcode on macOS. Use Swift 6.0 or newer for the pinned dependency graph (the app manifest itself declares Swift tools 5.9). Development currently uses Swift 6.4. The app deployment target is macOS 13.3 (the bundled llama.cpp framework’s minimum). Apple silicon is the initial distribution target; Intel and the minimum OS still need runtime validation.
 
 ```sh
 ./scripts/build.sh
@@ -22,6 +22,8 @@ The Actions workflow builds on a [GitHub-hosted macOS runner](https://docs.githu
 | `Prompter` | SwiftUI workspace, native windows, voice coordination, file dialogs |
 | `PrompterCore` | Script library, transport, phrase matching, cadence, retake gate |
 | `PrompterLayout` | Shared AppKit typography and reading-guide geometry |
+| `PrompterCommands` | Optional local command-model download, integrity checks, and serialized llama.cpp inference |
+| `CommandCheck` | Natural-language evaluation corpus and cached-model validation |
 | `PrompterSpeech` | WhisperKit model lifecycle and single-channel Core Audio capture |
 | `PrompterChecks` | Deterministic assertion runner without XCTest |
 | `WhisperCheck` | Real-model transcription, downloads, and channel tests |
@@ -68,3 +70,23 @@ No workflow automatically publishes releases. A passing CI build alone is not re
 ## In-app updater
 
 Sparkle 2.10.0 is pinned in SwiftPM. `build.sh` embeds its framework and helper executables; Developer ID builds sign nested helpers before the enclosing framework and app. Development builds preserve Sparkle’s vendor signatures. The Sparkle signing key is not needed for ordinary builds or CI. See [UPDATES.md](UPDATES.md) for feed generation and the stable GitHub-release promotion workflow.
+
+## Natural command interpretation (Beta)
+
+The fast command parser runs first. Only a settled, previously unconsumed request after **Hey Teleprompter** reaches the optional model. Qwen2.5-1.5B-Instruct Q4_K_M runs through the official llama.cpp b11053 XCFramework, embedded and signed with the app. Neither Ollama nor a separate server is required. `CommandModelStore` pins the publisher revision, byte size, and SHA-256. Downloads use temporary files and atomic installation; cached weights are verified before loading. Cancellation and retry are supported. Setup requires about 2.3 GB free disk space temporarily.
+
+The model emits a grammar-constrained action object, then `CommandIntent` validates the object and request again. Line counts must be explicit and between 1 and 10; cue navigation must name a cue/bookmark. Multiple actions, negations and unsupported pace changes are conservatively declined. The model never receives the script, tools, file access, or general app automation. It is an intent classifier, not a general assistant.
+
+Inference runs on an actor with a 2,048-token context, at most 32 output tokens, and a four-second deadline. The UI holds prompting while interpreting and invalidates pending actions after manual repositioning, pause, mic stop, script changes, or disabling the feature. Whisper decoding waits during the short interpretation; audio capture and UI metering continue. Cancellation is checked between decode steps; Metal calls already in progress finish without applying stale results.
+
+Run the evaluation and the synthetic speech integration separately from ordinary CI (both need downloaded weights):
+
+```sh
+swift build -c release --product CommandCheck
+.build/release/CommandCheck '/path/to/qwen2.5-1.5b-instruct-q4_k_m.gguf'
+.build/release/CommandCheck --cache-check "$HOME/Library/Application Support/Prompter/CommandModel"
+swift build -c release --product WhisperCheck
+.build/release/WhisperCheck --natural-commands '/path/to/qwen2.5-1.5b-instruct-q4_k_m.gguf'
+```
+
+The evaluation reports exact outcomes, conservative declines, and incorrect actions separately. The experimental acceptance threshold is at least 90% exact outcomes with zero incorrect actions **on the listed fixtures**; this is not a guarantee for arbitrary speech. Initial evaluation on an M5 Mac matched 46/48 fixtures: 26/28 intended actions, 20/20 expected refusals, and two conservative declines. Median model interpretation was about 0.36–0.42 seconds, excluding Whisper and the pause used to finish a command. These fixtures were also used during prompt development, so they are regression checks rather than an independent quality estimate. Real speaker testing and older-Mac latency/memory testing remain necessary.

@@ -1,0 +1,20 @@
+StudioPrompter natural voice commands
+
+Inference runtime: llama.cpp b11053
+https://github.com/ggml-org/llama.cpp/releases/tag/b11053
+MIT license; see llama.cpp-LICENSE.txt.
+The official XCFramework is pinned by SHA-256 in Package.swift and embedded
+inside the application. The macOS framework requires macOS 13.3 or later.
+
+Optional model: Qwen2.5-1.5B-Instruct, Q4_K_M GGUF
+Copyright Qwen Team. Apache License 2.0; see Qwen2.5-LICENSE.txt.
+https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF
+Revision: 91cad51170dc346986eccefdc2dd33a9da36ead9
+File: qwen2.5-1.5b-instruct-q4_k_m.gguf
+Size: 1117320736 bytes
+SHA-256: 6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e
+
+Model weights are downloaded on request from the original publisher; they are
+not part of the application archive. StudioPrompter does not modify the weights.
+Commands are processed locally. No transcript, script, or audio is sent to a
+remote inference service.

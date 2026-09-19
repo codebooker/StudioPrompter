@@ -37,6 +37,7 @@ struct VoicePromptControls: View {
                         .font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.accent)
                     Text("Then give a command and briefly pause.")
                         .font(.system(size: 10)).foregroundStyle(Palette.muted)
+                    NaturalCommandsSettings(assistant: voice.assistant, setEnabled: voice.setNaturalCommands)
                     DisclosureGroup("Command examples") {
                         Text("Go back two lines\nStart this paragraph over\nStart from the top of the document\nMove to the next paragraph\nGo back to the last cue point\nIncrease / decrease the font size\nPause / resume\nCancel / stop listening")
                             .font(.system(size: 10)).foregroundStyle(Palette.muted).padding(.top, 5)

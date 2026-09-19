@@ -11,6 +11,11 @@ SPARKLE="$PWD/.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x
 [[ -d "$SPARKLE" ]] || { echo "Sparkle binary artifact is missing." >&2; exit 1; }
 rm -rf "$APP/Contents/Frameworks/Sparkle.framework"
 ditto "$SPARKLE" "$APP/Contents/Frameworks/Sparkle.framework"
+# SwiftPM derives the root artifact identity from the checkout directory name.
+LLAMA="$(find "$PWD/.build/artifacts" -type d -path '*/llama/llama.xcframework/macos-arm64_x86_64/llama.framework' -print -quit)"
+[[ -d "$LLAMA" ]] || { echo "Command AI runtime artifact is missing." >&2; exit 1; }
+rm -rf "$APP/Contents/Frameworks/llama.framework"
+ditto "$LLAMA" "$APP/Contents/Frameworks/llama.framework"
 cp ThirdParty/*.txt "$APP/Contents/Resources/"
 cp LICENSE "$APP/Contents/Resources/LICENSE.txt"
 swift scripts/make-icon.swift "$PWD/.build/Prompter.iconset"
@@ -24,8 +29,10 @@ if [[ -n "${SIGNING_IDENTITY:-}" ]]; then
         codesign --force --options runtime --timestamp --preserve-metadata=entitlements --sign "$SIGNING_IDENTITY" "$ITEM"
     done
     codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP/Contents/Frameworks/Sparkle.framework"
+    codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP/Contents/Frameworks/llama.framework"
     codesign --force --options runtime --timestamp --entitlements scripts/Entitlements.plist --sign "$SIGNING_IDENTITY" "$APP"
 else
+    codesign --force --sign - "$APP/Contents/Frameworks/llama.framework"
     codesign --force --sign - "$APP"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP"

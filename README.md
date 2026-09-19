@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/codebooker/StudioPrompter/actions/workflows/ci.yml"><img src="https://github.com/codebooker/StudioPrompter/actions/workflows/ci.yml/badge.svg" alt="Build and checks"></a>
-  <img src="https://img.shields.io/badge/macOS-13%2B-15191f?logo=apple&logoColor=white" alt="macOS 13 or later">
+  <img src="https://img.shields.io/badge/macOS-13.3%2B-15191f?logo=apple&logoColor=white" alt="macOS 13.3 or later">
   <img src="https://img.shields.io/badge/Voice-local%20Whisper-ff8147" alt="Local Whisper voice recognition">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-637087" alt="AGPL-3.0 license"></a>
 </p>
@@ -37,6 +37,8 @@ Keep the controls on your Mac. Send a clean, full-screen script to the talent mo
 
 **Control a solo session by voice.** Enable Hands-free commands and say “Hey Teleprompter,” followed by a command: go back two lines, restart a paragraph, jump to a cue, resize the text, or pause and resume. It uses the existing local Whisper model. In this mode Pause leaves the microphone available for commands; Stop listening turns it off. Commands and feedback stay separate from your script.
 
+**Say it your way.** Turn on **Natural commands · Beta** inside Hands-free commands, then choose **Download command AI**. The optional Qwen2.5 1.5B model downloads once (1.12 GB) and interprets requests such as “the words are too big, shrink them a little” or “take me back a couple of lines.” Clear commands keep their instant path. Interpretation stays on your Mac, and uncertain requests leave the script in place. Ask for one action at a time; start every request with “Hey Teleprompter.”
+
 Voice features are in beta. Recognition and responsiveness depend on your Mac, microphone, speaking style, and script. English is currently supported.
 
 ## Start in four steps
@@ -63,7 +65,7 @@ Using an audio interface? Select the interviewer's isolated channel so the guest
 
 **The first beta is being prepared.** The current package targets Apple silicon. A public, notarized download will be linked in [Releases](https://github.com/codebooker/StudioPrompter/releases) after the remaining [release checks](docs/TESTING.md) pass.
 
-Developers can build now on macOS 13 or later with a recent Xcode or Swift toolchain:
+Developers can build now on macOS 13.3 or later with a recent Xcode or Swift toolchain:
 
 ```sh
 git clone https://github.com/codebooker/StudioPrompter.git

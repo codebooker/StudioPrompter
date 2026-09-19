@@ -545,6 +545,31 @@ private func voiceCommandChecks() {
     expectEqual(speaking.consume(full, audioEnd: 2, quiet: false), .listening)
     expectEqual(speaking.consume(full, audioEnd: 9, quiet: false), .unrecognized)
 
+    // Natural-language fallback requires a fresh wake + a settled phrase and opt-in.
+    var natural = VoiceCommandRouter()
+    let flexible = words("Hey, Teleprompter take me back a couple of lines")
+    expectEqual(natural.consume(flexible, audioEnd: 3, quiet: true, interpretUnknown: true), .listening)
+    expectEqual(natural.consume(flexible, audioEnd: 3.5, quiet: true, interpretUnknown: true), .interpret("take me back a couple of lines"))
+    expectEqual(natural.consume(flexible, audioEnd: 4, quiet: true, interpretUnknown: true), .reading)
+    var unfinished = VoiceCommandRouter()
+    expectEqual(unfinished.consume(flexible, audioEnd: 3, quiet: false, interpretUnknown: true), .listening)
+    expectEqual(unfinished.consume(flexible, audioEnd: 10, quiet: false, interpretUnknown: true), .unrecognized)
+    var fast = VoiceCommandRouter()
+    expectEqual(fast.consume(full, audioEnd: 2, quiet: true, interpretUnknown: true), .listening)
+    expectEqual(fast.consume(full, audioEnd: 2.5, quiet: true, interpretUnknown: true), .execute(.lines(-2)))
+    for output in ["{\"action\":\"delete_script\"}", "{\"action\":\"back_20_lines\"}", "{\"action\":\"pause\",\"extra\":\"resume\"}", "pause", "[{\"action\":\"pause\"}]", "{\"action\":2}"] {
+        expectTrue(CommandIntent.decode(output) == nil)
+    }
+    for count in 1...10 {
+        expectEqual(CommandIntent.decode("{\"action\":\"back_\(count)_lines\"}"), .lines(-count))
+        expectEqual(CommandIntent.decode("{\"action\":\"forward_\(count)_lines\"}"), .lines(count))
+    }
+    expectEqual(CommandIntent.interpret("{\"action\":\"back_2_lines\"}", request: "Back a couple of lines"), .lines(-2))
+    for request in ["Go back twenty lines", "Go back a bit", "Back two lines and change the font", "Do not go back two lines"] {
+        expectTrue(CommandIntent.interpret("{\"action\":\"back_2_lines\"}", request: request) == nil)
+    }
+    expectTrue(CommandIntent.interpret("{\"action\":\"next_cue\"}", request: "Skip to the next question") == nil)
+
     var script = Script(title: "Navigation", text: "First paragraph has enough words to wrap across several reading lines. Keep reading this opening.\n\nSecond paragraph is here with another sentence and more words.\n\nThird paragraph finishes the script.")
     script.settings.fontSize = 58
     let layout = ScriptCueLayout(script)

@@ -50,7 +50,7 @@ public struct CommandWord: Sendable {
 /// Routes rolling/revised Whisper windows before pace or script matching.
 /// Absolute audio timestamps prevent a completed wake phrase from firing again.
 public struct VoiceCommandRouter {
-    public enum Event: Equatable { case reading, listening, execute(VoiceCommand), unrecognized }
+    public enum Event: Equatable { case reading, listening, execute(VoiceCommand), interpret(String), unrecognized }
     public private(set) var isListening = false
     public private(set) var consumedThrough: Double
     private var wakeEnd = 0.0
@@ -59,7 +59,7 @@ public struct VoiceCommandRouter {
     private var candidateSince = 0.0
     public init(after time: Double = 0) { consumedThrough = time }
 
-    public mutating func consume(_ words: [CommandWord], audioEnd: Double, quiet: Bool) -> Event {
+    public mutating func consume(_ words: [CommandWord], audioEnd: Double, quiet: Bool, interpretUnknown: Bool = false) -> Event {
         let tokens = words.flatMap { word in VoiceCommand.tokens(word.text).map { CommandWord($0, start: word.start, end: word.end) } }
         if !isListening {
             let fresh = tokens.filter { $0.start >= consumedThrough }
@@ -82,7 +82,8 @@ public struct VoiceCommandRouter {
             isListening = false
             consumedThrough = audioEnd
             candidate = ""
-            return command.map(Event.execute) ?? .unrecognized
+            if let command { return .execute(command) }
+            return settled && interpretUnknown ? .interpret(phrase) : .unrecognized
         }
         return .listening
     }

@@ -9,7 +9,7 @@
     <key>CFBundleExecutable</key><string>Prompter</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>LSMinimumSystemVersion</key><string>13.0</string>
+    <key>LSMinimumSystemVersion</key><string>13.3</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSMicrophoneUsageDescription</key><string>Prompter uses your selected microphone for local Whisper transcription and voice-controlled scrolling. Audio stays on this Mac.</string>

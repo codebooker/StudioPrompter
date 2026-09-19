@@ -7,7 +7,7 @@ from update_feed import inspect_feed
 SIGNATURE = base64.b64encode(bytes(64)).decode()
 FEED = f'''<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel><item>
 <sparkle:version>3</sparkle:version><sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
-<sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion><sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+<sparkle:minimumSystemVersion>13.3</sparkle:minimumSystemVersion><sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
 <enclosure url="https://github.com/codebooker/StudioPrompter/releases/download/0.1.1/StudioPrompter-0.1.1-macos-arm64.zip" length="100" sparkle:edSignature="{SIGNATURE}"/>
 </item></channel></rss>'''
 
@@ -25,7 +25,7 @@ class UpdateFeedChecks(unittest.TestCase):
             FEED.replace('https://github.com/', 'http://github.com/'),
             FEED.replace('codebooker/StudioPrompter', 'someone/another-app'),
             FEED.replace('>arm64<', '>x86_64<'),
-            FEED.replace('>13.0<', '>14.0<'),
+            FEED.replace('>13.3<', '>14.0<'),
             FEED.replace('>3<', '>two<'),
             FEED.replace(SIGNATURE, 'unsigned'),
             FEED.replace('length="100"', 'length="0"'),

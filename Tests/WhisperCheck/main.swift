@@ -44,7 +44,9 @@ Task {
             if progress >= 1 { print("Model files ready") }
         }
         print("Whisper is loaded locally.")
-        if CommandLine.arguments.dropFirst().first == "--commands" {
+        if CommandLine.arguments.count > 2, CommandLine.arguments[1] == "--natural-commands" {
+            try await runVoiceCommandChecks(service: service, commandModelPath: CommandLine.arguments[2])
+        } else if CommandLine.arguments.dropFirst().first == "--commands" {
             try await runVoiceCommandChecks(service: service)
         } else if CommandLine.arguments.count > 3, CommandLine.arguments[1] == "--stream" {
             let raw = try AudioProcessor.loadAudioAsFloatArray(fromPath: CommandLine.arguments[2])

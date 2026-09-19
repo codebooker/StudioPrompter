@@ -35,6 +35,10 @@ final class VoiceController: ObservableObject {
     @Published var downloadProgress = 0.0
     @Published var status = "Local Whisper · English"
     @Published var transcript = ""
+    let assistant = CommandAssistant()
+    private var commandTask: Task<Void, Never>?
+    private var commandTimeout: Task<Void, Never>?
+    private var commandGeneration = UUID()
     @Published var handsFreeCommands = false
     @Published var awaitingCommand = false
     @Published var commandNotice: String?
@@ -86,6 +90,8 @@ final class VoiceController: ObservableObject {
     }
     var controlling: Bool { isListening }
     func setHandsFreeCommands(_ enabled: Bool) {
+        cancelInterpretation()
+        if !enabled { assistant.setEnabled(false) }
         handsFreeCommands = enabled
         commands = VoiceCommandRouter(after: microphone.snapshot().end)
         awaitingCommand = false; commandNotice = nil
@@ -98,6 +104,48 @@ final class VoiceController: ObservableObject {
         state?.playback.transport.pause()
         beginRetake()
         status = "Script paused · listening for Hey Teleprompter"
+    }
+    func setNaturalCommands(_ enabled: Bool) {
+        beginRetake()
+        assistant.setEnabled(enabled)
+    }
+    private func cancelInterpretation() {
+        commandGeneration = UUID()
+        commandTask?.cancel(); commandTask = nil
+        commandTimeout?.cancel(); commandTimeout = nil
+        awaitingCommand = false
+    }
+    private func interpretCommand(_ request: String) {
+        beginRetake()
+        let run = UUID(); commandGeneration = run
+        let scriptID = state?.current.id
+        awaitingCommand = true; commandNotice = "Understanding your command…"
+        updateDrive()
+        commandTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            var result: VoiceCommand?
+            do { result = CommandIntent.interpret(try await assistant.model.classify(request), request: request) }
+            catch { result = nil }
+            guard !Task.isCancelled, commandGeneration == run, isListening, handsFreeCommands,
+                  assistant.enabled, state?.current.id == scriptID else { return }
+            commandTask = nil
+            commandTimeout?.cancel(); commandTimeout = nil
+            awaitingCommand = false
+            commands = VoiceCommandRouter(after: microphone.snapshot().end)
+            beginRetake()
+            if let result { showCommandNotice(state?.performVoiceCommand(result) ?? "Command unavailable") }
+            else { showCommandNotice("Please name a line count, paragraph, cue, or text-size change") }
+            updateDrive()
+        }
+        commandTimeout = Task { @MainActor [weak self] in
+            do { try await Task.sleep(nanoseconds: 4_000_000_000) } catch { return }
+            guard let self, commandGeneration == run else { return }
+            cancelInterpretation()
+            commands = VoiceCommandRouter(after: microphone.snapshot().end)
+            beginRetake()
+            showCommandNotice("That took too long · please try a shorter command")
+            updateDrive()
+        }
     }
     private func showCommandNotice(_ text: String) {
         commandNotice = text
@@ -187,6 +235,7 @@ final class VoiceController: ObservableObject {
                 var processedEnd = 0.0
                 while !Task.isCancelled, generation == run {
                     try await Task.sleep(nanoseconds: 50_000_000)
+                    guard commandTask == nil else { continue }
                     let snapshot = microphone.snapshot()
                     // Keep decoding quiet speech. RMS is a meter/pace hint, not
                     // permission to recognize the next words of the script.
@@ -222,10 +271,12 @@ final class VoiceController: ObservableObject {
         if let meter { RunLoop.main.add(meter, forMode: .common) }
     }
     private func consume(_ speech: HeardSpeech, snapshot: AudioSnapshot) {
+        guard commandTask == nil else { return }
         if handsFreeCommands {
             let words = speech.words.map { CommandWord($0.text, start: snapshot.start + $0.start, end: snapshot.start + $0.end) }
             let event = commands.consume(words, audioEnd: snapshot.end,
-                quiet: ProcessInfo.processInfo.systemUptime - snapshot.lastVoice >= 0.65)
+                quiet: ProcessInfo.processInfo.systemUptime - snapshot.lastVoice >= 0.65,
+                interpretUnknown: assistant.enabled && assistant.ready)
             switch event {
             case .reading: break
             case .listening:
@@ -238,6 +289,9 @@ final class VoiceController: ObservableObject {
                 beginRetake()
                 showCommandNotice(state?.performVoiceCommand(command) ?? "Command unavailable")
                 updateDrive(); return
+            case .interpret(let request):
+                interpretCommand(request)
+                return
             case .unrecognized:
                 awaitingCommand = false
                 beginRetake()
@@ -307,6 +361,7 @@ final class VoiceController: ObservableObject {
         updateDrive()
     }
     func beginRetake() {
+        cancelInterpretation()
         guard let state, isListening else { return }
         retake.begin(now: ProcessInfo.processInfo.systemUptime, audioEnd: microphone.snapshot().end,
                      progress: state.playback.transport.progress)
@@ -318,6 +373,7 @@ final class VoiceController: ObservableObject {
         updateDrive()
     }
     func stop() {
+        cancelInterpretation()
         generation = UUID()
         listening?.cancel(); listening = nil
         meter?.invalidate(); meter = nil

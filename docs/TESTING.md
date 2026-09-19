@@ -38,7 +38,7 @@ These observations describe this development setup, not every supported Mac or a
 - [ ] Presenter/guest isolation with the intended Mac Studio and physical RØDECaster configuration; confirm channel choice and acoustic bleed behavior.
 - [ ] Monitor unplug/reconnect and audio-device unplug recovery on the candidate build.
 - [ ] Clean-account installation: permission denial/recovery, interrupted model download/retry, first launch, relaunch, and offline prompting after setup.
-- [ ] Runtime validation on macOS 13 or raise the advertised minimum to the oldest validated version.
+- [ ] Runtime validation on macOS 13.3 or raise the advertised minimum to the oldest validated version.
 - [ ] Developer ID signature, successful notarization, stapled ticket, and Gatekeeper acceptance on the exact ZIP candidate.
 - [ ] Download and open that candidate on a second Mac without development tools or an existing model cache.
 - [ ] Attach matching source revision, ZIP, SHA-256 checksum, build metadata, and honest prerelease notes.
@@ -66,3 +66,11 @@ The core checks cover the complete wake phrase, rejection of shorter/interrupted
 Before release, test a live presenter with the selected microphone in both Follow script and Adaptive pace: wake detection and response time, pause/resume, commands at script end, repeated retakes, font reflow, cue boundaries, noise and guest speech, unknown commands, Stop listening/Esc, and mirrored talent feedback. The full wake phrase is “Hey Teleprompter”; the originally considered product-name phrase was misrecognized in the synthetic speech test. Synthetic success does not establish a live false-activation rate.
 
 Native smoke check (2026-09-19): enabled Hands-free commands, started microphone-only listening while paused, played and paused without stopping capture, and confirmed Stop listening returned to Mic off. The right panel shows the wake phrase and command examples. Live speaker recognition and command feedback on the talent display still require presenter acceptance.
+
+### Natural commands beta
+
+- [ ] On a clean Mac, download command AI with the app button, cancel partway, retry, then relaunch and use it with the network disconnected.
+- [ ] Say “Hey, Teleprompter” plus varied requests, including corrections, incomplete commands, background conversation, unsupported actions, and negation.
+- [ ] Manually scroll, pause, switch scripts, turn off Natural commands, or stop the mic while “Understanding your command…” is visible; no late action should execute.
+- [ ] Check model warmup, sustained prompting, RAM pressure, and interpretation latency on an 8 GB Apple silicon Mac and the oldest supported macOS version.
+- [ ] Verify visible confirmations on the talent output, including mirroring and blackout. Neither download nor model interpretation should modify the script text.

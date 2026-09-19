@@ -28,8 +28,8 @@ def inspect_feed(data, *, tag=None, previous=None):
         raise ValueError("Release tag and app display version do not match")
     if item.find(SPARKLE + "channel") is not None:
         raise ValueError("Prerelease channels are not allowed")
-    if item.findtext(SPARKLE + "minimumSystemVersion") != "13.0":
-        raise ValueError("Expected the supported macOS 13.0 minimum")
+    if item.findtext(SPARKLE + "minimumSystemVersion") != "13.3":
+        raise ValueError("Expected the supported macOS 13.3 minimum")
     if item.findtext(SPARKLE + "hardwareRequirements") != "arm64":
         raise ValueError("An arm64-only archive must be restricted to Apple silicon")
     enclosures = item.findall("enclosure")
