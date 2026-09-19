@@ -19,6 +19,14 @@ jobs:
         run: swift --version
       - name: Core, layout, channel, and bundle checks
         run: ./scripts/check.sh
+      - name: Diagnose test launch failure
+        if: failure()
+        run: |
+          codesign --verify --strict --verbose=4 .build/debug/PrompterChecks || true
+          codesign --display --entitlements - .build/debug/PrompterChecks || true
+          otool -L .build/debug/PrompterChecks || true
+          /usr/bin/log show --last 5m --style compact --predicate 'eventMessage CONTAINS "PrompterChecks"' || true
+          find ~/Library/Logs/DiagnosticReports -name 'PrompterChecks*' -maxdepth 1 -exec cat {} \; || true
       - name: Archive development build
         run: ditto -c -k --sequesterRsrc --keepParent dist/Prompter.app dist/Prompter-development.zip
       - uses: actions/upload-artifact@v7.0.1

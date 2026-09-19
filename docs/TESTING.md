@@ -14,7 +14,7 @@ A green automated build is necessary, but does not establish comfortable live pr
 | Input isolation | `swift run -c release WhisperCheck --channels` | Synthetic 20-channel planar/interleaved input: selected host channel reaches mono recognition, other channels remain silent, invalid channel rejected |
 | First model setup | `./scripts/check-speech.sh` | Fresh Base English download, local preparation, cache detection, reopen with model download disabled, synthetic transcription |
 | Real Whisper streaming | Same script | Quiet synthetic speech at −50 dB RMS, rolling eight-second windows; passage must reach its final eight words |
-| Bundle | `./scripts/check.sh` | Release compilation, plist lint, code-signature integrity, only system runtime dependencies |
+| Bundle | `./scripts/check.sh` | Release compilation, plist lint, code-signature integrity, system libraries and embedded Sparkle only |
 | GitHub build | Actions: Build and checks | Runs core/layout/channel/bundle checks on a hosted macOS runner; review the run linked from the README |
 
 The speech fixture is generated locally; no microphone recording is committed. Synthetic speech is not a substitute for live testing. Cached reopen with downloads disabled is not a network-disconnection test.
@@ -55,3 +55,5 @@ Native smoke check (2026-09-19): selected bold + underline, cleared and restored
 ## In-app update checks
 
 `check.sh` validates the embedded Sparkle helpers and runs `test-update-feed.py`. Release promotion additionally verifies the archive’s Ed25519 signature before extraction, Apple code signing, stapled notarization, and Gatekeeper acceptance. Test the menu’s busy-state gating, no-update result, network failure, cancellation, and a full Install & Relaunch between two signed/notarized builds before public distribution. Preserve the user’s library and model cache throughout. See [UPDATES.md](UPDATES.md).
+
+Development check (2026-09-19): the native update window read the public GitHub feed and reported the installed version up to date. The menu command was disabled during playback and enabled again when paused. Sparkle generated an appcast signed with the release Mac’s Keychain key; verification against the app’s pinned public key accepted the original archive and rejected a same-size tampered copy. The automated cryptographic self-test also rejects truncation and the wrong signing key. These checks used a local development archive; full signed/notarized installation, cancellation, and network-failure testing remain outstanding.
