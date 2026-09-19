@@ -79,3 +79,7 @@ Existing version-1 JSON libraries migrate automatically on save, with the origin
 | ⌃⌘F | Main-window full screen |
 
 Single-key controls leave text entry alone when an editor or text field has focus. Click the preview to return keyboard control to prompting.
+
+## Updating StudioPrompter
+
+Pause prompting and stop the microphone, then choose **StudioPrompter → Check for Updates…** from the macOS menu bar. When a newer stable release is available, review its notes and choose Download, then Install & Relaunch. Your saved library and downloaded models stay on this Mac. Checks are manual; draft releases and betas are not offered. Older builds without this menu need one manual installation of an updater-enabled build.

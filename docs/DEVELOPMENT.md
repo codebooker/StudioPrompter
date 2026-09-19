@@ -64,3 +64,7 @@ The script enables hardened runtime with microphone access, submits the ZIP, sta
 5. Publish as a prerelease only when its required checks pass; update the README download status.
 
 No workflow automatically publishes releases. A passing CI build alone is not release acceptance.
+
+## In-app updater
+
+Sparkle 2.10.0 is pinned in SwiftPM. `build.sh` embeds its framework and helper executables; Developer ID builds sign nested helpers before the enclosing framework and app. Development builds preserve Sparkle’s vendor signatures. The Sparkle signing key is not needed for ordinary builds or CI. See [UPDATES.md](UPDATES.md) for feed generation and the stable GitHub-release promotion workflow.

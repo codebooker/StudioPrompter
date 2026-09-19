@@ -5,13 +5,17 @@ import AppKit
 struct PrompterApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var state = AppState()
+    @StateObject private var updater = AppUpdater()
     var body: some Scene {
         Window("StudioPrompter", id: "workspace") {
             WorkspaceView(state: state)
-                .onAppear { delegate.state = state; NSApp.activate(ignoringOtherApps: true) }
+                .onAppear { delegate.state = state; updater.state = state; NSApp.activate(ignoringOtherApps: true) }
         }
         .defaultSize(width: 1380, height: 860)
         .commands {
+            CommandGroup(after: .appInfo) {
+                CheckForUpdatesButton(updater: updater, playback: state.playback, voice: state.voice)
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Script", action: state.newScript).keyboardShortcut("n")
                 Button("Import Script…", action: state.importScript).keyboardShortcut("o")

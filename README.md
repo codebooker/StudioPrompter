@@ -86,3 +86,7 @@ See [development and packaging](docs/DEVELOPMENT.md) for architecture, signing, 
 ## Open source
 
 StudioPrompter is licensed under [GNU AGPL v3](LICENSE). [WhisperKit and its bundled notices](ThirdParty) retain their respective licenses. Thanks to the Whisper and WhisperKit teams for making local speech recognition possible.
+
+### Updates without the download dance
+
+Choose **StudioPrompter → Check for Updates…** to get published stable releases from GitHub. [Sparkle](https://sparkle-project.org/) handles the signed download and Install & Relaunch flow, while your scripts and local speech models stay in place. Checks are manual so update prompts stay out of recording sessions. See [the update guide](docs/UPDATES.md) for release setup and validation.
