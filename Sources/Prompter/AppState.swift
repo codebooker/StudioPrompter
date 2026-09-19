@@ -227,6 +227,7 @@ final class AppState: ObservableObject {
         alert.addButton(withTitle: "Delete")
         alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
+        pausePlayback(stopListening: true)
         library.scripts.removeAll { $0.id == library.selectedID }
         if library.scripts.isEmpty { library.scripts.append(Script(title: "Untitled script", text: "")) }
         library.selectedID = library.scripts[0].id
