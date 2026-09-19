@@ -317,7 +317,11 @@ struct Inspector: View {
 
                 VStack(alignment: .leading, spacing: 17) {
                     SectionLabel(title: "APPEARANCE")
-                    Picker("Typeface", selection: state.setting(\.serifFont)) { Text("System").tag(false); Text("Georgia").tag(true) }.font(.system(size: 11))
+                    Picker("Typeface", selection: state.setting(\.typeface)) {
+                        ForEach(ScriptTypeface.allCases) { typeface in
+                            Text(typeface.name).tag(typeface)
+                        }
+                    }.font(.system(size: 11))
                     parameter("Text size", value: String(Int(state.current.settings.fontSize))) {
                         Slider(value: state.setting(\.fontSize), in: 32...90, step: 2).accessibilityLabel("Text size")
                     }

@@ -108,6 +108,23 @@ final class LibraryTests {
         expectEqual(decoded.fontSize, 64)
         expectTrue(decoded.mirrorHorizontal)
     }
+    func testTypefaceMigrationAndPersistence() throws {
+        let decoder = JSONDecoder()
+        let legacySerif = try decoder.decode(PromptSettings.self, from: Data(#"{"serifFont":true,"fontSize":64}"#.utf8))
+        expectEqual(legacySerif.typeface, .georgia)
+        expectEqual(legacySerif.fontSize, 64)
+        expectEqual(try decoder.decode(PromptSettings.self, from: Data(#"{"serifFont":false}"#.utf8)).typeface, .system)
+        expectEqual(try decoder.decode(PromptSettings.self, from: Data("{}".utf8)).typeface, .system)
+        expectEqual(try decoder.decode(PromptSettings.self, from: Data(#"{"typeface":"future-font"}"#.utf8)).typeface, .system)
+        expectEqual(try decoder.decode(PromptSettings.self, from: Data(#"{"typeface":"verdana","serifFont":true}"#.utf8)).typeface, .verdana)
+        for typeface in ScriptTypeface.allCases {
+            var settings = PromptSettings()
+            settings.typeface = typeface
+            settings.fontSize = 58
+            let data = try JSONEncoder().encode(settings)
+            expectEqual(try decoder.decode(PromptSettings.self, from: data), settings)
+        }
+    }
 }
 
 
@@ -145,6 +162,7 @@ private func expectThrows<T>(_ expression: @autoclosure () throws -> T, file: St
         try library.testCorruptedLibraryIsNotChangedOnRead()
         library.testDurationAndEmptyWhitespace()
         try library.testExistingSettingsGainGuideDefaultsWithoutLosingPreferences()
+        try library.testTypefaceMigrationAndPersistence()
         speechChecks()
         followChecks()
         adaptiveChecks()

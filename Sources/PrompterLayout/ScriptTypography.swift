@@ -3,7 +3,13 @@ import PrompterCore
 
 public enum ScriptTypography {
     public static func font(_ settings: PromptSettings) -> NSFont {
-        settings.serifFont ? NSFont(name: "Georgia", size: settings.fontSize) ?? NSFont.systemFont(ofSize: settings.fontSize) : NSFont.systemFont(ofSize: settings.fontSize, weight: .medium)
+        let fallback = NSFont.systemFont(ofSize: settings.fontSize, weight: .medium)
+        switch settings.typeface {
+        case .system: return fallback
+        case .avenirNext: return NSFont(name: "AvenirNext-Medium", size: settings.fontSize) ?? fallback
+        case .verdana: return NSFont(name: "Verdana", size: settings.fontSize) ?? fallback
+        case .georgia: return NSFont(name: "Georgia", size: settings.fontSize) ?? fallback
+        }
     }
 
     public static func text(_ text: String, settings: PromptSettings) -> NSAttributedString {

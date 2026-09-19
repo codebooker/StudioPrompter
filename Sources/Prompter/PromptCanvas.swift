@@ -49,7 +49,7 @@ final class ScriptCanvas: NSView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func configure(text: String, settings: PromptSettings) {
-        guard text != lastText || settings.fontSize != self.settings.fontSize || settings.margin != self.settings.margin || settings.lineSpacing != self.settings.lineSpacing || settings.serifFont != self.settings.serifFont else {
+        guard text != lastText || settings.fontSize != self.settings.fontSize || settings.margin != self.settings.margin || settings.lineSpacing != self.settings.lineSpacing || settings.typeface != self.settings.typeface else {
             self.settings = settings
             return
         }

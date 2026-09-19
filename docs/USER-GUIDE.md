@@ -10,7 +10,7 @@ With one monitor, use **Open Rehearsal Window** to inspect the talent view.
 
 ## Reading and retakes
 
-Adjust font, size, line spacing, and margins in the right panel. Move the reading guide with its orange arrow or the Guide position slider; Guide height covers one to three lines. Focus highlighting includes complete intersecting lines.
+Choose System, Avenir Next, Verdana, or Georgia in the right panel. Avenir Next uses a medium weight; Verdana offers wider letter shapes. Typeface choices save per script and apply to both displays. Adjust size, line spacing, and margins below the typeface picker. Move the reading guide with its orange arrow or the Guide position slider; Guide height covers one to three lines. Focus highlighting includes complete intersecting lines.
 
 Scroll the producer preview with a wheel or trackpad, drag it, use the position slider, or press the arrow keys. In fixed-speed mode, this pauses automatic playback.
 

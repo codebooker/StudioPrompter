@@ -8,7 +8,7 @@ A green automated build is necessary, but does not establish comfortable live pr
 
 | Area | Repeatable check | Current evidence |
 | --- | --- | --- |
-| Transport and persistence | `swift run PrompterChecks` | 119 assertions pass: countdown, frame independence, pause/end, library round-trip and corrupt-file preservation |
+| Transport and persistence | `swift run PrompterChecks` | 129 assertions pass: countdown, frame independence, pause/end, library round-trip, legacy font migration, typeface persistence, and corrupt-file preservation |
 | Speech matching and motion | Same runner | Skipped/filler words, unrelated speech rejection, recognition corrections, quiet-speech recovery logic, cadence smoothing, bounded motion, layout and focus geometry |
 | Retake control | Same runner | Active playback preserved, countdown cancelled, old/far location rejected, scrolling-settle gate, fresh nearby match releases hold, explicit pause preserved |
 | Input isolation | `swift run -c release WhisperCheck --channels` | Synthetic 20-channel planar/interleaved input: selected host channel reaches mono recognition, other channels remain silent, invalid channel rejected |

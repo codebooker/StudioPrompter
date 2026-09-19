@@ -1,5 +1,18 @@
 import Foundation
 
+public enum ScriptTypeface: String, Codable, CaseIterable, Identifiable {
+    case system, avenirNext, verdana, georgia
+    public var id: String { rawValue }
+    public var name: String {
+        switch self {
+        case .system: return "System"
+        case .avenirNext: return "Avenir Next"
+        case .verdana: return "Verdana"
+        case .georgia: return "Georgia"
+        }
+    }
+}
+
 public struct PromptSettings: Codable, Equatable {
     public var wordsPerMinute: Double = 140
     public var fontSize: Double = 54
@@ -12,11 +25,12 @@ public struct PromptSettings: Codable, Equatable {
     public var guidePosition: Double = 0.32
     public var guideLines: Double = 1
     public var focusMode = true
-    public var serifFont = false
+    public var typeface: ScriptTypeface = .system
     public init() {}
     private enum CodingKeys: String, CodingKey {
-        case wordsPerMinute, fontSize, lineSpacing, margin, countdown, mirrorHorizontal, mirrorVertical, showGuide, guidePosition, guideLines, focusMode, serifFont
+        case wordsPerMinute, fontSize, lineSpacing, margin, countdown, mirrorHorizontal, mirrorVertical, showGuide, guidePosition, guideLines, focusMode, typeface
     }
+    private enum LegacyCodingKeys: String, CodingKey { case serifFont }
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         wordsPerMinute = try values.decodeIfPresent(Double.self, forKey: .wordsPerMinute) ?? 140
@@ -30,7 +44,12 @@ public struct PromptSettings: Codable, Equatable {
         guidePosition = try values.decodeIfPresent(Double.self, forKey: .guidePosition) ?? 0.32
         guideLines = try values.decodeIfPresent(Double.self, forKey: .guideLines) ?? 1
         focusMode = try values.decodeIfPresent(Bool.self, forKey: .focusMode) ?? true
-        serifFont = try values.decodeIfPresent(Bool.self, forKey: .serifFont) ?? false
+        if let savedFont = try values.decodeIfPresent(String.self, forKey: .typeface) {
+            typeface = ScriptTypeface(rawValue: savedFont) ?? .system
+        } else {
+            let legacy = try decoder.container(keyedBy: LegacyCodingKeys.self)
+            typeface = (try legacy.decodeIfPresent(Bool.self, forKey: .serifFont) ?? false) ? .georgia : .system
+        }
     }
 }
 
