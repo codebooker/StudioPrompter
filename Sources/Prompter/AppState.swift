@@ -239,8 +239,8 @@ final class AppState: ObservableObject {
     }
     func openVoiceLab() {
         if let voiceWindow { voiceWindow.makeKeyAndOrderFront(nil); return }
-        let window = NSWindow(contentRect: NSRect(x: 120, y: 100, width: 650, height: 740), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-        window.title = "Prompter — Voice settings"
+        let window = NSWindow(contentRect: NSRect(x: 120, y: 100, width: 760, height: min(820, (NSScreen.main?.visibleFrame.height ?? 900) - 80)), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        window.title = "StudioPrompter — Voice settings"
         window.identifier = NSUserInterfaceItemIdentifier("voice-lab")
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: VoiceLabView(state: self, voice: voice).preferredColorScheme(.dark))

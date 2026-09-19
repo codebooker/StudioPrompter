@@ -100,130 +100,302 @@ struct VoiceModelSetup: View {
 struct VoiceLabView: View {
     @ObservedObject var state: AppState
     @ObservedObject var voice: VoiceController
+
+    private var inputLocked: Bool { voice.isListening || voice.isStarting }
+    private var microphoneName: String {
+        voice.microphones.first { $0.id == voice.selectedMicrophone }?.name ?? "System default"
+    }
+    private var channelName: String {
+        voice.channels.first { $0.id == voice.selectedChannel }?.name ?? "Choose a channel"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Image(systemName: "waveform").font(.system(size: 25)).foregroundStyle(Palette.accent)
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Voice settings").font(.system(size: 23, weight: .semibold))
-                    Text("LOCAL SPEECH RECOGNITION").font(.system(size: 9, weight: .semibold)).tracking(1.6).foregroundStyle(Palette.muted)
-                }
-                Spacer()
-                Button("Back to script", action: state.closeVoiceLab).buttonStyle(QuietButton())
-            }.padding(22)
-            Divider()
+            header
+            Rectangle().fill(Palette.border).frame(height: 1)
             ScrollView {
-                VStack(alignment: .leading, spacing: 21) {
-                    Text("Listen locally, measure your cadence, and let the script follow along. No cloud transcription or saved audio.")
-                        .font(.system(size: 12)).foregroundStyle(Palette.muted).lineSpacing(4)
-                    HStack(alignment: .top, spacing: 18) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            SectionLabel(title: "WHISPER MODEL")
-                            Picker("Whisper model", selection: Binding(get: { voice.model }, set: { voice.changeModel($0) })) {
-                                Text("Base English · smaller").tag("base.en")
-                                Text("Small English · larger").tag("small.en")
-                            }.labelsHidden().disabled(voice.isListening || voice.isPreparing || voice.isStarting)
-                        }
-                        VStack(alignment: .leading, spacing: 8) {
-                            SectionLabel(title: "MICROPHONE")
-                            HStack {
-                                Picker("Microphone", selection: $voice.selectedMicrophone) {
-                                    Text("System default").tag(UInt32(0))
-                                    ForEach(voice.microphones) { mic in Text(mic.name).tag(mic.id) }
-                                }.labelsHidden().disabled(voice.isListening || voice.isStarting)
-                                Button(action: voice.refreshMicrophones) { Image(systemName: "arrow.clockwise") }
-                                    .buttonStyle(.plain).help("Refresh microphones").disabled(voice.isListening || voice.isStarting)
-                            }
-                        }
-                    }
-                    Picker("Input channel", selection: $voice.selectedChannel) {
-                        Text("Choose input channel").tag(0)
-                        ForEach(voice.channels) { channel in Text(channel.name).tag(channel.id) }
-                    }.disabled(voice.isListening || voice.isStarting).accessibilityLabel("Input channel")
-                    Text("Select only the presenter's microphone channel. The meter and recognition use this channel, not the full mix. For a mixer, enable multitrack USB output and verify the channel while the presenter and guest speak separately.")
-                        .font(.system(size: 11)).foregroundStyle(Palette.muted)
-                    VoiceModelSetup(voice: voice)
-                    HStack {
-                        Circle().fill(voice.isListening ? Palette.green : Palette.muted).frame(width: 7, height: 7)
-                        Text(voice.status).font(.system(size: 11))
-                        Spacer()
-                        Button(voice.isListening ? "Stop microphone" : "Start listening") {
-                            if voice.isListening { voice.stop() } else { voice.start() }
-                        }.buttonStyle(.borderedProminent).disabled(voice.isStarting || voice.isPreparing || voice.selectedChannel == 0 || !voice.isDownloaded)
-                    }
-                    if let error = voice.error {
-                        Text(error).font(.system(size: 12)).foregroundStyle(.red).textSelection(.enabled)
-                    }
-                    HStack(spacing: 12) {
-                        Image(systemName: voice.speaking ? "mic.fill" : "mic").foregroundStyle(voice.speaking ? Palette.green : Palette.muted)
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                Capsule().fill(Color.white.opacity(0.08))
-                                Capsule().fill(voice.speaking ? Palette.green : Palette.muted).frame(width: geometry.size.width * min(1, max(0, (voice.decibels + 65) / 65)))
-                            }
-                        }.frame(height: 6)
-                        Text(voice.isListening ? "\(Int(voice.decibels)) dB" : "MIC OFF").font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.muted).frame(width: 58)
-                    }
-                    Divider()
-                    Picker("Voice mode", selection: $voice.mode) {
-                        ForEach(VoiceMode.allCases) { mode in Text(mode.rawValue).tag(mode) }
-                    }.pickerStyle(.segmented).labelsHidden()
-                    Text(modeDescription).font(.system(size: 11)).foregroundStyle(Palette.muted).lineSpacing(4)
-                    if voice.mode == .follow {
-                        knob("Reading lead", value: "\(Int(voice.followLead)) words", binding: $voice.followLead, range: -10...10, step: 1)
-                        Text("Zero follows recognized words. Negative values keep text lower; positive values bring upcoming text up sooner.")
-                            .font(.system(size: 10)).foregroundStyle(Palette.muted)
-                    }
-                    HStack {
-                        metric("HEARD PACE", value: voice.measuredPace.map { "\(Int($0)) wpm" } ?? "—")
-                        Spacer()
-                        metric("APPLIED PACE", value: voice.controlling ? "\(Int(voice.effectivePace)) wpm" : "Manual")
-                        Spacer()
-                        metric("INFERENCE", value: voice.inferenceSeconds > 0 ? String(format: "%.2f sec", voice.inferenceSeconds) : "—")
-                        Spacer()
-                        metric("SCRIPT MATCH", value: voice.matchConfidence.map { "\(Int($0 * 100))%" } ?? "—")
-                    }.padding(16).background(Palette.panel, in: RoundedRectangle(cornerRadius: 10))
-                    VoiceTransport(state: state, playback: state.playback, voice: voice)
-                    VStack(alignment: .leading, spacing: 9) {
-                        SectionLabel(title: "RECENT SPEECH", trailing: "Rolling 8-second window")
-                        Text(voice.transcript.isEmpty ? "Your live transcript will appear here after you start listening and speak." : voice.transcript)
-                            .font(.system(size: 16)).lineSpacing(5).foregroundStyle(voice.transcript.isEmpty ? Palette.muted : .white.opacity(0.9))
-                            .textSelection(.enabled).frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
-                    }.padding(16).background(Palette.panel, in: RoundedRectangle(cornerRadius: 10))
-                    DisclosureGroup("Tuning") {
-                        VStack(spacing: 16) {
-                            knob("Microphone threshold", value: "\(Int(voice.noiseFloor)) dB", binding: $voice.noiseFloor, range: -65 ... -20, step: 1)
-                            Text("Sets silence detection for Adaptive pace. Follow script still recognizes quieter speech and moves only to matched words.").font(.system(size: 10)).foregroundStyle(Palette.muted)
-                            knob("Pause after silence", value: String(format: "%.1f sec", voice.pauseDelay), binding: $voice.pauseDelay, range: 0.3...2, step: 0.1)
-                            knob("Minimum pace", value: "\(Int(voice.minimumPace)) wpm", binding: Binding(get: { voice.minimumPace }, set: { voice.minimumPace = min($0, voice.maximumPace) }), range: 40...180, step: 5)
-                            knob("Maximum pace", value: "\(Int(voice.maximumPace)) wpm", binding: Binding(get: { voice.maximumPace }, set: { voice.maximumPace = max($0, voice.minimumPace) }), range: 100...300, step: 5)
-                            knob("Speed responsiveness", value: voice.responsiveness < 0.35 ? "Smooth" : "Quick", binding: $voice.responsiveness, range: 0.1...0.7, step: 0.05)
-                        }.padding(.top, 16)
-                    }.font(.system(size: 12))
-                    Text("Play starts listening and prompting together; Pause stops both. While prompting, scroll back for a retake and read from the new position—the mic stays on. Microphone testing here leaves playback paused. Closing settings leaves an active microphone test running until you stop it.")
-                        .font(.system(size: 10)).foregroundStyle(Palette.muted).lineSpacing(4)
-                }.padding(22)
+                VStack(alignment: .leading, spacing: 16) {
+                    inputCard
+                    promptingCard
+                    modelCard
+                    tuningCard
+                    diagnosticsCard
+                }.padding(24)
             }
-        }.frame(minWidth: 610, minHeight: 580).background(Palette.background).foregroundStyle(.white.opacity(0.9)).tint(Palette.accent)
-
-    }
-    private var modeDescription: String {
-        switch voice.mode {
-        case .pace: return "Press Play to adapt to your speaking pace. Speed builds gradually and slows more quickly. Matched phrases gently correct drift to keep your words near the guide. Silence holds the script; without a match, scrolling follows cadence alone."
-        case .follow: return "Tracks nearby phrases and catches up smoothly, allowing missed words. Reading lead offsets recognition delay. It holds when speech or a reliable match is missing; scroll manually to reread an earlier passage."
+            Rectangle().fill(Palette.border).frame(height: 1)
+            VStack(alignment: .leading, spacing: 10) {
+                VoiceTransport(state: state, playback: state.playback, voice: voice)
+                Label("Speech stays on this Mac. Audio and transcripts aren’t saved.", systemImage: "lock.shield")
+                    .font(.system(size: 10)).foregroundStyle(Palette.muted)
+            }.padding(.horizontal, 24).padding(.vertical, 16)
         }
+        .frame(minWidth: 660, minHeight: 580)
+        .background(Palette.background).foregroundStyle(.white.opacity(0.92)).tint(Palette.accent)
+    }
+
+    private var header: some View {
+        HStack(spacing: 13) {
+            Image(systemName: "waveform")
+                .font(.system(size: 23, weight: .medium)).foregroundStyle(Palette.accent)
+                .frame(width: 46, height: 46)
+                .background(Palette.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 13))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Voice settings").font(.system(size: 24, weight: .semibold)).tracking(-0.5)
+                Text("A natural pace. A little fine-tuning.")
+                    .font(.system(size: 12)).foregroundStyle(Palette.muted)
+            }
+            Spacer(minLength: 16)
+            Button(action: state.closeVoiceLab) {
+                Label("Back to script", systemImage: "arrow.left")
+            }.buttonStyle(QuietButton())
+        }.padding(.horizontal, 24).padding(.vertical, 20)
+    }
+
+    private var inputCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                cardHeading("Audio input", subtitle: "Choose the voice that moves the script.", icon: "mic")
+                Spacer()
+                HStack(spacing: 5) {
+                    Circle().fill(voice.isListening ? Palette.green : Palette.muted).frame(width: 5, height: 5)
+                    Text(voice.isListening ? "MIC ON" : "MIC OFF")
+                        .font(.system(size: 9, weight: .semibold)).tracking(0.7)
+                }.foregroundStyle(voice.isListening ? Palette.green : Palette.muted)
+                    .padding(.horizontal, 9).padding(.vertical, 6)
+                    .background(Color.white.opacity(0.035), in: Capsule())
+            }
+            HStack(alignment: .bottom, spacing: 12) {
+                VStack(alignment: .leading, spacing: 7) {
+                    fieldLabel("Microphone")
+                    HStack(spacing: 7) {
+                        VoiceSettingsMenu(title: "Microphone", value: microphoneName, selection: $voice.selectedMicrophone) {
+                            Text("System default").tag(UInt32(0))
+                            ForEach(voice.microphones) { mic in Text(mic.name).tag(mic.id) }
+                        }
+                        Button(action: voice.refreshMicrophones) { Image(systemName: "arrow.clockwise").frame(width: 16, height: 18) }
+                            .buttonStyle(QuietButton()).help("Refresh microphones").accessibilityLabel("Refresh microphones")
+                    }
+                }.frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 7) {
+                    fieldLabel("Input channel")
+                    VoiceSettingsMenu(title: "Input channel", value: channelName, selection: $voice.selectedChannel) {
+                        Text("Choose a channel").tag(0)
+                        ForEach(voice.channels) { channel in Text(channel.name).tag(channel.id) }
+                    }
+                }.frame(width: 190)
+            }.disabled(inputLocked)
+            Text("For interviews, choose the presenter’s isolated channel so the guest’s track won’t move the script.")
+                .font(.system(size: 11)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
+            inputMeter
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(voice.isStarting ? "Starting microphone…" : voice.isListening ? "Listening to your selected channel" : "Check your microphone")
+                        .font(.system(size: 12, weight: .medium))
+                    Text(voice.isListening ? "Closing settings leaves the microphone on." : "Test your input without starting the script.")
+                        .font(.system(size: 10)).foregroundStyle(Palette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Button {
+                    if voice.isListening { voice.stop() } else { voice.start() }
+                } label: {
+                    Label(voice.isListening ? "Stop microphone" : "Test microphone", systemImage: voice.isListening ? "stop.fill" : "mic.fill")
+                }.buttonStyle(QuietButton())
+                    .disabled(voice.isStarting || voice.isPreparing || voice.selectedChannel == 0 || !voice.isDownloaded)
+            }
+            if let error = voice.error {
+                Label(error, systemImage: "exclamationmark.circle")
+                    .font(.system(size: 11)).foregroundStyle(Color(red: 1, green: 0.6, blue: 0.5))
+                    .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+            }
+        }.voiceCard()
+    }
+
+    private var inputMeter: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 3) {
+                ForEach(0..<36) { index in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(voice.isListening && Double(index) / 36 < min(1, max(0, (voice.decibels + 65) / 65))
+                              ? (index > 30 ? Palette.accent : Palette.green) : Color.white.opacity(0.07))
+                        .frame(height: 8)
+                }
+            }.accessibilityElement(children: .ignore)
+                .accessibilityLabel("Selected microphone channel level")
+                .accessibilityValue(voice.isListening ? "\(Int(voice.decibels)) decibels" : "Microphone off")
+            Text(voice.isListening ? "\(Int(voice.decibels)) dB" : "— dB")
+                .font(.system(size: 10, design: .monospaced)).foregroundStyle(Palette.muted)
+                .frame(width: 46, alignment: .trailing)
+        }
+    }
+
+    private var promptingCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            cardHeading("Prompting style", subtitle: "Find the feel that suits your delivery.", icon: "text.alignleft")
+            HStack(spacing: 10) {
+                modeOption(.follow, icon: "text.quote", detail: "Follow the words you say.")
+                modeOption(.pace, icon: "waveform.path", detail: "Move with your speaking rhythm.")
+            }
+            if voice.mode == .follow {
+                knob("Reading lead", value: "\(Int(voice.followLead)) words", binding: $voice.followLead, range: -10...10, step: 1)
+                Text("Keep it at zero to follow recognized words. Increase it to bring text up sooner, or decrease it to keep text lower.")
+                    .font(.system(size: 10)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("Builds speed gradually, slows with you, and holds during silence. Nearby phrase matches help keep your place.")
+                    .font(.system(size: 11)).foregroundStyle(Palette.muted).lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }.voiceCard()
+    }
+
+    private var modelCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 18) {
+                cardHeading("Speech model", subtitle: "Local Whisper · English", icon: "cpu")
+                Spacer(minLength: 0)
+                VoiceSettingsMenu(title: "Whisper model", value: voice.model == "base.en" ? "Base English" : "Small English",
+                                  selection: Binding(get: { voice.model }, set: { voice.changeModel($0) })) {
+                    Text("Base English · Recommended").tag("base.en")
+                    Text("Small English").tag("small.en")
+                }.frame(width: 220).disabled(inputLocked || voice.isPreparing)
+            }
+            VoiceModelSetup(voice: voice)
+            Text("Base is recommended for live prompting. Small may take longer to respond.")
+                .font(.system(size: 10)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
+        }.voiceCard()
+    }
+
+    private var tuningCard: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 18) {
+                knob("Microphone threshold", value: "\(Int(voice.noiseFloor)) dB", binding: $voice.noiseFloor, range: -65 ... -20, step: 1)
+                Text("Controls silence detection in Adaptive pace. Follow script can still recognize quieter speech.")
+                    .font(.system(size: 10)).foregroundStyle(Palette.muted)
+                knob("Pause after silence", value: String(format: "%.1f sec", voice.pauseDelay), binding: $voice.pauseDelay, range: 0.3...2, step: 0.1)
+                knob("Minimum pace", value: "\(Int(voice.minimumPace)) wpm", binding: Binding(get: { voice.minimumPace }, set: { voice.minimumPace = min($0, voice.maximumPace) }), range: 40...180, step: 5)
+                knob("Maximum pace", value: "\(Int(voice.maximumPace)) wpm", binding: Binding(get: { voice.maximumPace }, set: { voice.maximumPace = max($0, voice.minimumPace) }), range: 100...300, step: 5)
+                knob("Speed responsiveness", value: voice.responsiveness < 0.35 ? "Smooth" : "Quick", binding: $voice.responsiveness, range: 0.1...0.7, step: 0.05)
+            }.padding(.top, 18)
+        } label: {
+            Label("Fine-tuning", systemImage: "slider.horizontal.3").font(.system(size: 13, weight: .medium))
+        }.voiceCard()
+    }
+
+    private var diagnosticsCard: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 12) {
+                    metric("Heard pace", value: voice.measuredPace.map { "\(Int($0)) wpm" } ?? "—")
+                    metric("Applied pace", value: voice.controlling ? "\(Int(voice.effectivePace)) wpm" : "—")
+                    metric("Recognition", value: voice.inferenceSeconds > 0 ? String(format: "%.2f s", voice.inferenceSeconds) : "—")
+                    metric("Script match", value: voice.matchConfidence.map { "\(Int($0 * 100))%" } ?? "—")
+                }
+                Divider().overlay(Palette.border)
+                HStack {
+                    fieldLabel("Recent speech")
+                    Spacer()
+                    Text("Last 8 seconds").font(.system(size: 10)).foregroundStyle(Palette.muted)
+                }
+                Text(voice.transcript.isEmpty ? "Start a mic test and speak to see your words here." : voice.transcript)
+                    .font(.system(size: 14)).lineSpacing(5)
+                    .foregroundStyle(voice.transcript.isEmpty ? Palette.muted : .white.opacity(0.9))
+                    .textSelection(.enabled).frame(maxWidth: .infinity, minHeight: 55, alignment: .topLeading)
+                Text(voice.status).font(.system(size: 10)).foregroundStyle(Palette.muted)
+            }.padding(.top, 18)
+        } label: {
+            Label("Live diagnostics", systemImage: "chart.bar.xaxis").font(.system(size: 13, weight: .medium))
+        }.voiceCard()
+    }
+
+    private func cardHeading(_ title: String, subtitle: String, icon: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon).font(.system(size: 14, weight: .medium)).foregroundStyle(Palette.accent)
+                .frame(width: 19).padding(.top, 2).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.system(size: 14, weight: .semibold))
+                Text(subtitle).font(.system(size: 11)).foregroundStyle(Palette.muted)
+            }
+        }
+    }
+    private func fieldLabel(_ title: String) -> some View {
+        Text(title).font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.muted)
+    }
+    private func modeOption(_ mode: VoiceMode, icon: String, detail: String) -> some View {
+        let selected = voice.mode == mode
+        return Button { voice.mode = mode } label: {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack {
+                    Image(systemName: icon).font(.system(size: 16)).foregroundStyle(selected ? Palette.accent : Palette.muted)
+                    Spacer()
+                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 14)).foregroundStyle(selected ? Palette.accent : Palette.muted.opacity(0.5))
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(mode.rawValue).font(.system(size: 13, weight: .semibold))
+                    Text(detail).font(.system(size: 10)).foregroundStyle(Palette.muted)
+                }
+            }.frame(maxWidth: .infinity, alignment: .leading).padding(14)
+                .background(selected ? Palette.accent.opacity(0.07) : Color.white.opacity(0.015), in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(selected ? Palette.accent.opacity(0.7) : Palette.border, lineWidth: 1))
+                .contentShape(RoundedRectangle(cornerRadius: 10))
+        }.buttonStyle(.plain).accessibilityLabel(mode.rawValue).accessibilityValue(selected ? "Selected" : "Not selected")
     }
     private func metric(_ label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label).font(.system(size: 8, weight: .semibold)).tracking(1).foregroundStyle(Palette.muted)
-            Text(value).font(.system(size: 17, weight: .medium, design: .rounded)).monospacedDigit()
-        }
+        VStack(alignment: .leading, spacing: 7) {
+            Text(label).font(.system(size: 10)).foregroundStyle(Palette.muted)
+            Text(value).font(.system(size: 18, weight: .medium)).monospacedDigit()
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func knob(_ title: String, value: String, binding: Binding<Double>, range: ClosedRange<Double>, step: Double) -> some View {
-        VStack(spacing: 5) {
-            HStack { Text(title); Spacer(); Text(value).foregroundStyle(Palette.muted) }.font(.system(size: 11))
+        VStack(spacing: 8) {
+            HStack {
+                Text(title).font(.system(size: 11, weight: .medium))
+                Spacer()
+                Text(value).font(.system(size: 10, weight: .medium, design: .monospaced)).foregroundStyle(Palette.accent)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(Palette.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 5))
+            }
             Slider(value: binding, in: range, step: step).accessibilityLabel(title)
         }
+    }
+}
+
+private struct VoiceSettingsMenu<Selection: Hashable, Options: View>: View {
+    let title: String
+    let value: String
+    @Binding var selection: Selection
+    @ViewBuilder var options: Options
+    @Environment(\.isEnabled) private var isEnabled
+    var body: some View {
+        Menu {
+            Picker(title, selection: $selection) { options }.pickerStyle(.inline)
+        } label: {
+            // Native macOS menus flatten custom labels. Draw the field over
+            // the menu so it keeps its native keyboard and selection behavior.
+            Text(" ")
+        }
+        .menuStyle(.borderlessButton).menuIndicator(.hidden)
+        .frame(maxWidth: .infinity).frame(height: 37)
+        .background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            HStack(spacing: 10) {
+                Text(value).lineLimit(1).truncationMode(.middle)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(Palette.muted)
+            }.font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.9))
+                .padding(.horizontal, 12).allowsHitTesting(false).accessibilityHidden(true)
+        }
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Palette.border, lineWidth: 1).allowsHitTesting(false))
+        .opacity(isEnabled ? 1 : 0.5).accessibilityLabel(title).accessibilityValue(value)
+    }
+}
+
+private extension View {
+    func voiceCard() -> some View {
+        self.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Palette.panel.opacity(0.7), in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.border, lineWidth: 1))
     }
 }
 
@@ -232,14 +404,24 @@ private struct VoiceTransport: View {
     @ObservedObject var playback: Playback
     @ObservedObject var voice: VoiceController
     var body: some View {
-        HStack {
-            Button { state.togglePlayback() } label: {
-                Label(playback.transport.isPlaying ? "Pause script" : "Play script", systemImage: playback.transport.isPlaying ? "pause.fill" : "play.fill")
-            }.buttonStyle(QuietButton()).disabled(state.current.wordCount == 0)
+        HStack(spacing: 10) {
+            Button {
+                if !playback.transport.isPlaying && !voice.isStarting { voice.enabled = true }
+                state.togglePlayback()
+            } label: {
+                Label(voice.isStarting ? "Cancel startup" : playback.transport.isPlaying ? "Pause script" : "Play script",
+                      systemImage: voice.isStarting ? "stop.fill" : playback.transport.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 12, weight: .semibold)).padding(.horizontal, 16).padding(.vertical, 11)
+                    .foregroundStyle(Palette.background)
+                    .background(Palette.accent, in: RoundedRectangle(cornerRadius: 9))
+            }.buttonStyle(.plain).disabled(state.current.wordCount == 0)
             Button("Reset", action: playback.reset).buttonStyle(QuietButton())
-            Spacer()
-            Text(playback.transport.isPlaying ? (voice.controlling && playback.voiceDrive?.speaking == false ? playback.voiceDrive?.holdReason ?? "Waiting for speech" : "Prompting") : "Script paused")
-                .font(.system(size: 11)).foregroundStyle(Palette.muted)
+            Spacer(minLength: 12)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(playback.transport.isPlaying ? (voice.controlling && playback.voiceDrive?.speaking == false ? playback.voiceDrive?.holdReason ?? "Waiting for speech" : "Prompting") : "Script paused")
+                    .font(.system(size: 11, weight: .medium))
+                Text("Play starts listening. Pause stops both.").font(.system(size: 10)).foregroundStyle(Palette.muted)
+            }
         }
     }
 }
