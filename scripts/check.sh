@@ -14,10 +14,16 @@ if grep -Ev '^(/System/Library/|/usr/lib/|@rpath/Sparkle\.framework/Versions/B/S
     echo "Unexpected non-system runtime dependency" >&2
     exit 1
 fi
-otool -L dist/Prompter.app/Contents/Frameworks/llama.framework/llama | awk '/^[[:space:]]/ { print $1 }' > .build/llama-dependencies.txt
-if grep -Ev '^(/System/Library/|/usr/lib/|@rpath/llama\.framework/Versions/Current/llama$)' .build/llama-dependencies.txt; then
-    echo "Unexpected command AI runtime dependency" >&2
-    exit 1
+if [[ "${STUDIO_EXPERIMENTAL_COMMANDS:-0}" != 1 ]]; then
+    test ! -d dist/Prompter.app/Contents/Frameworks/llama.framework
+    if grep -q 'llama' .build/runtime-dependencies.txt; then
+        echo "Experimental command runtime must not ship in release builds" >&2
+        exit 1
+    fi
+    if nm dist/Prompter.app/Contents/MacOS/Prompter | grep -E 'CommandAssistant|interpretCommand|setHandsFreeCommands|performVoiceCommand'; then
+        echo "Experimental command entry points must not ship in release builds" >&2
+        exit 1
+    fi
 fi
 test -x dist/Prompter.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate
 test -x dist/Prompter.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater

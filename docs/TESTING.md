@@ -1,14 +1,14 @@
 # Beta validation and release gates
 
-Candidate: **0.1.0-beta.1**, Apple silicon, macOS deployment target 13.
+Tester release: **0.1.0**, Apple silicon, macOS deployment target 13.3.
 
-A green automated build is necessary, but does not establish comfortable live prompting or clean-machine installation. The first public download remains gated on the unfinished items below.
+A green automated build is necessary, but does not establish comfortable live prompting or clean-machine installation. The owner has chosen to distribute an early, non-notarized tester build. The unfinished items below remain requirements before declaring the app ready for general production use; they are not claimed as completed by this tester release.
 
 ## Automated checks
 
 | Area | Repeatable check | Current evidence |
 | --- | --- | --- |
-| Transport and persistence | `swift run PrompterChecks` | 244 assertions pass: countdown, frame independence, pause/end, library round-trip, legacy font migration, typeface persistence, corrupt-file preservation, Markdown migration/round-trip, emphasis, cue anchors, and rich-text round-trip |
+| Transport and persistence | `swift run PrompterChecks` | 289 assertions pass: countdown, frame independence, pause/end, library round-trip, legacy font migration, typeface persistence, corrupt-file preservation, Markdown migration/round-trip, emphasis, cue anchors, and rich-text round-trip |
 | Speech matching and motion | Same runner | Skipped/filler words, unrelated speech rejection, recognition corrections, quiet-speech recovery logic, cadence smoothing, bounded motion, layout and focus geometry |
 | Retake control | Same runner | Active playback preserved, countdown cancelled, old/far location rejected, scrolling-settle gate, fresh nearby match releases hold, explicit pause preserved |
 | Input isolation | `swift run -c release WhisperCheck --channels` | Synthetic 20-channel planar/interleaved input: selected host channel reaches mono recognition, other channels remain silent, invalid channel rejected |
@@ -32,7 +32,7 @@ Development hardware: Apple silicon Mac with an S24R35xFZ secondary display.
 
 These observations describe this development setup, not every supported Mac or audio interface.
 
-## Required before publishing the first downloadable beta
+## Outstanding before general production release
 
 - [ ] Live reader acceptance of automatic retakes in both voice modes: backward scroll, fresh phrase resumes, repeated retakes, explicit Pause stays paused.
 - [ ] Presenter/guest isolation with the intended Mac Studio and physical RØDECaster configuration; confirm channel choice and acoustic bleed behavior.
@@ -59,7 +59,7 @@ Native smoke check (2026-09-19): selected bold + underline, cleared and restored
 Development check (2026-09-19): the native update window read the public GitHub feed and reported the installed version up to date. The menu command was disabled during playback and enabled again when paused. Sparkle generated an appcast signed with the release Mac’s Keychain key; verification against the app’s pinned public key accepted the original archive and rejected a same-size tampered copy. The automated cryptographic self-test also rejects truncation and the wrong signing key. These checks used a local development archive; full signed/notarized installation, cancellation, and network-failure testing remain outstanding.
 
 
-## Hands-free command validation
+## Deferred experiment: hands-free commands (excluded from release)
 
 The core checks cover the complete wake phrase, rejection of shorter/interrupted phrases, bounded command parsing, negation and extra-instruction rejection, partial windows, revised recognition, repeat suppression, fresh repeated commands, activation cutoffs, silence/timeout handling, and rendered-line/paragraph/cue destinations. `swift run -c release WhisperCheck --commands` uses synthesized audio with the actual local Base English model in rolling windows; navigation, paragraph restart, and font-size commands each execute once, while the short wake phrase and ordinary conversation execute none. It never opens the microphone.
 
@@ -67,10 +67,18 @@ Before release, test a live presenter with the selected microphone in both Follo
 
 Native smoke check (2026-09-19): enabled Hands-free commands, started microphone-only listening while paused, played and paused without stopping capture, and confirmed Stop listening returned to Mic off. The right panel shows the wake phrase and command examples. Live speaker recognition and command feedback on the talent display still require presenter acceptance.
 
-### Natural commands beta
+### Deferred natural commands experiment
 
 - [ ] On a clean Mac, download command AI with the app button, cancel partway, retry, then relaunch and use it with the network disconnected.
 - [ ] Say “Hey, Teleprompter” plus varied requests, including corrections, incomplete commands, background conversation, unsupported actions, and negation.
 - [ ] Manually scroll, pause, switch scripts, turn off Natural commands, or stop the mic while “Understanding your command…” is visible; no late action should execute.
 - [ ] Check model warmup, sustained prompting, RAM pressure, and interpretation latency on an 8 GB Apple silicon Mac and the oldest supported macOS version.
 - [ ] Verify visible confirmations on the talent output, including mirroring and blackout. Neither download nor model interpretation should modify the script text.
+
+## First tester release scope
+
+Ordinary builds compile out command activation, interpretation, and both command settings panels. The command AI runtime is absent from the app bundle and executable dependencies; the packaging script rejects experimental builds. Follow script and Adaptive pace still use local Whisper. The opt-in speech trace is disabled in ordinary builds.
+
+Live command testing on 2026-09-19 found incorrect actions for paragraph counts and numbered cues, false refusals, and “Q point” transcription rejected by validation. Those findings supersede the narrow command fixture benchmark as release evidence. Commands are deferred until their action schema and live behavior are improved.
+
+Tester updates use a separate feed. Promotion verifies the downloaded archive against the pinned Ed25519 key before extraction, then checks app signature integrity, identity, versions, and feed URL. Tester promotion permits non-notarized prereleases; stable promotion still requires notarization and Gatekeeper acceptance.

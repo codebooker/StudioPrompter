@@ -11,12 +11,20 @@ SPARKLE="$PWD/.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x
 [[ -d "$SPARKLE" ]] || { echo "Sparkle binary artifact is missing." >&2; exit 1; }
 rm -rf "$APP/Contents/Frameworks/Sparkle.framework"
 ditto "$SPARKLE" "$APP/Contents/Frameworks/Sparkle.framework"
-# SwiftPM derives the root artifact identity from the checkout directory name.
-LLAMA="$(find "$PWD/.build/artifacts" -type d -path '*/llama/llama.xcframework/macos-arm64_x86_64/llama.framework' -print -quit)"
-[[ -d "$LLAMA" ]] || { echo "Command AI runtime artifact is missing." >&2; exit 1; }
+# Remove stale experiment artifacts when switching back to a release build.
 rm -rf "$APP/Contents/Frameworks/llama.framework"
-ditto "$LLAMA" "$APP/Contents/Frameworks/llama.framework"
-cp ThirdParty/*.txt "$APP/Contents/Resources/"
+rm -f "$APP/Contents/Resources/CommandAI-NOTICES.txt" "$APP/Contents/Resources/Qwen2.5-LICENSE.txt" "$APP/Contents/Resources/llama.cpp-LICENSE.txt"
+if [[ "${STUDIO_EXPERIMENTAL_COMMANDS:-0}" == 1 ]]; then
+    LLAMA="$(find "$PWD/.build/artifacts" -type d -path '*/llama/llama.xcframework/macos-arm64_x86_64/llama.framework' -print -quit)"
+    [[ -d "$LLAMA" ]] || { echo "Command AI runtime artifact is missing." >&2; exit 1; }
+    ditto "$LLAMA" "$APP/Contents/Frameworks/llama.framework"
+fi
+for NOTICE in ThirdParty/*.txt; do
+    case "$(basename "$NOTICE")" in
+        CommandAI-*|Qwen*|llama*) [[ "${STUDIO_EXPERIMENTAL_COMMANDS:-0}" == 1 ]] || continue ;;
+    esac
+    cp "$NOTICE" "$APP/Contents/Resources/"
+done
 cp LICENSE "$APP/Contents/Resources/LICENSE.txt"
 swift scripts/make-icon.swift "$PWD/.build/Prompter.iconset"
 iconutil -c icns .build/Prompter.iconset -o "$APP/Contents/Resources/AppIcon.icns"
@@ -29,10 +37,10 @@ if [[ -n "${SIGNING_IDENTITY:-}" ]]; then
         codesign --force --options runtime --timestamp --preserve-metadata=entitlements --sign "$SIGNING_IDENTITY" "$ITEM"
     done
     codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP/Contents/Frameworks/Sparkle.framework"
-    codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP/Contents/Frameworks/llama.framework"
+    if [[ -d "$APP/Contents/Frameworks/llama.framework" ]]; then codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP/Contents/Frameworks/llama.framework"; fi
     codesign --force --options runtime --timestamp --entitlements scripts/Entitlements.plist --sign "$SIGNING_IDENTITY" "$APP"
 else
-    codesign --force --sign - "$APP/Contents/Frameworks/llama.framework"
+    if [[ -d "$APP/Contents/Frameworks/llama.framework" ]]; then codesign --force --sign - "$APP/Contents/Frameworks/llama.framework"; fi
     codesign --force --sign - "$APP"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP"

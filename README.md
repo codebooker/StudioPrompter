@@ -33,11 +33,7 @@ Keep the controls on your Mac. Send a clean, full-screen script to the talent mo
 
 **Adaptive pace** adjusts to your speaking cadence, easing into faster speech and slowing down when you do. Nearby phrase matches help keep the guide close to your place.
 
-**Take over whenever you need to.** While voice prompting is running, scroll back to a line. The mic stays on; the script waits for fresh speech at the new position before following again. Pause stops both the microphone and prompting unless you enable Hands-free commands. With voice prompting off, manual scrolling pauses fixed-speed playback.
-
-**Control a solo session by voice.** Enable Hands-free commands to start listening immediately, then say “Hey Teleprompter, start,” “resume,” or “let’s go” to begin prompting. You can also say “Hey Teleprompter,” followed by a command: go back two lines, restart a paragraph, jump to a cue, resize the text, or pause and resume. It uses the existing local Whisper model. In this mode Pause leaves the microphone available for commands; Stop listening turns it off. Commands and feedback stay separate from your script.
-
-**Say it your way.** Turn on **Natural commands · Beta** in Advanced voice settings, then choose **Download command AI**. The optional Qwen2.5 1.5B model downloads once (1.12 GB) and interprets requests such as “the words are too big, shrink them a little” or “take me back a couple of lines.” Clear commands keep their instant path. Interpretation stays on your Mac, and uncertain requests leave the script in place. Ask for one action at a time; start every request with “Hey Teleprompter.”
+**Take over whenever you need to.** While voice prompting is running, scroll back to a line. The mic stays on; the script waits for fresh speech at the new position before following again. Pause stops both the microphone and prompting. With voice prompting off, manual scrolling pauses fixed-speed playback.
 
 Voice features are in beta. Recognition and responsiveness depend on your Mac, microphone, speaking style, and script. English is currently supported.
 
@@ -63,7 +59,13 @@ Using an audio interface? Select the interviewer's isolated channel so the guest
 
 ## Get StudioPrompter
 
-**The first beta is being prepared.** The current package targets Apple silicon. A public, notarized download will be linked in [Releases](https://github.com/codebooker/StudioPrompter/releases) after the remaining [release checks](docs/TESTING.md) pass.
+**[Download StudioPrompter 0.1.0 — tester release](https://github.com/codebooker/StudioPrompter/releases/tag/0.1.0)**
+
+For **Apple silicon Macs (M1 or newer), macOS 13.3+**. Unzip the download, move `Prompter.app` to Applications, and open it. It appears as **StudioPrompter**. This early build is not notarized: if macOS blocks the first launch, use **System Settings → Privacy & Security → Open Anyway** for StudioPrompter. See [Apple’s instructions](https://support.apple.com/en-us/102445).
+
+Follow script, Adaptive pace, the Markdown editor, cue points, and dual-display output are included. **“Hey Teleprompter” commands and the command AI are excluded** while we improve and test them. This is a tester release, not a production-readiness claim; [remaining validation](docs/TESTING.md) is documented.
+
+Future tester releases arrive through **StudioPrompter → Check for Updates…**. Signed update archives are verified before installation; scripts and downloaded models stay on your Mac.
 
 Developers can build now on macOS 13.3 or later with a recent Xcode or Swift toolchain:
 
@@ -93,4 +95,4 @@ StudioPrompter is licensed under [GNU AGPL v3](LICENSE). [WhisperKit and its bun
 
 ### Updates without the download dance
 
-Choose **StudioPrompter → Check for Updates…** to get published stable releases from GitHub. [Sparkle](https://sparkle-project.org/) handles the signed download and Install & Relaunch flow, while your scripts and local speech models stay in place. Checks are manual so update prompts stay out of recording sessions. See [the update guide](docs/UPDATES.md) for release setup and validation.
+Choose **StudioPrompter → Check for Updates…** to get published tester releases from GitHub. [Sparkle](https://sparkle-project.org/) handles the signed download and Install & Relaunch flow, while your scripts and local speech models stay in place. Checks are manual so update prompts stay out of recording sessions. See [the update guide](docs/UPDATES.md) for release setup and validation.

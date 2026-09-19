@@ -4,7 +4,7 @@
     <key>CFBundleName</key><string>StudioPrompter</string>
     <key>CFBundleDisplayName</key><string>StudioPrompter</string>
     <key>CFBundleIdentifier</key><string>studio.local.prompter</string>
-    <key>CFBundleVersion</key><string>2</string>
+    <key>CFBundleVersion</key><string>3</string>
     <key>CFBundleShortVersionString</key><string>0.1.0</string>
     <key>CFBundleExecutable</key><string>Prompter</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
@@ -14,7 +14,7 @@
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSMicrophoneUsageDescription</key><string>Prompter uses your selected microphone for local Whisper transcription and voice-controlled scrolling. Audio stays on this Mac.</string>
     <key>SUPublicEDKey</key><string>mwZ7BoLOmu0MdEy5FBsnttLXow6/7MR18qxbTc+/hG4=</string>
-    <key>SUFeedURL</key><string>https://raw.githubusercontent.com/codebooker/StudioPrompter/main/updates/appcast.xml</string>
+    <key>SUFeedURL</key><string>https://raw.githubusercontent.com/codebooker/StudioPrompter/main/updates/tester-appcast.xml</string>
     <key>SUEnableAutomaticChecks</key><false/>
     <key>SUAllowsAutomaticUpdates</key><false/>
     <key>SUAutomaticallyUpdate</key><false/>

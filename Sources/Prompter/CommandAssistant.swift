@@ -1,3 +1,4 @@
+#if EXPERIMENTAL_COMMANDS
 import Foundation
 import SwiftUI
 import PrompterCore
@@ -88,3 +89,5 @@ struct NaturalCommandsSettings: View {
         }.font(.system(size: 10)).fixedSize(horizontal: false, vertical: true)
     }
 }
+
+#endif

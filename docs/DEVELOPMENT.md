@@ -2,7 +2,7 @@
 
 ## Build
 
-Use a recent Swift toolchain or Xcode on macOS. Use Swift 6.0 or newer for the pinned dependency graph (the app manifest itself declares Swift tools 5.9). Development currently uses Swift 6.4. The app deployment target is macOS 13.3 (the bundled llama.cpp framework’s minimum). Apple silicon is the initial distribution target; Intel and the minimum OS still need runtime validation.
+Use a recent Swift toolchain or Xcode on macOS. Use Swift 6.0 or newer for the pinned dependency graph (the app manifest itself declares Swift tools 5.9). Development currently uses Swift 6.4. The app deployment target is macOS 13.3. Apple silicon is the initial distribution target; Intel and the minimum OS still need runtime validation.
 
 ```sh
 ./scripts/build.sh
@@ -35,10 +35,10 @@ The Actions workflow builds on a [GitHub-hosted macOS runner](https://docs.githu
 Commit all changes first. The packaging script requires a clean checkout and records the source commit in `BUILD-INFO.txt`.
 
 ```sh
-RELEASE_VERSION=0.1.0-beta.1 ./scripts/package-release.sh
+RELEASE_VERSION=0.1.0 ./scripts/package-release.sh
 ```
 
-Output: `dist/releases/0.1.0-beta.1/`, containing a versioned ZIP, SHA-256 checksum, and build information. The version's numeric part must match `scripts/Info.plist`. Without signing credentials, this is explicitly an **ad-hoc development package**. Keep it in a draft release while distribution and live acceptance gates are outstanding.
+Output: `dist/releases/0.1.0/`, containing a versioned ZIP, SHA-256 checksum, and build information. The version's numeric part must match `scripts/Info.plist`. Without signing credentials, this is explicitly an **ad-hoc development package**. For explicitly approved early tester distribution, follow the separate tester process in [UPDATES.md](UPDATES.md). General distribution still requires signing and live acceptance.
 
 The ZIP contains the application license and third-party notices. The matching Git tag and GitHub source archive provide the source for the distributed app.
 
@@ -51,7 +51,7 @@ Once configured locally, supply the identity name and keychain profile:
 ```sh
 SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)' \
 NOTARY_PROFILE='StudioPrompter-notary' \
-RELEASE_VERSION=0.1.0-beta.1 \
+RELEASE_VERSION=0.1.0 \
 ./scripts/package-release.sh
 ```
 
@@ -71,7 +71,17 @@ No workflow automatically publishes releases. A passing CI build alone is not re
 
 Sparkle 2.10.0 is pinned in SwiftPM. `build.sh` embeds its framework and helper executables; Developer ID builds sign nested helpers before the enclosing framework and app. Development builds preserve Sparkle’s vendor signatures. The Sparkle signing key is not needed for ordinary builds or CI. See [UPDATES.md](UPDATES.md) for feed generation and the stable GitHub-release promotion workflow.
 
-## Natural command interpretation (Beta)
+## Experimental command build (not shipped)
+
+Normal builds exclude hands-free controls, wake-word handling, model interpretation, and the llama runtime from the app. To resume development testing explicitly:
+
+```sh
+STUDIO_EXPERIMENTAL_COMMANDS=1 ./scripts/run.sh
+```
+
+The packaging script refuses that flag. Run the next ordinary build without it to remove the embedded experimental runtime. `--voice-diagnostics` is honored only by experimental app builds; it prints rolling Whisper text and command decisions to stdout for an explicitly requested live test. Do not use it with private speech or save/share its output inadvertently.
+
+## Natural command interpretation (deferred experiment)
 
 The fast command parser runs first. Only a settled, previously unconsumed request after **Hey Teleprompter** reaches the optional model. Qwen2.5-1.5B-Instruct Q4_K_M runs through the official llama.cpp b11053 XCFramework, embedded and signed with the app. Neither Ollama nor a separate server is required. `CommandModelStore` pins the publisher revision, byte size, and SHA-256. Downloads use temporary files and atomic installation; cached weights are verified before loading. Cancellation and retry are supported. Setup requires about 2.3 GB free disk space temporarily.
 

@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${RELEASE_VERSION:-0.1.0-beta.1}"
+[[ "${STUDIO_EXPERIMENTAL_COMMANDS:-0}" != 1 ]] || { echo "Experimental commands cannot be packaged for release." >&2; exit 1; }
+VERSION="${RELEASE_VERSION:-0.1.0}"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]] || { echo "Invalid release version" >&2; exit 1; }
 PLIST_VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' scripts/Info.plist)"
 [[ "${VERSION%%-*}" == "$PLIST_VERSION" ]] || { echo "Release version must match Info.plist" >&2; exit 1; }
@@ -10,8 +11,10 @@ if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
     exit 1
 fi
 if [[ "${UPDATE_FEED:-0}" == 1 ]]; then
-    [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "The update feed only accepts stable releases." >&2; exit 1; }
-    [[ -n "${NOTARY_PROFILE:-}" && -n "${SIGNING_IDENTITY:-}" ]] || { echo "Update distribution requires Developer ID signing and notarization." >&2; exit 1; }
+    [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Update feeds require numeric release versions." >&2; exit 1; }
+    if [[ "${TESTER_RELEASE:-0}" != 1 ]]; then
+        [[ -n "${NOTARY_PROFILE:-}" && -n "${SIGNING_IDENTITY:-}" ]] || { echo "Stable updates require Developer ID signing and notarization. Use TESTER_RELEASE=1 only for the separate tester feed." >&2; exit 1; }
+    fi
     [[ -f "${RELEASE_NOTES_FILE:-}" ]] || { echo "Set RELEASE_NOTES_FILE to the release's Markdown notes." >&2; exit 1; }
 fi
 if [[ -n "${NOTARY_PROFILE:-}" && -z "${SIGNING_IDENTITY:-}" ]]; then
@@ -50,18 +53,22 @@ codesign --verify --deep --strict "$APP"
     swift --version
 } > "$OUT/BUILD-INFO.txt"
 if [[ "${UPDATE_FEED:-0}" == 1 ]]; then
+    FEED_NAME=appcast.xml
+    if [[ "${TESTER_RELEASE:-0}" == 1 ]]; then FEED_NAME=tester-appcast.xml; fi
+    BUNDLE_FEED="$(/usr/libexec/PlistBuddy -c 'Print SUFeedURL' "$APP/Contents/Info.plist")"
+    [[ "$BUNDLE_FEED" == "https://raw.githubusercontent.com/codebooker/StudioPrompter/main/updates/$FEED_NAME" ]] || { echo "Bundle update channel does not match release channel." >&2; exit 1; }
     cp "$RELEASE_NOTES_FILE" "${ZIP%.zip}.md"
     .build/artifacts/sparkle/Sparkle/bin/generate_appcast \
-        --account studio.local.prompter --maximum-deltas 0 --maximum-versions 1 --embed-release-notes \
+        --account studio.local.prompter -o "$OUT/$FEED_NAME" --maximum-deltas 0 --maximum-versions 1 --embed-release-notes \
         --download-url-prefix "https://github.com/codebooker/StudioPrompter/releases/download/$VERSION/" \
         --link "https://github.com/codebooker/StudioPrompter/releases/tag/$VERSION" "$OUT"
-    python3 - "$OUT/appcast.xml" "$VERSION" <<'PYVERIFY'
+    python3 - "$OUT/$FEED_NAME" "$VERSION" "$FEED_NAME" <<'PYVERIFY'
 import pathlib, sys
 sys.path.insert(0, 'scripts')
 from update_feed import inspect_feed
-inspect_feed(pathlib.Path(sys.argv[1]).read_bytes(), tag=sys.argv[2], previous=pathlib.Path('updates/appcast.xml').read_bytes())
+inspect_feed(pathlib.Path(sys.argv[1]).read_bytes(), tag=sys.argv[2], previous=pathlib.Path('updates', sys.argv[3]).read_bytes())
 PYVERIFY
-    swift scripts/verify-update.swift scripts/Info.plist "$OUT/appcast.xml" "$ZIP"
+    swift scripts/verify-update.swift scripts/Info.plist "$OUT/$FEED_NAME" "$ZIP"
 fi
 (cd "$OUT" && shasum -a 256 "$(basename "$ZIP")" > SHA256SUMS.txt)
 echo "Packaged $ZIP ($SIGNING)"

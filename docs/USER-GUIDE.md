@@ -14,7 +14,7 @@ Choose System, Avenir Next, Verdana, or Georgia in the right panel. Avenir Next 
 
 Scroll the producer preview with a wheel or trackpad, drag it, use the position slider, or press the arrow keys. In fixed-speed mode, this pauses automatic playback.
 
-During active voice prompting, manual movement keeps the microphone on. After scrolling settles, **Ready for retake—read from here** appears. Read a short phrase from the new reading area; the app discards speech buffered before the move and resumes once it finds your place. Both Follow script and Adaptive pace use this retake hold. A single common word is not enough to release it. With Hands-free commands off, Pause, Reset, reaching the end, and changing scripts stop the mic. Scrolling while paused does not start listening.
+During active voice prompting, manual movement keeps the microphone on. After scrolling settles, **Ready for retake—read from here** appears. Read a short phrase from the new reading area; the app discards speech buffered before the move and resumes once it finds your place. Both Follow script and Adaptive pace use this retake hold. A single common word is not enough to release it. Pause, Reset, reaching the end, and changing scripts stop the mic. Scrolling while paused does not start listening.
 
 Use Follow script when wording matters. Adaptive pace is useful when delivery varies, but it can continue by cadence when a fresh script match is unavailable. Silence and stale recognition hold movement. Both modes remain experimental; use manual control whenever needed.
 
@@ -32,7 +32,7 @@ Click **Download model** in the main panel. Leave the app open while files downl
 
 Base English is the default. Advanced voice settings offers only Base English and Small English; switching to an uninstalled model requires its own download. Model selection and tuning are session-only in this beta.
 
-Play starts the selected microphone and prompting together. Pause stops both when Hands-free commands is off. Advanced settings also offers a microphone-only test: closing that window leaves the test active, with the main-window microphone indicator visible. Choose Stop microphone to stop capture; Pause also stops capture when Hands-free commands is off.
+Play starts the selected microphone and prompting together. Pause stops both. Advanced settings also offers a microphone-only test: closing that window leaves the test active, with the main-window microphone indicator visible. Choose Stop microphone to stop capture; Pause also stops capture.
 
 The recent transcript can revise itself as Whisper recognizes more context. It is diagnostic text, not a recording or final transcript export.
 
@@ -58,28 +58,9 @@ The library is ordinary local Markdown plus a JSON index, not encrypted storage.
 Existing version-1 JSON libraries migrate automatically on save, with the original retained as `library-before-markdown.json`. Earlier app builds cannot read the new index. An unreadable library or missing Markdown file is preserved; export any new work before quitting recovery mode.
 
 
-## Hands-free commands
+## Voice commands
 
-Turn on **Voice prompting → Hands-free commands**, then choose **Listen for commands** (mic on, script paused) or **Play**. Use the full wake phrase **“Hey Teleprompter”**, give one command, and briefly pause. Recognition and commands run locally using the existing Whisper model; there is no additional model download. Only the selected microphone channel is used.
-
-Examples:
-
-- “Hey Teleprompter, go back two lines.” (One through ten rendered reading lines.)
-- “Hey Teleprompter, start this paragraph over.”
-- “Hey Teleprompter, move to the next paragraph.” / “Go to the previous paragraph.”
-- “Hey Teleprompter, start from the top of the document.”
-- “Hey Teleprompter, go back to the last cue point.” / “Go to the next cue.”
-- “Hey Teleprompter, increase the font size.” / “Decrease the font size.” (Four-point steps, within the normal size limits.)
-- “Hey Teleprompter, pause.” / “Resume.”
-- “Hey Teleprompter, cancel.” / “Stop listening.”
-
-Navigation commands move the script and arm prompting, waiting for fresh reading at the new location. Font changes preserve the current passage and whether prompting was paused. Paragraphs follow script paragraph breaks; lines follow the shared prompter layout. A missing previous/next cue leaves the position unchanged.
-
-The script holds while an instruction is being recognized. Command words are excluded from script matching and pace estimates, and repeated rolling transcripts do not repeat an action. An unknown or unfinished command times out without moving the script. The presenter sees a short visual confirmation on the talent display; there is no spoken response.
-
-**Pause, Reset, and reaching the end keep the microphone on in hands-free mode**, allowing another command. **Stop listening**, **Esc**, disabling Voice prompting, opening the editor, or changing scripts stops capture. After stopping the mic, use the app controls to start listening again. Hands-free commands is off at launch and must be enabled explicitly.
-
-Both wake words are required; punctuation and capitalization are ignored, so “Hey, Teleprompter” works too. Shorter phrases such as “Hey Prompter” do not activate it. If the script itself quotes the full wake phrase and a supported command, turn Hands-free commands off for that passage. Transcription can still mishear speech; check the visual feedback, and live-test your microphone and speaking style before recording.
+“Hey Teleprompter” and natural-language commands are not included in the tester release. Follow script and Adaptive pace work normally using Play and Pause.
 
 ## Keyboard shortcuts
 
@@ -106,4 +87,4 @@ Single-key controls leave text entry alone when an editor or text field has focu
 
 ## Updating StudioPrompter
 
-Pause prompting and stop the microphone, then choose **StudioPrompter → Check for Updates…** from the macOS menu bar. When a newer stable release is available, review its notes and choose Download, then Install & Relaunch. Your saved library and downloaded models stay on this Mac. Checks are manual; draft releases and betas are not offered. Older builds without this menu need one manual installation of an updater-enabled build.
+Pause prompting and stop the microphone, then choose **StudioPrompter → Check for Updates…** from the macOS menu bar. When a newer tester release is available, review its notes and choose Download, then Install & Relaunch. Your saved library and downloaded models stay on this Mac. Checks are manual; unpublished drafts are not offered. This build receives published tester releases from a separate feed. Older builds without this menu need one manual installation of an updater-enabled build.

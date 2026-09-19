@@ -121,6 +121,7 @@ final class AppState: ObservableObject {
         if !stopListening && voice.handsFreeCommands && voice.isListening { voice.pauseForCommands() }
         else { voice.stop(); playback.transport.pause() }
     }
+    #if EXPERIMENTAL_COMMANDS
     func performVoiceCommand(_ command: VoiceCommand) -> String {
         guard (!isEditing && NSApp.modalWindow == nil) || command == .pause || command == .stopListening else { return "Close the editor or dialog to use voice commands" }
         let position = playback.transport.progress
@@ -153,6 +154,7 @@ final class AppState: ObservableObject {
             }
         }
     }
+    #endif
     var filteredScripts: [Script] {
         library.scripts.filter { search.isEmpty || $0.title.localizedCaseInsensitiveContains(search) || $0.text.localizedCaseInsensitiveContains(search) }
     }

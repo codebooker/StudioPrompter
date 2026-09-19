@@ -35,15 +35,44 @@ final class VoiceController: ObservableObject {
     @Published var downloadProgress = 0.0
     @Published var status = "Local Whisper · English"
     @Published var transcript = ""
+    #if EXPERIMENTAL_COMMANDS
     let assistant = CommandAssistant()
+    #endif
     private var commandTask: Task<Void, Never>?
     private var commandTimeout: Task<Void, Never>?
     private var commandGeneration = UUID()
-    @Published var handsFreeCommands = false
+    @Published private(set) var handsFreeCommands = false
     @Published var awaitingCommand = false
     @Published var commandNotice: String?
     private var commandNoticeUntil = 0.0
     private var commands = VoiceCommandRouter()
+    #if EXPERIMENTAL_COMMANDS
+    private let liveTraceEnabled = ProcessInfo.processInfo.arguments.contains("--voice-diagnostics")
+    #else
+    private let liveTraceEnabled = false
+    #endif
+    private var lastTracedSpeech = ""
+    private func trace(_ event: String, _ details: [String: Any] = [:]) {
+        guard liveTraceEnabled else { return }
+        var record = details
+        record["event"] = event
+        record["time"] = ISO8601DateFormatter().string(from: Date())
+        record["progress"] = state?.playback.transport.progress ?? 0
+        record["playing"] = state?.playback.transport.isPlaying ?? false
+        record["fontSize"] = state?.current.settings.fontSize ?? 0
+        guard let data = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]),
+              let line = String(data: data, encoding: .utf8) else { return }
+        print("VOICE_TRACE " + line)
+        fflush(stdout)
+    }
+    #if EXPERIMENTAL_COMMANDS
+    private func executeCommand(_ command: VoiceCommand, source: String) {
+        trace("action_requested", ["source": source, "command": String(describing: command)])
+        let notice = state?.performVoiceCommand(command) ?? "Command unavailable"
+        trace("action_result", ["source": source, "command": String(describing: command), "result": notice])
+        showCommandNotice(notice)
+    }
+    #endif
     @Published var decibels = -100.0
     @Published var speaking = false
     @Published var measuredPace: Double?
@@ -89,6 +118,7 @@ final class VoiceController: ObservableObject {
         return selectedChannel > 0 ? "\(device) · Channel \(selectedChannel)" : "Choose an input channel"
     }
     var controlling: Bool { isListening }
+    #if EXPERIMENTAL_COMMANDS
     func setHandsFreeCommands(_ enabled: Bool) {
         cancelInterpretation()
         if !enabled { assistant.setEnabled(false) }
@@ -104,32 +134,44 @@ final class VoiceController: ObservableObject {
             stop()
         }
     }
+    #endif
     func pauseForCommands() {
         state?.playback.transport.pause()
         beginRetake()
         status = "Script paused · listening for Hey Teleprompter"
     }
+    #if EXPERIMENTAL_COMMANDS
     func setNaturalCommands(_ enabled: Bool) {
         beginRetake()
         assistant.setEnabled(enabled)
     }
+    #endif
     private func cancelInterpretation() {
+        if commandTask != nil { trace("llm_cancelled") }
         commandGeneration = UUID()
         commandTask?.cancel(); commandTask = nil
         commandTimeout?.cancel(); commandTimeout = nil
         awaitingCommand = false
     }
+    #if EXPERIMENTAL_COMMANDS
     private func interpretCommand(_ request: String) {
         beginRetake()
         let run = UUID(); commandGeneration = run
         let scriptID = state?.current.id
         awaitingCommand = true; commandNotice = "Understanding your command…"
+        trace("llm_request", ["request": request])
         updateDrive()
         commandTask = Task { @MainActor [weak self] in
             guard let self else { return }
             var result: VoiceCommand?
-            do { result = CommandIntent.interpret(try await assistant.model.classify(request), request: request) }
-            catch { result = nil }
+            let started = ProcessInfo.processInfo.systemUptime
+            do {
+                let output = try await assistant.model.classify(request)
+                result = CommandIntent.interpret(output, request: request)
+                trace("llm_response", ["request": request, "raw": output,
+                    "validated": result.map { String(describing: $0) } ?? "declined",
+                    "seconds": ProcessInfo.processInfo.systemUptime - started])
+            } catch { result = nil; trace("llm_error", ["error": String(describing: error)]) }
             guard !Task.isCancelled, commandGeneration == run, isListening, handsFreeCommands,
                   assistant.enabled, state?.current.id == scriptID else { return }
             commandTask = nil
@@ -137,7 +179,7 @@ final class VoiceController: ObservableObject {
             awaitingCommand = false
             commands = VoiceCommandRouter(after: microphone.snapshot().end)
             beginRetake()
-            if let result { showCommandNotice(state?.performVoiceCommand(result) ?? "Command unavailable") }
+            if let result { executeCommand(result, source: "LLM") }
             else { showCommandNotice("Please name a line count, paragraph, cue, or text-size change") }
             updateDrive()
         }
@@ -151,6 +193,7 @@ final class VoiceController: ObservableObject {
             updateDrive()
         }
     }
+    #endif
     private func showCommandNotice(_ text: String) {
         commandNotice = text
         commandNoticeUntil = ProcessInfo.processInfo.systemUptime + 4
@@ -197,7 +240,7 @@ final class VoiceController: ObservableObject {
     func start(playWhenReady: Bool = false) {
         guard !isListening, !isStarting else { return }
         guard state?.isEditing != true else { handsFreeCommands = false; error = "Finish editing before starting voice prompting."; return }
-        guard isDownloaded || isReady else { handsFreeCommands = false; error = "Download the speech model first, then turn on Hands-free commands or press Play."; return }
+        guard isDownloaded || isReady else { handsFreeCommands = false; error = "Download the speech model first, then press Play."; return }
         guard selectedChannel > 0 else { handsFreeCommands = false; error = "Choose the interviewer's input channel before starting."; return }
         enabled = true
         isStarting = true
@@ -228,7 +271,13 @@ final class VoiceController: ObservableObject {
             do {
                 microphone.setThreshold(noiseFloor)
                 try microphone.start(deviceID: selectedMicrophone == 0 ? nil : selectedMicrophone, channel: selectedChannel)
-                isListening = true; transcript = ""; estimator = PaceEstimator(); measuredPace = nil
+                isListening = true
+                lastTracedSpeech = ""
+                #if EXPERIMENTAL_COMMANDS
+                trace("microphone_started", ["input": inputSummary, "handsFree": handsFreeCommands,
+                    "naturalCommands": assistant.enabled, "modelReady": assistant.ready])
+                #endif
+                transcript = ""; estimator = PaceEstimator(); measuredPace = nil
                 commands = VoiceCommandRouter(); awaitingCommand = false; commandNotice = nil
                 lastRecognition = 0; recognitionUpdates = RecognitionUpdates(); matchedWord = nil; matchConfidence = nil; minimumSpeechTime = 0
                 retake = RetakeGate(); waitingForRetake = false
@@ -277,7 +326,13 @@ final class VoiceController: ObservableObject {
         if let meter { RunLoop.main.add(meter, forMode: .common) }
     }
     private func consume(_ speech: HeardSpeech, snapshot: AudioSnapshot) {
+        if liveTraceEnabled && speech.text != lastTracedSpeech {
+            lastTracedSpeech = speech.text
+            trace("whisper", ["text": speech.text, "audioStart": snapshot.start, "audioEnd": snapshot.end,
+                "inferenceSeconds": inferenceSeconds])
+        }
         guard commandTask == nil else { return }
+        #if EXPERIMENTAL_COMMANDS
         if handsFreeCommands {
             let words = speech.words.map { CommandWord($0.text, start: snapshot.start + $0.start, end: snapshot.start + $0.end) }
             let event = commands.consume(words, audioEnd: snapshot.end,
@@ -286,25 +341,27 @@ final class VoiceController: ObservableObject {
             switch event {
             case .reading: break
             case .listening:
-                if !awaitingCommand { beginRetake() }
+                if !awaitingCommand { trace("wake_detected"); beginRetake() }
                 awaitingCommand = true
                 commandNotice = "Listening for your command…"
                 updateDrive(); return
             case .execute(let command):
                 awaitingCommand = false
                 beginRetake()
-                showCommandNotice(state?.performVoiceCommand(command) ?? "Command unavailable")
+                executeCommand(command, source: "fast parser")
                 updateDrive(); return
             case .interpret(let request):
                 interpretCommand(request)
                 return
             case .unrecognized:
+                trace("command_unrecognized", ["naturalCommands": assistant.enabled, "modelReady": assistant.ready])
                 awaitingCommand = false
                 beginRetake()
                 showCommandNotice("Command not recognized · try again")
                 updateDrive(); return
             }
         }
+        #endif
         let cutoff = max(minimumSpeechTime, handsFreeCommands ? commands.consumedThrough : 0)
         let words = speech.words.filter { snapshot.start + $0.start >= cutoff }
         guard let last = words.last else { return }
@@ -379,6 +436,7 @@ final class VoiceController: ObservableObject {
         updateDrive()
     }
     func stop() {
+        if isListening || isStarting { trace("microphone_stopped") }
         cancelInterpretation()
         generation = UUID()
         listening?.cancel(); listening = nil

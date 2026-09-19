@@ -5,17 +5,22 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Already-published stable release tag (for example 0.1.1)
+        description: Already-published numeric release tag (for example 0.1.1)
         required: true
         type: string
+      tester:
+        description: Promote an early tester prerelease
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
-  group: stable-update-feed
+  group: publish-update-feeds
   cancel-in-progress: false
 jobs:
   publish:
-    if: github.event_name == 'workflow_dispatch' || (!github.event.release.draft && !github.event.release.prerelease)
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.draft
     runs-on: macos-15
     timeout-minutes: 15
     steps:
@@ -26,15 +31,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
-        run: python3 scripts/publish-update-feed.py "$RELEASE_TAG"
+          TESTER_RELEASE: ${{ inputs.tester || github.event.release.prerelease }}
+        run: |
+          if [[ "$TESTER_RELEASE" == true ]]; then
+            python3 scripts/publish-update-feed.py "$RELEASE_TAG" --tester
+          else
+            python3 scripts/publish-update-feed.py "$RELEASE_TAG"
+          fi
       - name: Publish the verified feed
         run: |
-          if git diff --quiet -- updates/appcast.xml; then
+          if git diff --quiet -- updates/; then
             echo "Update feed already current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add updates/appcast.xml
+          git add updates/
           git commit -m "Update public appcast for published release"
           git push origin HEAD:main

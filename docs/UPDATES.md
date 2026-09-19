@@ -1,46 +1,45 @@
 # In-app updates
 
-StudioPrompter uses [Sparkle 2](https://sparkle-project.org/documentation/) to download, verify, install, and relaunch published updates. Choose **StudioPrompter → Check for Updates…** in the macOS menu bar.
+Choose **StudioPrompter → Check for Updates…** with prompting paused and the microphone stopped. Sparkle downloads, verifies, installs, and relaunches an update. Checks are manual, so recording sessions are not interrupted. The library and downloaded speech models live outside the app bundle and survive replacement.
 
-Checks are manual. There are no background update prompts during a recording and no silent installations. Pause prompting and stop microphone listening before checking. Sparkle presents release notes and progress, handles network errors, and asks before installation. The app saves its library before restarting. The library and downloaded Whisper models live outside the application bundle and are preserved by replacement.
+## Tester releases
 
-The public channel contains stable Apple-silicon releases only. Drafts and prereleases are never promoted. The feed starts empty until the first eligible release is published. A build without Sparkle must be replaced manually once; subsequent updater-enabled builds can use this menu.
+The first release is an early tester build for Apple silicon, distributed as a GitHub **prerelease** with a numeric tag (`0.1.0`). It is ad-hoc signed, not Apple notarized. First installation may require **System Settings → Privacy & Security → Open Anyway**. [Apple explains that approval](https://support.apple.com/en-us/102445). Test the first launch on the recipient’s Mac; a successful local build is not a clean-machine acceptance test.
 
-## Release process
+This build uses `updates/tester-appcast.xml`. Subsequent tester releases use that same feed and the same Ed25519 key, so testers can update from within the app. An archive is verified against the app’s pinned public key before extraction. Non-notarized tester releases never enter the separate stable feed.
 
-1. Increment `CFBundleVersion` in `scripts/Info.plist` to a new integer for **every distributed build**. Sparkle compares this build number, not the Git tag. Set `CFBundleShortVersionString` to the stable version, such as `0.1.1`.
-2. Commit and run the normal checks. Complete the release gates in [TESTING.md](TESTING.md).
-3. Package the stable release with Developer ID signing, notarization, and update-feed generation:
+1. Increment `CFBundleVersion` for every distributed build. Set `CFBundleShortVersionString` to the numeric release version. Never reuse or replace an already published version.
+2. Keep `SUFeedURL` pointed at the tester feed and commit the source. Ordinary builds must exclude experimental commands.
+3. Package and sign the update archive with the existing local Sparkle key:
 
    ```sh
-   RELEASE_VERSION=0.1.1 \
-   SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)' \
-   NOTARY_PROFILE='your-notary-profile' \
-   RELEASE_NOTES_FILE='docs/RELEASE-NOTES-0.1.1.md' \
-   UPDATE_FEED=1 ./scripts/package-release.sh
+   RELEASE_VERSION=0.1.1 TESTER_RELEASE=1 UPDATE_FEED=1 \
+   RELEASE_NOTES_FILE=docs/RELEASE-NOTES-0.1.1.md \
+   ./scripts/package-release.sh
    ```
 
-4. Attach the resulting ZIP, `appcast.xml`, `SHA256SUMS.txt`, and `BUILD-INFO.txt` from `dist/releases/0.1.1/` to the matching GitHub release **before publishing**. The tag must be `0.1.1`, without a `v` prefix. Prepare it as a draft while testing.
-5. Publish the release as a stable release. The **Publish update feed** workflow downloads its appcast and archive, checks the pinned Ed25519 signature, archive size, bundle identity, versions, notarization, and Gatekeeper acceptance. Only then does it commit `updates/appcast.xml` to `main`. It refuses old or repeated build numbers and mismatched release URLs. Publishing a prerelease does not run this promotion.
-6. Check the workflow result and test **Check for Updates…** from the previous installed version. Confirm Install & Relaunch preserves the library, cue/emphasis data, and model cache.
+4. Tag the exact packaged commit as `0.1.1`. Upload the ZIP, `tester-appcast.xml`, `SHA256SUMS.txt`, and `BUILD-INFO.txt` to a draft GitHub release. Publish it as a **prerelease** after checks and smoke testing.
+5. The **Publish update feed** workflow verifies the uploaded archive’s Ed25519 signature, byte count, app signature integrity, bundle identity, versions, feed URL, minimum OS, and architecture before committing the tester feed. Drafts cannot be promoted. Private signing keys are not needed on GitHub.
+6. Check the workflow and perform **Check for Updates… → Install & Relaunch** from the prior tester build. Confirm scripts, cues, emphasis, and model cache survive.
 
-The workflow has narrowly scoped repository-content write access for this feed commit. It needs no signing secret. If repository branch rules prevent its push, use an allowed review/merge flow for the verified appcast rather than weakening branch protection. After correcting a missing asset or transient failure, rerun the workflow manually with the already-published tag. It never publishes a draft release itself.
+To retry promotion locally: `python3 scripts/publish-update-feed.py 0.1.1 --tester`, then review and commit the verified feed. The script never publishes a release itself. Increasing build numbers and exact release asset URLs prevent downgrade and accidental mismatches. Any failure leaves the existing feed intact.
 
-For local promotion/testing, `python3 scripts/publish-update-feed.py 0.1.1` performs the same validation and changes only the local feed. Review and commit that file to publish it.
+## Signed general releases
 
-## Signing key
+The separate `updates/appcast.xml` stable feed continues to require Developer ID signing, notarization, a stapled ticket, and Gatekeeper acceptance. Stable promotion rejects GitHub prereleases. Configure that bundle’s feed URL accordingly and package with:
 
-The app pins `SUPublicEDKey`. The corresponding private Ed25519 key is held in the release Mac’s login Keychain under the Sparkle account `studio.local.prompter`. It is **not** in the repository, app, release assets, or GitHub Actions. Keep a secure Keychain backup; do not generate a replacement key for each release.
+```sh
+RELEASE_VERSION=1.0.0 UPDATE_FEED=1 \
+SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)' \
+NOTARY_PROFILE='your-notary-profile' \
+RELEASE_NOTES_FILE=docs/RELEASE-NOTES-1.0.0.md \
+./scripts/package-release.sh
+```
 
-`generate_keys --account studio.local.prompter -p` prints only the existing public key. Sparkle documents secure key backup and migration in its [setup guide](https://sparkle-project.org/documentation/). Anyone building their own fork must configure their own key and feed.
+Complete the general-release checks in [TESTING.md](TESTING.md). A future move from the tester feed to the stable feed must itself be delivered as a signed update to existing testers; changing a feed URL only in source does not migrate installed apps.
 
-Sparkle archive signatures complement Apple Developer ID signing and notarization. Update-feed packaging intentionally rejects ad-hoc or unnotarized builds. The ordinary development build still works without access to the private key.
+## Signing key and verification
 
-## Validation and remaining release gate
+The app pins `SUPublicEDKey`. Its private key is held in the release Mac’s login Keychain under `studio.local.prompter`. It is not in the repository, app, assets, or Actions secrets. Keep a secure Keychain backup and do not regenerate the key for each release. `generate_keys --account studio.local.prompter -p` prints only the public key. See [Sparkle’s documentation](https://sparkle-project.org/documentation/) for key migration and backup.
 
-- The app bundle embeds Sparkle and its signed installer helpers; the executable resolves the framework inside the bundle.
-- Automated feed checks reject malformed feeds, incorrect hosts/tags, unsigned archives, architecture mismatches, and build-number downgrades.
-- `scripts/verify-update.swift` verifies archive bytes with the pinned public key before the publishing workflow extracts anything.
-- Before the first public release, exercise a complete update between two Developer ID signed, notarized builds on a separate Mac, plus network failure, cancellation, and recovery. A development signature check alone does not establish Gatekeeper or installation behavior on another machine.
-
-The currently prepared draft beta is not automatically eligible for this feed. Do not publish it just to exercise the updater.
+`check.sh` verifies the embedded installer helpers, feed validation, and cryptographic tamper rejection. `verify-update.swift` verifies the exact ZIP before promotion extracts it. Update archive signing does not provide Apple notarization or remove the first-install warning.

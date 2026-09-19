@@ -1,4 +1,4 @@
-"""Validation for the public, stable, Apple-silicon update channel."""
+"""Validation shared by the stable and tester Apple-silicon update feeds."""
 import base64
 import re
 import xml.etree.ElementTree as ET
@@ -16,18 +16,18 @@ def inspect_feed(data, *, tag=None, previous=None):
     if tag is None and not items:
         return None  # Initial feed before the first public release.
     if len(items) != 1:
-        raise ValueError("The stable feed must contain exactly one current release")
+        raise ValueError("The feed must contain exactly one current release")
     item = items[0]
     version = item.findtext(SPARKLE + "version", "")
     short_version = item.findtext(SPARKLE + "shortVersionString", "")
     if not re.fullmatch(r"[1-9][0-9]*", version):
         raise ValueError("An increasing integer CFBundleVersion is required")
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", short_version):
-        raise ValueError("Only stable semantic versions belong in this feed")
+        raise ValueError("Numeric semantic versions are required in this feed")
     if tag is not None and tag != short_version:
         raise ValueError("Release tag and app display version do not match")
     if item.find(SPARKLE + "channel") is not None:
-        raise ValueError("Prerelease channels are not allowed")
+        raise ValueError("Use a separate feed instead of a Sparkle channel")
     if item.findtext(SPARKLE + "minimumSystemVersion") != "13.3":
         raise ValueError("Expected the supported macOS 13.3 minimum")
     if item.findtext(SPARKLE + "hardwareRequirements") != "arm64":

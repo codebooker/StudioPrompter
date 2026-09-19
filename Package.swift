@@ -1,5 +1,9 @@
 // swift-tools-version: 5.9
 import PackageDescription
+import Foundation
+
+// Experimental commands are never enabled by ordinary or release builds.
+let experimentalCommands = ProcessInfo.processInfo.environment["STUDIO_EXPERIMENTAL_COMMANDS"] == "1"
 
 let package = Package(
     name: "Prompter",
@@ -16,7 +20,8 @@ let package = Package(
         .target(name: "PrompterCore"),
         .target(name: "PrompterLayout", dependencies: ["PrompterCore"]),
         .target(name: "PrompterSpeech", dependencies: [.product(name: "WhisperKit", package: "argmax-oss-swift")]),
-        .executableTarget(name: "Prompter", dependencies: ["PrompterCore", "PrompterSpeech", "PrompterLayout", "PrompterCommands", .product(name: "Sparkle", package: "Sparkle")],
+        .executableTarget(name: "Prompter", dependencies: ["PrompterCore", "PrompterSpeech", "PrompterLayout", .product(name: "Sparkle", package: "Sparkle")] + (experimentalCommands ? [.target(name: "PrompterCommands")] : []),
+            swiftSettings: experimentalCommands ? [.define("EXPERIMENTAL_COMMANDS")] : [],
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]),
         .executableTarget(name: "WhisperCheck", dependencies: ["PrompterSpeech", "PrompterCore", "PrompterCommands", .product(name: "WhisperKit", package: "argmax-oss-swift")], path: "Tests/WhisperCheck"),
         .executableTarget(name: "PrompterChecks", dependencies: ["PrompterCore", "PrompterLayout"], path: "Tests/PrompterCoreTests")

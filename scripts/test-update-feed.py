@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 import base64
+import importlib.util
 import pathlib
 import unittest
 from update_feed import inspect_feed
+
+spec = importlib.util.spec_from_file_location('publisher', pathlib.Path(__file__).with_name('publish-update-feed.py'))
+publisher = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(publisher)
 
 SIGNATURE = base64.b64encode(bytes(64)).decode()
 FEED = f'''<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel><item>
@@ -16,6 +21,18 @@ class UpdateFeedChecks(unittest.TestCase):
     def test_initial_feed(self):
         self.assertIsNone(inspect_feed('<rss><channel/></rss>'))
         inspect_feed(pathlib.Path('updates/appcast.xml').read_bytes())
+
+    def test_release_channel_separation(self):
+        for draft in (True, False):
+            for prerelease in (True, False):
+                for tester in (True, False):
+                    release = dict(isDraft=draft, isPrerelease=prerelease)
+                    if not draft and prerelease == tester:
+                        publisher.validate_release_channel(release, tester=tester)
+                    else:
+                        with self.assertRaises(ValueError):
+                            publisher.validate_release_channel(release, tester=tester)
+        inspect_feed(pathlib.Path('updates/tester-appcast.xml').read_bytes())
 
     def test_stable_release(self):
         self.assertEqual(inspect_feed(FEED, tag='0.1.1')['build'], 3)

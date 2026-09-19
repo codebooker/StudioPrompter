@@ -31,6 +31,7 @@ struct VoicePromptControls: View {
                         ForEach(voice.channels) { channel in Text(channel.name).tag(channel.id) }
                     }.labelsHidden().accessibilityLabel("Input channel")
                 }.disabled(voice.isListening || voice.isStarting)
+                #if EXPERIMENTAL_COMMANDS
                 Divider().overlay(Palette.border)
                 Toggle("Hands-free commands", isOn: Binding(get: { voice.handsFreeCommands }, set: voice.setHandsFreeCommands))
                     .font(.system(size: 11, weight: .medium)).toggleStyle(.switch)
@@ -40,6 +41,7 @@ struct VoicePromptControls: View {
                     Text("Say “Hey Teleprompter, let’s go” to begin.")
                         .font(.system(size: 10)).foregroundStyle(Palette.muted)
                 }
+                #endif
                 Button("Advanced voice settings…", action: state.openVoiceLab).font(.system(size: 11)).buttonStyle(.plain).foregroundStyle(Palette.accent)
                 Text(voice.handsFreeCommands ? "Pause keeps listening. Esc turns the mic off." : "Play starts listening. Pause stops the mic.")
                     .font(.system(size: 10)).foregroundStyle(Palette.muted)
@@ -133,7 +135,9 @@ struct VoiceLabView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     inputCard
                     promptingCard
+                    #if EXPERIMENTAL_COMMANDS
                     commandsCard
+                    #endif
                     modelCard
                     tuningCard
                     diagnosticsCard
@@ -266,6 +270,7 @@ struct VoiceLabView: View {
         }.voiceCard()
     }
 
+    #if EXPERIMENTAL_COMMANDS
     private var commandsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             cardHeading("Hands-free commands", subtitle: "Say “Hey Teleprompter,” then give one command and briefly pause.", icon: "waveform.bubble")
@@ -279,6 +284,7 @@ struct VoiceLabView: View {
         }.voiceCard()
     }
 
+    #endif
     private var modelCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 18) {

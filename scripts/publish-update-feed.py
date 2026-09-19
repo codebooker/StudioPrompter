@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Promote a verified appcast from an already-published stable GitHub release.
-
-This script never publishes a release. It only writes updates/appcast.xml after
-checking the archive's signature, size, Apple signing, notarization and versions.
-"""
+"""Promote a signature-verified stable or explicitly selected tester release."""
 import argparse
 import json
 import pathlib
@@ -18,22 +14,30 @@ def run(*args):
     return subprocess.check_output(args, text=True)
 
 
+def validate_release_channel(release, *, tester=False):
+    if release['isDraft']:
+        raise ValueError('Draft releases cannot enter an update feed')
+    if release['isPrerelease'] != tester:
+        raise ValueError('Tester feed requires a prerelease; stable feed requires a stable release')
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('tag')
+    parser.add_argument('--tester', action='store_true', help='Use the separate non-notarized tester feed')
     args = parser.parse_args()
     if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', args.tag):
-        raise ValueError('Use a stable release tag such as 0.1.1 (without a v prefix)')
+        raise ValueError('Use a numeric release tag such as 0.1.1 (without a v prefix)')
     release = json.loads(run('gh', 'release', 'view', args.tag, '--repo', REPOSITORY,
                              '--json', 'isDraft,isPrerelease,tagName,assets'))
-    if release['isDraft'] or release['isPrerelease']:
-        raise ValueError('Drafts and prereleases cannot enter the stable update feed')
+    validate_release_channel(release, tester=args.tester)
+    feed_name = 'tester-appcast.xml' if args.tester else 'appcast.xml'
     with tempfile.TemporaryDirectory(prefix='studioprompter-update-') as temporary:
         folder = pathlib.Path(temporary)
         run('gh', 'release', 'download', args.tag, '--repo', REPOSITORY,
-            '--pattern', 'appcast.xml', '--dir', str(folder))
-        feed = (folder / 'appcast.xml').read_bytes()
-        current = pathlib.Path('updates/appcast.xml')
+            '--pattern', feed_name, '--dir', str(folder))
+        feed = (folder / feed_name).read_bytes()
+        current = pathlib.Path('updates') / feed_name
         if current.read_bytes() == feed:
             print('This release is already in the update feed.')
             return
@@ -44,7 +48,7 @@ def main():
         run('gh', 'release', 'download', args.tag, '--repo', REPOSITORY,
             '--pattern', info['archive'], '--dir', str(folder))
         archive = folder / info['archive']
-        print(run('swift', 'scripts/verify-update.swift', 'scripts/Info.plist', str(folder / 'appcast.xml'), str(archive)))
+        print(run('swift', 'scripts/verify-update.swift', 'scripts/Info.plist', str(folder / feed_name), str(archive)))
         extracted = folder / 'unpacked'
         run('ditto', '-x', '-k', str(archive), str(extracted))
         app = extracted / 'Prompter.app'
@@ -56,11 +60,12 @@ def main():
                 bundle['CFBundleShortVersionString'] != info['version'] or
                 int(bundle['CFBundleVersion']) != info['build'] or
                 bundle.get('SUPublicEDKey') != expected['SUPublicEDKey'] or
-                bundle.get('SUFeedURL') != expected['SUFeedURL']):
+                bundle.get('SUFeedURL') != f'https://raw.githubusercontent.com/{REPOSITORY}/main/updates/{feed_name}'):
             raise ValueError('Bundle identity, versions, or update configuration do not match')
         run('codesign', '--verify', '--deep', '--strict', str(app))
-        run('xcrun', 'stapler', 'validate', str(app))
-        run('spctl', '--assess', '--type', 'execute', str(app))
+        if not args.tester:
+            run('xcrun', 'stapler', 'validate', str(app))
+            run('spctl', '--assess', '--type', 'execute', str(app))
         # Atomic replacement; never expose a partial or unverified feed.
         staged = current.with_suffix('.xml.tmp')
         staged.write_bytes(feed)
