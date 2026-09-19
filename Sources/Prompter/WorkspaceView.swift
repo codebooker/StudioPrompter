@@ -45,12 +45,18 @@ struct WorkspaceView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Image(systemName: "text.alignleft").font(.system(size: 20, weight: .bold))
-                .foregroundStyle(Palette.accent).frame(width: 34, height: 34)
-                .background(Palette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
-            Text("prompter").font(.system(size: 20, weight: .semibold, design: .rounded))
-            Text("STUDIO").font(.system(size: 9, weight: .bold)).tracking(1.8)
-                .foregroundStyle(Palette.muted).padding(.leading, 2)
+            HStack(spacing: 10) {
+                Image(systemName: "text.alignleft").font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Palette.accent).frame(width: 34, height: 34)
+                    .background(Palette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
+                    .accessibilityHidden(true)
+                (Text("Studio").font(.system(size: 23, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.76))
+                 + Text("Prompter").font(.system(size: 23, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.95)))
+                    .tracking(-0.6)
+                    .fixedSize()
+            }
             Spacer()
             Button(action: state.importScript) { Label("Import", systemImage: "square.and.arrow.down") }.buttonStyle(QuietButton())
             OutputMenu(state: state, prominent: true)
