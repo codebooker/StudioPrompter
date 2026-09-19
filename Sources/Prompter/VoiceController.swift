@@ -289,11 +289,11 @@ private final class TextPositionMap {
     var lineStep: Double { lineHeight / travel }
     init() { container.lineFragmentPadding = 0; layout.addTextContainer(container); storage.addLayoutManager(layout) }
     func configure(_ script: Script) {
-        if let key, key.text == script.text, key.settings == script.settings { return }
+        if let key, key.text == script.text, key.emphasis == script.emphasis, key.settings == script.settings { return }
         key = script
         let settings = script.settings
         container.containerSize = NSSize(width: 1000 - settings.margin * 2, height: CGFloat.greatestFiniteMagnitude)
-        storage.setAttributedString(ScriptTypography.text(script.text, settings: settings))
+        storage.setAttributedString(ScriptTypography.text(script.text, settings: settings, emphasis: script.emphasis))
         layout.ensureLayout(for: container)
         travel = max(1, layout.usedRect(for: container).height - settings.fontSize * 1.2)
         lineHeight = layout.defaultLineHeight(for: ScriptTypography.font(settings)) + settings.fontSize * (settings.lineSpacing - 1)

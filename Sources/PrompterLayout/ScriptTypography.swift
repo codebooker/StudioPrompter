@@ -12,13 +12,14 @@ public enum ScriptTypography {
         }
     }
 
-    public static func text(_ text: String, settings: PromptSettings) -> NSAttributedString {
+    public static func text(_ text: String, settings: PromptSettings, emphasis: [TextEmphasis] = []) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = settings.fontSize * (settings.lineSpacing - 1)
         paragraph.paragraphSpacing = settings.fontSize * 0.25
         let result = NSMutableAttributedString(string: text, attributes: [
             .font: font(settings), .foregroundColor: NSColor(white: 0.96, alpha: 1), .paragraphStyle: paragraph
         ])
+        apply(emphasis, to: result, baseFont: font(settings))
         // Preserve script offsets, but don't render blank separator paragraphs as
         // full-size empty reading lines. Paragraph spacing already marks the break.
         let blank = NSMutableParagraphStyle()
@@ -29,6 +30,41 @@ public enum ScriptTypography {
         }
         return result
     }
+    public static func apply(_ emphasis: [TextEmphasis], to text: NSMutableAttributedString, baseFont: NSFont) {
+        for mark in emphasis {
+            guard let range = mark.range(in: text.string) else { continue }
+            if mark.bold {
+                let converted = NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
+                let boldFont = NSFontManager.shared.traits(of: converted).contains(.boldFontMask) ? converted : NSFont.systemFont(ofSize: baseFont.pointSize, weight: .bold)
+                text.addAttribute(.font, value: boldFont, range: range)
+            }
+            if mark.underline { text.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range) }
+        }
+    }
+
+    public static func emphasis(in text: NSAttributedString) -> [TextEmphasis] {
+        var result: [TextEmphasis] = []
+        text.enumerateAttributes(in: NSRange(location: 0, length: text.length)) { attributes, range, _ in
+            let bold = (attributes[.font] as? NSFont).map { NSFontManager.shared.traits(of: $0).contains(.boldFontMask) } ?? false
+            let underline = (attributes[.underlineStyle] as? NSNumber)?.intValue ?? 0 != 0
+            if bold || underline {
+                if let last = result.last, last.location + last.length == range.location, last.bold == bold, last.underline == underline {
+                    result[result.count - 1].length += range.length
+                } else { result.append(TextEmphasis(location: range.location, length: range.length, bold: bold, underline: underline)) }
+            }
+        }
+        return result
+    }
+
+    public static func editorText(_ script: Script) -> NSAttributedString {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = 7
+        let font = NSFont.systemFont(ofSize: 19)
+        let text = NSMutableAttributedString(string: script.text, attributes: [.font: font, .foregroundColor: NSColor(white: 0.92, alpha: 1), .paragraphStyle: paragraph])
+        apply(script.emphasis, to: text, baseFont: font)
+        return text
+    }
+
 }
 
 public enum FocusGeometry {
@@ -40,5 +76,31 @@ public enum FocusGeometry {
             result = result.union(CGRect(x: nominal.minX, y: line.minY - 2, width: nominal.width, height: line.height + 4))
         }
         return result
+    }
+}
+
+/// Canonical display geometry shared by cue placement and both prompter screens.
+public final class ScriptCueLayout {
+    private let storage: NSTextStorage
+    private let layout = NSLayoutManager()
+    private let container: NSTextContainer
+    private let travel: Double
+    public init(_ script: Script) {
+        storage = NSTextStorage(attributedString: ScriptTypography.text(script.text, settings: script.settings, emphasis: script.emphasis))
+        container = NSTextContainer(size: NSSize(width: 1000 - script.settings.margin * 2, height: CGFloat.greatestFiniteMagnitude))
+        container.lineFragmentPadding = 0
+        layout.addTextContainer(container); storage.addLayoutManager(layout)
+        layout.ensureLayout(for: container)
+        travel = max(1, layout.usedRect(for: container).height - script.settings.fontSize * 1.2)
+    }
+    public func progress(at offset: Int) -> Double {
+        guard storage.length > 0 else { return 0 }
+        let glyph = layout.glyphIndexForCharacter(at: min(max(0, offset), storage.length - 1))
+        return min(1, max(0, layout.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil).minY / travel))
+    }
+    public func offset(at progress: Double) -> Int {
+        guard storage.length > 0 else { return 0 }
+        let glyph = layout.glyphIndex(for: NSPoint(x: 0, y: max(0, min(1, progress)) * travel + 1), in: container)
+        return layout.characterIndexForGlyph(at: min(glyph, max(0, layout.numberOfGlyphs - 1)))
     }
 }

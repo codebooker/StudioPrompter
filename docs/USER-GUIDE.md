@@ -38,14 +38,24 @@ The recent transcript can revise itself as Whisper recognizes more context. It i
 
 ## Scripts, cues, and storage
 
-Scripts autosave locally. Imports preserve text, not document styling or images. Export TXT or RTF from File → Export Script.
+Scripts autosave as Markdown files. Import TXT, MD/Markdown, RTF, RTFD, DOC, or DOCX. Markdown imports understand `**bold**` (or `<strong>`), `<u>underline</u>`, and StudioPrompter cue comments; other Markdown constructs remain literal script text. Word and rich-text imports retain bold and underline while using your prompter’s typography. Images and other document styling are omitted. PDF import is not currently supported.
 
-Add a cue at the current position to jump back later. Right-click to remove a cue. Cues store relative positions, so recreate them after major script or layout changes. Time remaining is an estimate; elapsed time excludes pauses and countdowns.
+Choose **Edit script**, select a passage, and use **B** or **U** (⌘B / ⌘U) to add emphasis. Both can be applied together. **Clear emphasis** removes them. Formatting appears in the producer preview and talent display, and voice following uses the same layout. Typing, formatting, and cue changes support undo/redo within the current editing session. Switching scripts or leaving the editor starts a new undo history.
 
-- Library: `~/Library/Application Support/Prompter/library.json`
+Export from **File → Export Script**: Markdown preserves emphasis and cue comments, RTF preserves emphasis, and TXT contains only spoken text. Markdown uses `<u>` because standard Markdown has no underline syntax, and `<strong>` for bold selections spanning line breaks or boundary spaces. Cue comments are hidden from the editor and prompter; they are never spoken text.
+
+In the editor, place the text cursor at a passage and choose **Add cue** (⌘⌥B). Rename it in the cue list, click its bookmark to find the passage, use **Move here** to move it to the current text cursor, or use the trash button to remove it. Cues follow their passage when text is inserted before it. Deleting a cue’s passage leaves the cue at the start of the replacement. Undo restores the previous passage and cue together.
+
+Outside the editor, Add cue bookmarks the current reading position. Click a cue in the sidebar to jump to it. Older percentage-based cues gain text anchors when their script is opened in the editor. Time remaining is an estimate; elapsed time excludes pauses and countdowns.
+
+- Library index and display settings: `~/Library/Application Support/Prompter/library.json`
+- Markdown scripts: `~/Library/Application Support/Prompter/Scripts/<generation>/<script-id>.md`
+- Original library backup after migration: `~/Library/Application Support/Prompter/library-before-markdown.json`
 - Models and tokenizer: `~/Library/Application Support/Prompter/Whisper`
 
-The library is ordinary local JSON, not encrypted storage. An unreadable library is preserved; export any new work before quitting recovery mode. Back up the library before replacing or reinstalling a development build.
+The library is ordinary local Markdown plus a JSON index, not encrypted storage. Saves write a complete new generation of Markdown files before atomically switching the index; only then is the previous generation removed. Use Markdown export for a stable file to edit in another app, then import it again. Back up the entire `Prompter` folder, not just `library.json`.
+
+Existing version-1 JSON libraries migrate automatically on save, with the original retained as `library-before-markdown.json`. Earlier app builds cannot read the new index. An unreadable library or missing Markdown file is preserved; export any new work before quitting recovery mode.
 
 ## Keyboard shortcuts
 
@@ -56,7 +66,8 @@ The library is ordinary local JSON, not encrypted storage. An unreadable library
 | ← / → | Scroll backward / forward |
 | R / ⌘R | Reset |
 | B / ⌘⇧B | Talent blackout |
-| ⌘B | Add cue |
+| ⌘B / ⌘U | Bold / underline in the script editor |
+| ⌘⌥B | Add cue |
 | ⌘← / ⌘→ | Previous / next cue |
 | ⌘E | Edit script |
 | ⌘N | New script |

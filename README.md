@@ -21,7 +21,7 @@ Keep the controls on your Mac. Send a clean, full-screen script to the talent mo
 
 | For the producer | For the presenter |
 | :--- | :--- |
-| A searchable script library, editor, and cue points | A clean, borderless display with generous type |
+| A searchable Markdown script library, emphasis, and named cue points | A clean, borderless display with generous type |
 | Live preview and manual wheel, drag, and keyboard control | Adjustable reading guide and focus highlighting |
 | One Play button for the microphone and prompting | Voice following that tolerates skipped words |
 | Microphone **and individual input channel** selection | Mirrored or flipped output for prompter glass |
@@ -39,7 +39,7 @@ Voice features are in beta. Recognition and responsiveness depend on your Mac, m
 
 ## Start in four steps
 
-1. **Open a script.** Write directly in the app or import TXT, RTF, RTFD, DOC, or DOCX.
+1. **Open a script.** Write directly in the app or import TXT, Markdown, RTF, RTFD, DOC, or DOCX. Emphasize key passages with bold and underline, and place named cues directly in the editor.
 2. **Send it to your display.** Connect an extended display and choose **Send to display**. The producer workspace stays on your Mac.
 3. **Choose your pace.** Use fixed speed, or turn on **Voice prompting**, choose a mode and microphone channel, and click **Download model** once.
 4. **Press Play.** Voice mode starts listening and prompting together. Space pauses both.

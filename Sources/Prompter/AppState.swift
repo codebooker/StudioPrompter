@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 import PrompterCore
+import PrompterLayout
 
 final class Playback: ObservableObject {
     @Published var transport = Transport()
@@ -62,6 +63,7 @@ final class AppState: ObservableObject {
     let playback = Playback()
     lazy var voice = VoiceController(state: self)
     let storeURL: URL
+    weak var activeEditor: ScriptEditorSession?
     private var pendingSave: DispatchWorkItem?
     private var canSave = true
     private var keyMonitor: Any?
@@ -133,7 +135,21 @@ final class AppState: ObservableObject {
     func setting<T>(_ path: WritableKeyPath<PromptSettings, T>) -> Binding<T> {
         Binding(get: { self.current.settings[keyPath: path] }, set: { value in self.update { $0.settings[keyPath: path] = value } })
     }
-    func configurePlayback() { playback.duration = current.duration; playback.countdown = current.settings.countdown; playback.wordCount = current.wordCount }
+    func configurePlayback() {
+        if let index = library.scripts.firstIndex(where: { $0.id == library.selectedID }), current.cues.contains(where: { $0.characterOffset != nil }) {
+            let script = current
+            let layout = ScriptCueLayout(script)
+            var cues = script.cues
+            for cueIndex in cues.indices {
+                if let offset = cues[cueIndex].characterOffset { cues[cueIndex].progress = layout.progress(at: offset) }
+            }
+            cues.sort { $0.progress < $1.progress }
+            if cues != script.cues { library.scripts[index].cues = cues }
+        }
+        playback.duration = current.duration
+        playback.countdown = current.settings.countdown
+        playback.wordCount = current.wordCount
+    }
     func scheduleSave() {
         pendingSave?.cancel()
         saveStatus = canSave ? "Saving…" : "Library recovery mode"
@@ -183,12 +199,23 @@ final class AppState: ObservableObject {
         isEditing.toggle()
         if !isEditing { NSApp.keyWindow?.makeFirstResponder(nil) }
     }
+    func anchorCues() {
+        guard current.cues.contains(where: { $0.characterOffset == nil }) else { return }
+        let layout = ScriptCueLayout(current)
+        update { script in
+            for index in script.cues.indices where script.cues[index].characterOffset == nil {
+                script.cues[index].characterOffset = layout.offset(at: script.cues[index].progress)
+            }
+        }
+    }
     func addCue() {
+        if isEditing, let activeEditor { activeEditor.addCue(); return }
         let progress = playback.transport.progress
         let words = current.text.split(whereSeparator: { $0.isWhitespace })
         let index = min(max(0, Int(Double(words.count) * progress)), max(0, words.count - 1))
         let title = words.isEmpty ? "New cue" : words.dropFirst(index).prefix(5).joined(separator: " ")
-        update { $0.cues.append(Cue(title: title, progress: progress)); $0.cues.sort { $0.progress < $1.progress } }
+        let offset = ScriptCueLayout(current).offset(at: progress)
+        update { $0.cues.append(Cue(title: title, progress: progress, characterOffset: offset)); $0.cues.sort { $0.progress < $1.progress } }
     }
     func jumpCue(forward: Bool) {
         let p = playback.transport.progress
@@ -203,14 +230,18 @@ final class AppState: ObservableObject {
         guard panel.runModal() == .OK else { return }
         for url in panel.urls {
             do {
-                let text: String
+                let title = url.deletingPathExtension().lastPathComponent
+                var script: Script
                 if ["rtf", "rtfd", "doc", "docx"].contains(url.pathExtension.lowercased()) {
-                    text = try NSAttributedString(url: url, options: [:], documentAttributes: nil).string
+                    let attributed = try NSAttributedString(url: url, options: [:], documentAttributes: nil)
+                    script = Script(title: title, text: attributed.string)
+                    script.emphasis = ScriptTypography.emphasis(in: attributed)
                 } else {
                     var encoding = String.Encoding.utf8
-                    text = try String(contentsOf: url, usedEncoding: &encoding)
+                    let text = try String(contentsOf: url, usedEncoding: &encoding)
+                    script = ["md", "markdown"].contains(url.pathExtension.lowercased())
+                        ? ScriptMarkdown.decode(text, title: title) : Script(title: title, text: text)
                 }
-                let script = Script(title: url.deletingPathExtension().lastPathComponent, text: text)
                 library.scripts.insert(script, at: 0)
                 select(script.id)
             } catch { errorMessage = "Could not import \(url.lastPathComponent): \(error.localizedDescription)" }
@@ -219,14 +250,16 @@ final class AppState: ObservableObject {
         isEditing = false
         scheduleSave()
     }
-    func exportScript(rtf: Bool = false) {
+    func exportScript(rtf: Bool = false, markdown: Bool = false) {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = rtf ? [.rtf] : [.plainText]
-        panel.nameFieldStringValue = current.title + (rtf ? ".rtf" : ".txt")
+        panel.allowedContentTypes = markdown ? [UTType(filenameExtension: "md") ?? .plainText] : (rtf ? [.rtf] : [.plainText])
+        panel.nameFieldStringValue = current.title + (markdown ? ".md" : (rtf ? ".rtf" : ".txt"))
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
-            if rtf {
-                let attributed = NSAttributedString(string: current.text, attributes: [.font: NSFont.systemFont(ofSize: 18)])
+            if markdown {
+                try ScriptMarkdown.encode(current).write(to: url, atomically: true, encoding: .utf8)
+            } else if rtf {
+                let attributed = ScriptTypography.editorText(current)
                 let data = try attributed.data(from: NSRange(location: 0, length: attributed.length), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
                 try data.write(to: url, options: .atomic)
             } else { try current.text.write(to: url, atomically: true, encoding: .utf8) }

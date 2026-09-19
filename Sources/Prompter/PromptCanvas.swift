@@ -11,7 +11,7 @@ struct PromptCanvas: NSViewRepresentable {
     var onGuideChange: ((Double) -> Void)?
     func makeNSView(context: Context) -> ScriptCanvas { ScriptCanvas() }
     func updateNSView(_ view: ScriptCanvas, context: Context) {
-        view.configure(text: script.text, settings: script.settings)
+        view.configure(text: script.text, settings: script.settings, emphasis: script.emphasis)
         view.progress = progress
         view.mirrored = mirrored
         view.onScroll = onScroll
@@ -25,6 +25,7 @@ final class ScriptCanvas: NSView {
     private let layout = NSLayoutManager()
     private let container = NSTextContainer(size: NSSize(width: 800, height: CGFloat.greatestFiniteMagnitude))
     private var settings = PromptSettings()
+    private var lastEmphasis: [TextEmphasis] = []
     private var lastText: String?
     private var textHeight: CGFloat = 0
     private var lineHeight: CGFloat = 80
@@ -48,15 +49,16 @@ final class ScriptCanvas: NSView {
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func configure(text: String, settings: PromptSettings) {
-        guard text != lastText || settings.fontSize != self.settings.fontSize || settings.margin != self.settings.margin || settings.lineSpacing != self.settings.lineSpacing || settings.typeface != self.settings.typeface else {
+    func configure(text: String, settings: PromptSettings, emphasis: [TextEmphasis]) {
+        guard emphasis != lastEmphasis || text != lastText || settings.fontSize != self.settings.fontSize || settings.margin != self.settings.margin || settings.lineSpacing != self.settings.lineSpacing || settings.typeface != self.settings.typeface else {
             self.settings = settings
             return
         }
         lastText = text
+        lastEmphasis = emphasis
         self.settings = settings
         container.containerSize = NSSize(width: 1000 - settings.margin * 2, height: CGFloat.greatestFiniteMagnitude)
-        storage.setAttributedString(ScriptTypography.text(text, settings: settings))
+        storage.setAttributedString(ScriptTypography.text(text, settings: settings, emphasis: emphasis))
         layout.ensureLayout(for: container)
         textHeight = layout.usedRect(for: container).height
         lineHeight = layout.defaultLineHeight(for: ScriptTypography.font(settings)) + settings.fontSize * (settings.lineSpacing - 1)

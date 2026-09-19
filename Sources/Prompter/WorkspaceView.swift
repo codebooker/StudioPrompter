@@ -84,18 +84,7 @@ struct WorkspaceView: View {
     }
 
     private var editor: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionLabel(title: "SCRIPT EDITOR", trailing: "Autosaved")
-            TextField("Script title", text: Binding(get: { state.current.title }, set: { value in state.update { $0.title = value } }))
-                .font(.system(size: 24, weight: .semibold)).textFieldStyle(.plain)
-                .accessibilityLabel("Script title")
-            Divider().overlay(Palette.border)
-            TextEditor(text: Binding(get: { state.current.text }, set: { value in state.update { $0.text = value } }))
-                .font(.system(size: 19)).lineSpacing(9).scrollContentBackground(.hidden)
-                .accessibilityLabel("Script text")
-            Text("Changes appear on the talent display as you type.")
-                .font(.system(size: 11)).foregroundStyle(Palette.muted)
-        }.padding(22).background(Palette.panel, in: RoundedRectangle(cornerRadius: 12)).padding(.horizontal, 24)
+        ScriptEditorView(state: state).id(state.current.id).padding(.horizontal, 24)
     }
 
     private var footer: some View {
@@ -317,11 +306,17 @@ struct Inspector: View {
 
                 VStack(alignment: .leading, spacing: 17) {
                     SectionLabel(title: "APPEARANCE")
-                    Picker("Typeface", selection: state.setting(\.typeface)) {
-                        ForEach(ScriptTypeface.allCases) { typeface in
-                            Text(typeface.name).tag(typeface)
-                        }
-                    }.font(.system(size: 11))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Typeface").font(.system(size: 11))
+                        SettingsMenuField(title: "Typeface", value: state.current.settings.typeface.name) {
+                            ForEach(ScriptTypeface.allCases) { typeface in
+                                Button { state.update { $0.settings.typeface = typeface } } label: {
+                                    if state.current.settings.typeface == typeface { Label(typeface.name, systemImage: "checkmark") }
+                                    else { Text(typeface.name) }
+                                }
+                            }
+                        }.controlSize(.regular)
+                    }
                     parameter("Text size", value: String(Int(state.current.settings.fontSize))) {
                         Slider(value: state.setting(\.fontSize), in: 32...90, step: 2).accessibilityLabel("Text size")
                     }

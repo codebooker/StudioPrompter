@@ -57,10 +57,48 @@ public struct Cue: Codable, Identifiable, Equatable {
     public var id: UUID
     public var title: String
     public var progress: Double
-    public init(title: String, progress: Double) {
+    /// UTF-16 position in the script. Nil preserves legacy percentage cues.
+    public var characterOffset: Int?
+    public init(title: String, progress: Double, characterOffset: Int? = nil) {
         id = UUID()
         self.title = title
         self.progress = min(1, max(0, progress))
+        self.characterOffset = characterOffset
+    }
+}
+
+/// Only portable emphasis is stored; display typography remains a script setting.
+public struct TextEmphasis: Codable, Equatable {
+    public var location: Int
+    public var length: Int
+    public var bold: Bool
+    public var underline: Bool
+    public init(location: Int, length: Int, bold: Bool = false, underline: Bool = false) {
+        self.location = location; self.length = length
+        self.bold = bold; self.underline = underline
+    }
+    public func range(in text: String) -> NSRange? {
+        let count = (text as NSString).length
+        guard location >= 0, location < count, length > 0 else { return nil }
+        return NSRange(location: location, length: min(length, count - location))
+    }
+}
+
+public enum CueAnchors {
+    /// Insertions at a cue push it with its passage. Replacing/deleting its
+    /// passage keeps the cue at the beginning of the replacement.
+    public static func replacing(_ cues: [Cue], range: NSRange, replacementLength: Int) -> [Cue] {
+        cues.map { cue in
+            var result = cue
+            if let offset = cue.characterOffset {
+                if offset >= range.location + range.length {
+                    result.characterOffset = max(0, offset + replacementLength - range.length)
+                } else if offset >= range.location {
+                    result.characterOffset = range.location
+                }
+            }
+            return result
+        }
     }
 }
 
@@ -71,6 +109,7 @@ public struct Script: Codable, Identifiable, Equatable {
     public var modified: Date
     public var settings: PromptSettings
     public var cues: [Cue]
+    public var emphasis: [TextEmphasis] = []
     public init(title: String, text: String, cues: [Cue] = []) {
         id = UUID()
         self.title = title
@@ -78,6 +117,17 @@ public struct Script: Codable, Identifiable, Equatable {
         modified = Date()
         settings = PromptSettings()
         self.cues = cues
+    }
+    private enum CodingKeys: String, CodingKey { case id, title, text, modified, settings, cues, emphasis }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        title = try values.decode(String.self, forKey: .title)
+        text = try values.decode(String.self, forKey: .text)
+        modified = try values.decode(Date.self, forKey: .modified)
+        settings = try values.decode(PromptSettings.self, forKey: .settings)
+        cues = try values.decodeIfPresent([Cue].self, forKey: .cues) ?? []
+        emphasis = try values.decodeIfPresent([TextEmphasis].self, forKey: .emphasis) ?? []
     }
     public var wordCount: Int { Self.countWords(text) }
     public static func countWords(_ text: String) -> Int {
@@ -97,16 +147,71 @@ public struct Library: Codable {
 }
 
 public enum LibraryStore {
+    private struct Index: Codable {
+        var version = 2
+        var generation: UUID
+        var selectedID: UUID?
+        var scripts: [Entry]
+    }
+    private struct Entry: Codable {
+        var id: UUID
+        var title: String
+        var modified: Date
+        var settings: PromptSettings
+    }
+    private struct Version: Decodable { var version: Int }
+
     public static func load(from url: URL) throws -> Library {
-        let library = try JSONDecoder().decode(Library.self, from: Data(contentsOf: url))
-        guard library.version == 1 else { throw StoreError.unsupportedVersion }
-        return library
+        let data = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        switch try decoder.decode(Version.self, from: data).version {
+        case 1: return try decoder.decode(Library.self, from: data)
+        case 2:
+            let index = try decoder.decode(Index.self, from: data)
+            let folder = scriptFolder(for: url, generation: index.generation)
+            let scripts = try index.scripts.map { entry -> Script in
+                let markdown = try String(contentsOf: folder.appendingPathComponent(entry.id.uuidString + ".md"), encoding: .utf8)
+                var script = ScriptMarkdown.decode(markdown, title: entry.title)
+                script.id = entry.id; script.modified = entry.modified; script.settings = entry.settings
+                return script
+            }
+            return Library(scripts: scripts, selectedID: index.selectedID)
+        default: throw StoreError.unsupportedVersion
+        }
     }
     public static func save(_ library: Library, to url: URL) throws {
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(library).write(to: url, options: .atomic)
+        let manager = FileManager.default
+        let parent = url.deletingLastPathComponent()
+        try manager.createDirectory(at: parent, withIntermediateDirectories: true)
+        let previous = manager.fileExists(atPath: url.path) ? try Data(contentsOf: url) : nil
+        // Keep the original library before the first migration; never replace that backup.
+        if let previous, (try? JSONDecoder().decode(Version.self, from: previous).version) == 1 {
+            let backup = parent.appendingPathComponent("library-before-markdown.json")
+            if !manager.fileExists(atPath: backup.path) { try previous.write(to: backup, options: .atomic) }
+        }
+        let generation = UUID()
+        let folder = scriptFolder(for: url, generation: generation)
+        try manager.createDirectory(at: folder, withIntermediateDirectories: true)
+        do {
+            for script in library.scripts {
+                try ScriptMarkdown.encode(script).write(to: folder.appendingPathComponent(script.id.uuidString + ".md"), atomically: true, encoding: .utf8)
+            }
+            let entries = library.scripts.map { Entry(id: $0.id, title: $0.title, modified: $0.modified, settings: $0.settings) }
+            let index = Index(generation: generation, selectedID: library.selectedID, scripts: entries)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            // Commit the index only after every Markdown file is safely written.
+            try encoder.encode(index).write(to: url, options: .atomic)
+        } catch {
+            try? manager.removeItem(at: folder)
+            throw error
+        }
+        if let previous, let old = try? JSONDecoder().decode(Index.self, from: previous) {
+            try? manager.removeItem(at: scriptFolder(for: url, generation: old.generation))
+        }
+    }
+    private static func scriptFolder(for url: URL, generation: UUID) -> URL {
+        url.deletingLastPathComponent().appendingPathComponent("Scripts").appendingPathComponent(generation.uuidString)
     }
     public enum StoreError: Error { case unsupportedVersion }
 }

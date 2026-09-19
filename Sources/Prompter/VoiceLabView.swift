@@ -169,7 +169,7 @@ struct VoiceLabView: View {
                 VStack(alignment: .leading, spacing: 7) {
                     fieldLabel("Microphone")
                     HStack(spacing: 7) {
-                        VoiceSettingsMenu(title: "Microphone", value: microphoneName, selection: $voice.selectedMicrophone) {
+                        SettingsMenu(title: "Microphone", value: microphoneName, selection: $voice.selectedMicrophone) {
                             Text("System default").tag(UInt32(0))
                             ForEach(voice.microphones) { mic in Text(mic.name).tag(mic.id) }
                         }
@@ -179,7 +179,7 @@ struct VoiceLabView: View {
                 }.frame(maxWidth: .infinity)
                 VStack(alignment: .leading, spacing: 7) {
                     fieldLabel("Input channel")
-                    VoiceSettingsMenu(title: "Input channel", value: channelName, selection: $voice.selectedChannel) {
+                    SettingsMenu(title: "Input channel", value: channelName, selection: $voice.selectedChannel) {
                         Text("Choose a channel").tag(0)
                         ForEach(voice.channels) { channel in Text(channel.name).tag(channel.id) }
                     }
@@ -254,7 +254,7 @@ struct VoiceLabView: View {
             HStack(alignment: .top, spacing: 18) {
                 cardHeading("Speech model", subtitle: "Local Whisper · English", icon: "cpu")
                 Spacer(minLength: 0)
-                VoiceSettingsMenu(title: "Whisper model", value: voice.model == "base.en" ? "Base English" : "Small English",
+                SettingsMenu(title: "Whisper model", value: voice.model == "base.en" ? "Base English" : "Small English",
                                   selection: Binding(get: { voice.model }, set: { voice.changeModel($0) })) {
                     Text("Base English · Recommended").tag("base.en")
                     Text("Small English").tag("small.en")
@@ -358,36 +358,6 @@ struct VoiceLabView: View {
             }
             Slider(value: binding, in: range, step: step).accessibilityLabel(title)
         }
-    }
-}
-
-private struct VoiceSettingsMenu<Selection: Hashable, Options: View>: View {
-    let title: String
-    let value: String
-    @Binding var selection: Selection
-    @ViewBuilder var options: Options
-    @Environment(\.isEnabled) private var isEnabled
-    var body: some View {
-        Menu {
-            Picker(title, selection: $selection) { options }.pickerStyle(.inline)
-        } label: {
-            // Native macOS menus flatten custom labels. Draw the field over
-            // the menu so it keeps its native keyboard and selection behavior.
-            Text(" ")
-        }
-        .menuStyle(.borderlessButton).menuIndicator(.hidden)
-        .frame(maxWidth: .infinity).frame(height: 37)
-        .background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 8))
-        .overlay {
-            HStack(spacing: 10) {
-                Text(value).lineLimit(1).truncationMode(.middle)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(Palette.muted)
-            }.font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.9))
-                .padding(.horizontal, 12).allowsHitTesting(false).accessibilityHidden(true)
-        }
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Palette.border, lineWidth: 1).allowsHitTesting(false))
-        .opacity(isEnabled ? 1 : 0.5).accessibilityLabel(title).accessibilityValue(value)
     }
 }
 

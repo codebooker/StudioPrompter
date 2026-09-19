@@ -163,6 +163,7 @@ private func expectThrows<T>(_ expression: @autoclosure () throws -> T, file: St
         library.testDurationAndEmptyWhitespace()
         try library.testExistingSettingsGainGuideDefaultsWithoutLosingPreferences()
         try library.testTypefaceMigrationAndPersistence()
+        try editorChecks()
         speechChecks()
         followChecks()
         adaptiveChecks()
@@ -384,4 +385,104 @@ private func speechChecks() {
     expectEqual(frequent.wordsPerMinute!, 132, accuracy: 0.001)
     var opening = PaceEstimator()
     expectEqual(opening.observe(wordCount: 10, span: 2, audioEnd: 2), 130)
+}
+
+
+private func editorChecks() throws {
+    let text = "Hello 👋 Café — **literal** <u>literal</u> \\end\nRead this carefully."
+    var script = Script(title: "Emphasis and cues", text: text)
+    let cafe = (text as NSString).range(of: "Café")
+    let passage = (text as NSString).range(of: "Read this carefully.")
+    script.emphasis = [TextEmphasis(location: cafe.location, length: cafe.length, bold: true, underline: true), TextEmphasis(location: passage.location, length: passage.length, underline: true)]
+    script.cues = [Cue(title: "Say Café — <!-- safely -->", progress: 0.15, characterOffset: cafe.location), Cue(title: "Closing", progress: 0.8, characterOffset: passage.location), Cue(title: "End", progress: 1, characterOffset: (text as NSString).length)]
+    let markdown = try ScriptMarkdown.encode(script)
+    expectTrue(markdown.contains("**<u>Café</u>**"))
+    expectTrue(markdown.contains("studioprompter-cue"))
+    expectEqual(try ScriptMarkdown.encode(Script(title: "Plain", text: "Hello. A natural sentence!")), "Hello. A natural sentence!")
+    let punctuation = "# Heading\n1. Number\n- List\nA &copy; literal = value."
+    expectEqual(ScriptMarkdown.decode(try ScriptMarkdown.encode(Script(title: "Literal", text: punctuation)), title: "Literal").text, punctuation)
+    let decoded = ScriptMarkdown.decode(markdown, title: script.title)
+    expectEqual(decoded.text, text)
+    expectEqual(decoded.emphasis, script.emphasis)
+    expectEqual(decoded.cues, script.cues)
+    let edited = ScriptMarkdown.decode("An opening. " + markdown, title: script.title)
+    expectEqual(edited.cues.first?.characterOffset, cafe.location + 12)
+    expectEqual(edited.emphasis.first?.location, cafe.location + 12)
+    let plain = ScriptMarkdown.decode("A **bold** word and <u>underlined</u> words.", title: "Test")
+    expectEqual(plain.text, "A bold word and underlined words.")
+    expectEqual(plain.emphasis.count, 2)
+    expectTrue(plain.emphasis[0].bold)
+    expectTrue(plain.emphasis[1].underline)
+    expectEqual(ScriptMarkdown.decode("unclosed ** and <u>literal", title: "Test").text, "unclosed ** and <u>literal")
+    var multiline = Script(title: "Multiline", text: " First line\nSecond line ")
+    multiline.emphasis = [TextEmphasis(location: 0, length: (multiline.text as NSString).length, bold: true)]
+    let multilineMarkdown = try ScriptMarkdown.encode(multiline)
+    expectTrue(multilineMarkdown.hasPrefix("<strong>"))
+    expectEqual(ScriptMarkdown.decode(multilineMarkdown, title: "Multiline").emphasis, multiline.emphasis)
+    let invalid = "<!-- studioprompter-cue invalid -->"
+    expectEqual(ScriptMarkdown.decode(invalid, title: "Test").text, invalid)
+    expectTrue(TextEmphasis(location: -1, length: 4, bold: true).range(in: "hello") == nil)
+    expectEqual(TextEmphasis(location: 3, length: Int.max, bold: true).range(in: "hello"), NSRange(location: 3, length: 2))
+
+    let inserted = CueAnchors.replacing(script.cues, range: NSRange(location: 0, length: 0), replacementLength: 3)
+    expectEqual(inserted[0].characterOffset, cafe.location + 3)
+    let atCue = CueAnchors.replacing(script.cues, range: NSRange(location: cafe.location, length: 0), replacementLength: 4)
+    expectEqual(atCue[0].characterOffset, cafe.location + 4)
+    let deleted = CueAnchors.replacing(script.cues, range: NSRange(location: cafe.location - 1, length: 6), replacementLength: 0)
+    expectEqual(deleted[0].characterOffset, cafe.location - 1)
+    expectEqual(deleted[1].characterOffset, passage.location - 6)
+    let legacyCue = Cue(title: "Legacy", progress: 0.5)
+    expectEqual(CueAnchors.replacing([legacyCue], range: NSRange(location: 0, length: 2), replacementLength: 4), [legacyCue])
+
+    for typeface in ScriptTypeface.allCases {
+        script.settings.typeface = typeface
+        let rich = ScriptTypography.text(script.text, settings: script.settings, emphasis: script.emphasis)
+        let font = rich.attribute(.font, at: cafe.location, effectiveRange: nil) as! NSFont
+        expectTrue(NSFontManager.shared.traits(of: font).contains(.boldFontMask))
+        expectEqual(rich.attribute(.underlineStyle, at: cafe.location, effectiveRange: nil) as? Int, NSUnderlineStyle.single.rawValue)
+        let cues = ScriptCueLayout(script)
+        expectTrue(cues.progress(at: passage.location) >= cues.progress(at: cafe.location))
+    }
+    let editor = ScriptTypography.editorText(script)
+    expectEqual(ScriptTypography.emphasis(in: editor), script.emphasis)
+    let rtf = try editor.data(from: NSRange(location: 0, length: editor.length), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+    let imported = try NSAttributedString(data: rtf, options: [.documentType: NSAttributedString.DocumentType.rtf], documentAttributes: nil)
+    expectEqual(imported.string, text)
+    expectEqual(ScriptTypography.emphasis(in: imported), script.emphasis)
+
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let url = directory.appendingPathComponent("library.json")
+    let library = Library(scripts: [script])
+    // A real version-1 payload without the new emphasis/anchor fields still loads.
+    var legacy = try JSONSerialization.jsonObject(with: JSONEncoder().encode(library)) as! [String: Any]
+    var scripts = legacy["scripts"] as! [[String: Any]]
+    scripts[0].removeValue(forKey: "emphasis")
+    scripts[0]["cues"] = [["id": legacyCue.id.uuidString, "title": legacyCue.title, "progress": legacyCue.progress]]
+    legacy["scripts"] = scripts
+    let original = try JSONSerialization.data(withJSONObject: legacy)
+    try original.write(to: url)
+    let oldLibrary = try LibraryStore.load(from: url)
+    expectEqual(oldLibrary.scripts[0].text, text)
+    expectEqual(oldLibrary.scripts[0].emphasis, [])
+    expectEqual(oldLibrary.scripts[0].cues, [legacyCue])
+    try LibraryStore.save(library, to: url)
+    expectEqual(try Data(contentsOf: directory.appendingPathComponent("library-before-markdown.json")), original)
+    expectEqual(try LibraryStore.load(from: url).scripts, [script])
+    let index = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+    expectEqual(index["version"] as? Int, 2)
+    expectTrue((index["scripts"] as! [[String: Any]])[0]["text"] == nil)
+    let folder = directory.appendingPathComponent("Scripts").appendingPathComponent(index["generation"] as! String)
+    let mdURL = folder.appendingPathComponent(script.id.uuidString + ".md")
+    expectEqual(try String(contentsOf: mdURL, encoding: .utf8), markdown)
+    // A missing script fails closed instead of silently saving an empty replacement.
+    try FileManager.default.removeItem(at: mdURL)
+    let savedIndex = try Data(contentsOf: url)
+    expectThrows(try LibraryStore.load(from: url))
+    expectEqual(try Data(contentsOf: url), savedIndex)
+    try LibraryStore.save(library, to: url)
+    expectEqual(try Data(contentsOf: directory.appendingPathComponent("library-before-markdown.json")), original)
+    expectEqual(try LibraryStore.load(from: url).scripts, [script])
+    expectFalse(FileManager.default.fileExists(atPath: folder.path))
 }
