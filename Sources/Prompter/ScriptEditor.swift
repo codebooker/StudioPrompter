@@ -8,6 +8,7 @@ final class ScriptEditorSession: NSObject, ObservableObject, NSTextViewDelegate 
     @Published var bold = false
     @Published var underline = false
     @Published var selectionLength = 0
+    @Published var focusedCueID: UUID?
     weak var textView: EmphasisTextView?
     weak var state: AppState?
     private var pendingCues: [Cue]?
@@ -146,7 +147,9 @@ final class ScriptEditorSession: NSObject, ObservableObject, NSTextViewDelegate 
         let tail = (view.string as NSString).substring(from: min(offset, (view.string as NSString).length))
         let title = tail.split(whereSeparator: { $0.isWhitespace }).prefix(5).joined(separator: " ")
         registerUndo()
-        state.update { $0.cues.append(Cue(title: title.isEmpty ? "New cue" : title, progress: 0, characterOffset: offset)) }
+        let cue = Cue(title: title.isEmpty ? "New cue" : title, progress: 0, characterOffset: offset)
+        state.update { $0.cues.append(cue) }
+        revealCue(cue)
         view.undoManager?.setActionName("Add cue")
     }
     func renameCue(_ id: UUID, title: String) {
@@ -164,6 +167,7 @@ final class ScriptEditorSession: NSObject, ObservableObject, NSTextViewDelegate 
             if let index = script.cues.firstIndex(where: { $0.id == id }) { script.cues[index].characterOffset = view.selectedRange().location }
         }
         view.undoManager?.setActionName("Move cue")
+        if let cue = state.current.cues.first(where: { $0.id == id }) { revealCue(cue) }
     }
     func removeCue(_ id: UUID) {
         guard let state else { return }
@@ -173,15 +177,108 @@ final class ScriptEditorSession: NSObject, ObservableObject, NSTextViewDelegate 
     }
     func revealCue(_ cue: Cue) {
         guard let view = textView else { return }
+        focusedCueID = cue.id
         let range = NSRange(location: min((view.string as NSString).length, max(0, cue.characterOffset ?? 0)), length: 0)
         view.window?.makeFirstResponder(view)
         view.setSelectedRange(range); view.scrollRangeToVisible(range)
-        view.showFindIndicator(for: (view.string as NSString).lineRange(for: range))
+        // Flash the anchored word, rather than the entire paragraph.
+        if range.location < (view.string as NSString).length,
+           !(view.string as NSString).substring(with: NSRange(location: range.location, length: 1)).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            view.showFindIndicator(for: view.selectionRange(forProposedRange: range, granularity: .selectByWord))
+        }
     }
 }
 
 final class EmphasisTextView: NSTextView {
     weak var session: ScriptEditorSession?
+    var cues: [Cue] = [] { didSet { needsDisplay = true } }
+    var focusedCueID: UUID? { didSet { if oldValue != focusedCueID { needsDisplay = true } } }
+    private let cueColor = NSColor(srgbRed: 1, green: 0.49, blue: 0.29, alpha: 1)
+    private struct CueMark {
+        let cue: Cue
+        let number: Int
+        let point: NSPoint
+        let line: NSRect
+    }
+    // Decorations live outside text storage: copying, formatting, undo and
+    // Markdown export never acquire marker characters or highlight attributes.
+    private func cueMarks() -> [CueMark] {
+        guard let manager = layoutManager, let container = textContainer else { return [] }
+        manager.ensureLayout(for: container)
+        let origin = textContainerOrigin
+        let length = (string as NSString).length
+        return cues.enumerated().map { index, cue in
+            let offset = min(length, max(0, cue.characterOffset ?? 0))
+            var line: NSRect
+            var point: NSPoint
+            if offset == length, manager.extraLineFragmentTextContainer != nil {
+                line = manager.extraLineFragmentRect
+                point = NSPoint(x: container.lineFragmentPadding, y: line.minY)
+            } else if manager.numberOfGlyphs > 0 {
+                let glyph = manager.glyphIndexForCharacter(at: min(offset, max(0, length - 1)))
+                line = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
+                point = manager.location(forGlyphAt: glyph)
+                point.x += line.minX
+                point.y = line.minY
+                if offset == length {
+                    point.x = manager.lineFragmentUsedRect(forGlyphAt: glyph, effectiveRange: nil).maxX
+                }
+            } else {
+                line = NSRect(x: 0, y: 0, width: container.size.width, height: 30)
+                point = NSPoint(x: container.lineFragmentPadding, y: 0)
+            }
+            line.origin.x += origin.x; line.origin.y += origin.y
+            point.x += origin.x; point.y += origin.y
+            return CueMark(cue: cue, number: index + 1, point: point, line: line)
+        }
+    }
+    override func draw(_ dirtyRect: NSRect) {
+        let marks = cueMarks()
+        for mark in marks where mark.line.intersects(dirtyRect) {
+            cueColor.withAlphaComponent(mark.cue.id == focusedCueID ? 0.12 : 0.045).setFill()
+            NSBezierPath(roundedRect: NSRect(x: textContainerOrigin.x, y: mark.line.minY,
+                width: max(0, bounds.width - textContainerOrigin.x - 8), height: mark.line.height), xRadius: 4, yRadius: 4).fill()
+        }
+        NSGraphicsContext.saveGraphicsState()
+        super.draw(dirtyRect)
+        NSGraphicsContext.restoreGraphicsState()
+        // Group cues on the same visual line so their gutter badges never overlap.
+        let groups = Dictionary(grouping: marks, by: { Int($0.line.minY.rounded()) })
+        for group in groups.values {
+            guard let first = group.first, first.line.intersects(dirtyRect) else { continue }
+            let selected = group.contains { $0.cue.id == focusedCueID }
+            let label = group.count == 1 ? "\(first.number)" : "\(first.number)+\(group.count - 1)"
+            let badge = NSRect(x: 3, y: first.line.minY + 2, width: 36, height: 22)
+            cueColor.withAlphaComponent(selected ? 1 : 0.18).setFill()
+            NSBezierPath(roundedRect: badge, xRadius: 6, yRadius: 6).fill()
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .bold),
+                .foregroundColor: selected ? NSColor.black : cueColor]
+            let size = (label as NSString).size(withAttributes: attributes)
+            (label as NSString).draw(at: NSPoint(x: badge.midX - size.width / 2, y: badge.midY - size.height / 2), withAttributes: attributes)
+            for mark in group {
+                cueColor.setFill()
+                NSRect(x: mark.point.x - 2, y: mark.line.minY + 2, width: 2, height: max(16, mark.line.height - 4)).fill()
+                let flag = NSBezierPath()
+                flag.move(to: NSPoint(x: mark.point.x - 2, y: mark.line.minY + 1))
+                flag.line(to: NSPoint(x: mark.point.x + 5, y: mark.line.minY + 1))
+                flag.line(to: NSPoint(x: mark.point.x - 2, y: mark.line.minY + 7))
+                flag.close(); flag.fill()
+            }
+        }
+    }
+    override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        if point.x < textContainerOrigin.x {
+            let group = cueMarks().filter { point.y >= $0.line.minY && point.y < $0.line.maxY }
+            if !group.isEmpty {
+                let next = group.firstIndex(where: { $0.cue.id == focusedCueID }).map { ($0 + 1) % group.count } ?? 0
+                session?.revealCue(group[next].cue)
+                return
+            }
+        }
+        super.mouseDown(with: event)
+    }
     private let editingUndoManager: UndoManager = {
         let manager = UndoManager()
         manager.levelsOfUndo = 100
@@ -225,6 +322,8 @@ final class EmphasisTextView: NSTextView {
 private struct NativeScriptEditor: NSViewRepresentable {
     let state: AppState
     let session: ScriptEditorSession
+    let cues: [Cue]
+    let focusedCueID: UUID?
     func makeNSView(context: Context) -> NSScrollView {
         let scroll = NSScrollView()
         scroll.hasVerticalScroller = true; scroll.drawsBackground = false
@@ -236,7 +335,7 @@ private struct NativeScriptEditor: NSViewRepresentable {
         view.isContinuousSpellCheckingEnabled = true
         view.usesFindBar = true; view.isIncrementalSearchingEnabled = true
         view.drawsBackground = false; view.insertionPointColor = .white
-        view.textContainerInset = NSSize(width: 8, height: 14)
+        view.textContainerInset = NSSize(width: 44, height: 14)
         view.minSize = NSSize(width: 0, height: 0)
         view.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         view.isVerticallyResizable = true; view.isHorizontallyResizable = false
@@ -246,9 +345,26 @@ private struct NativeScriptEditor: NSViewRepresentable {
         view.setAccessibilityLabel("Script text")
         scroll.documentView = view
         session.attach(view, state: state)
+        view.cues = cues
+        view.focusedCueID = focusedCueID
         return scroll
     }
-    func updateNSView(_ view: NSScrollView, context: Context) {}
+    func updateNSView(_ view: NSScrollView, context: Context) {
+        guard let editor = view.documentView as? EmphasisTextView else { return }
+        let revealAfterLayout = editor.focusedCueID != focusedCueID || editor.cues.count != cues.count
+        editor.cues = cues
+        editor.focusedCueID = focusedCueID
+        if revealAfterLayout, let id = focusedCueID, cues.contains(where: { $0.id == id }) {
+            let selection = editor.selectedRange()
+            // Adding a cue can enlarge the list and shorten the text viewport.
+            // Reveal again after SwiftUI has applied the new frame.
+            DispatchQueue.main.async { [weak editor] in
+                guard let editor, editor.focusedCueID == id, editor.selectedRange() == selection else { return }
+                editor.window?.contentView?.layoutSubtreeIfNeeded()
+                editor.scrollRangeToVisible(selection)
+            }
+        }
+    }
 }
 
 struct ScriptEditorView: View {
@@ -272,10 +388,10 @@ struct ScriptEditorView: View {
                     .font(.system(size: 10)).foregroundStyle(Palette.muted).lineLimit(1)
             }
             Divider().overlay(Palette.border)
-            NativeScriptEditor(state: state, session: session).frame(minHeight: 140)
+            NativeScriptEditor(state: state, session: session, cues: state.current.cues, focusedCueID: session.focusedCueID).frame(minHeight: 140)
             Divider().overlay(Palette.border)
             cueEditor
-            Text("Emphasis appears on both displays. Cues stay with their passage as you edit.")
+            Text("Numbered markers show cue locations. The orange flag marks the exact position. Click a number to find it.")
                 .font(.system(size: 10)).foregroundStyle(Palette.muted)
         }.padding(18).background(Palette.panel, in: RoundedRectangle(cornerRadius: 12))
             .onAppear { state.activeEditor = session; state.anchorCues() }
@@ -299,18 +415,26 @@ struct ScriptEditorView: View {
                     VStack(spacing: 6) {
                         ForEach(state.current.cues) { cue in
                             HStack(spacing: 8) {
-                                Button { session.revealCue(cue) } label: { Image(systemName: "bookmark.fill").foregroundStyle(Palette.accent) }
+                                Button { session.revealCue(cue) } label: {
+                                    Text("\((state.current.cues.firstIndex(where: { $0.id == cue.id }) ?? 0) + 1)")
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .frame(width: 26, height: 24)
+                                        .foregroundStyle(session.focusedCueID == cue.id ? Color.black : Palette.accent)
+                                        .background(Palette.accent.opacity(session.focusedCueID == cue.id ? 1 : 0.14), in: RoundedRectangle(cornerRadius: 5))
+                                }
                                     .buttonStyle(.plain).help("Find this cue in the script").accessibilityLabel("Find cue \(cue.title)")
                                 TextField("Cue name", text: Binding(get: { state.current.cues.first(where: { $0.id == cue.id })?.title ?? "" }, set: { session.renameCue(cue.id, title: $0) }))
                                     .textFieldStyle(.plain).font(.system(size: 11)).accessibilityLabel("Cue name")
                                 Button("Move here") { session.moveCue(cue.id) }.buttonStyle(.plain).foregroundStyle(Palette.muted)
                                     .help("Move this cue to the script cursor")
+                                Button("Find") { session.revealCue(cue) }.buttonStyle(.plain).foregroundStyle(Palette.accent)
+                                    .help("Show the exact cue position in the editor").accessibilityLabel("Show cue \(cue.title)")
                                 Button { session.removeCue(cue.id) } label: { Image(systemName: "trash") }
                                     .buttonStyle(.plain).foregroundStyle(Palette.muted).help("Remove cue").accessibilityLabel("Remove cue \(cue.title)")
                             }.font(.system(size: 10)).padding(8).background(.black.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
                         }
                     }
-                }.frame(height: min(104, CGFloat(state.current.cues.count) * 37))
+                }.frame(height: min(122, CGFloat(state.current.cues.count) * 46))
             }
         }
     }
