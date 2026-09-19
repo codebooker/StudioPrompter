@@ -69,7 +69,7 @@ cd StudioPrompter
 ./scripts/run.sh
 ```
 
-This creates and opens `dist/Prompter.app` with a local ad-hoc signature. It is a development build, not a notarized distribution. The app appears as **Prompter Studio** in macOS.
+This creates and opens `dist/Prompter.app` with a local ad-hoc signature. It is a development build, not a notarized distribution. The app appears as **StudioPrompter** in macOS.
 
 ## Built for the Mac
 

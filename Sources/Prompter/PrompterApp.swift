@@ -6,7 +6,7 @@ struct PrompterApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var state = AppState()
     var body: some Scene {
-        Window("Prompter Studio", id: "workspace") {
+        Window("StudioPrompter", id: "workspace") {
             WorkspaceView(state: state)
                 .onAppear { delegate.state = state; NSApp.activate(ignoringOtherApps: true) }
         }
