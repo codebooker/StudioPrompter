@@ -60,9 +60,6 @@ struct WorkspaceView: View {
             Spacer()
             Button(action: state.importScript) { Label("Import", systemImage: "square.and.arrow.down") }.buttonStyle(QuietButton())
             OutputMenu(state: state, prominent: true)
-            Button(action: state.toggleFullScreen) {
-                Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 13)).frame(width: 18, height: 16)
-            }.buttonStyle(QuietButton()).help("Enter / exit full screen (⌃⌘F)").accessibilityLabel("Toggle full screen")
         }.padding(.horizontal, 24).frame(height: 66)
     }
 
