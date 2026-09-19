@@ -23,12 +23,16 @@ struct WorkspaceView: View {
                 Rectangle().fill(Palette.border).frame(width: 1)
                 VStack(spacing: 0) {
                     scriptHeader
-                    if state.isEditing { editor }
-                    else { PreviewPanel(state: state, playback: state.playback).padding(.horizontal, 24) }
-                    TransportBar(state: state, playback: state.playback, voice: state.voice).padding(24)
+                    if state.isEditing { editor.padding(.bottom, 24) }
+                    else {
+                        PreviewPanel(state: state, playback: state.playback).padding(.horizontal, 24)
+                        TransportBar(state: state, playback: state.playback, voice: state.voice).padding(24)
+                    }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                Rectangle().fill(Palette.border).frame(width: 1)
-                Inspector(state: state, voice: state.voice).frame(width: 256)
+                if !state.isEditing {
+                    Rectangle().fill(Palette.border).frame(width: 1)
+                    Inspector(state: state, voice: state.voice).frame(width: 256)
+                }
             }
             Rectangle().fill(Palette.border).frame(height: 1)
             footer
@@ -89,11 +93,18 @@ struct WorkspaceView: View {
             Circle().fill(state.saveStatus == "Saved on this Mac" ? Palette.green : Palette.accent).frame(width: 5, height: 5)
             Text(state.saveStatus)
             Spacer()
-            keyHint("SPACE", "Play / pause")
-            keyHint("↑ ↓", "Pace")
-            keyHint("← →", "Scroll")
-            keyHint("R", "Reset")
-            keyHint("B", "Blackout")
+            if state.isEditing {
+                keyHint("⌘B", "Bold")
+                keyHint("⌘U", "Underline")
+                keyHint("⌘⌥B", "Add cue")
+                keyHint("⌘E", "Done editing")
+            } else {
+                keyHint("SPACE", "Play / pause")
+                keyHint("↑ ↓", "Pace")
+                keyHint("← →", "Scroll")
+                keyHint("R", "Reset")
+                keyHint("B", "Blackout")
+            }
         }.font(.system(size: 10)).foregroundStyle(Palette.muted).padding(.horizontal, 24).frame(height: 34)
     }
     private func keyHint(_ key: String, _ title: String) -> some View {
