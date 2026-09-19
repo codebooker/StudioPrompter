@@ -75,7 +75,14 @@ public actor WhisperService {
         let options = DecodingOptions(language: "en", temperatureFallbackCount: 0, sampleLength: 160, skipSpecialTokens: true, wordTimestamps: true, suppressBlank: true, concurrentWorkerCount: 1)
         let results = try await engine.transcribe(audioArray: samples, decodeOptions: options)
         let segments = results.flatMap(\.segments).filter { $0.noSpeechProb < 0.65 && $0.avgLogprob > -1.2 }
-        let words = segments.flatMap { $0.words ?? [] }.filter { $0.probability > 0.15 }.map { HeardWord(text: $0.word, start: Double($0.start), end: Double($0.end)) }
+        // Keep this explicit so Swift 6.0/6.1 can type-check it as well as
+        // newer toolchains. Preserve segment and timestamp order.
+        var words: [HeardWord] = []
+        for segment in segments {
+            for word in segment.words ?? [] where word.probability > 0.15 {
+                words.append(HeardWord(text: word.word, start: Double(word.start), end: Double(word.end)))
+            }
+        }
         return HeardSpeech(text: segments.map(\.text).joined().trimmingCharacters(in: .whitespacesAndNewlines), words: words)
     }
     public func transcribeFile(_ path: String) async throws -> HeardSpeech {
