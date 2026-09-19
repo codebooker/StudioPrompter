@@ -82,3 +82,14 @@ Ordinary builds compile out command activation, interpretation, and both command
 Live command testing on 2026-09-19 found incorrect actions for paragraph counts and numbered cues, false refusals, and “Q point” transcription rejected by validation. Those findings supersede the narrow command fixture benchmark as release evidence. Commands are deferred until their action schema and live behavior are improved.
 
 Tester updates use a separate feed. Promotion verifies the downloaded archive against the pinned Ed25519 key before extraction, then checks app signature integrity, identity, versions, and feed URL. Tester promotion permits non-notarized prereleases; stable promotion still requires notarization and Gatekeeper acceptance.
+
+### 0.1.0 tester release evidence · 2026-09-19
+
+- Release source: `a7df6af77dc446d14d07c75b162dbbca4ac78b96`, build 3. [Hosted CI passed](https://github.com/codebooker/StudioPrompter/actions/runs/35467691204); 289 deterministic assertions, channel isolation, bundle checks, feed validation, and cryptographic tamper rejection passed locally as well.
+- Fresh Base English download, cached reopen with downloads disabled, and quiet rolling-window speech following passed again.
+- Native release UI: hands-free controls and command AI setup absent in both panels. Play starts local Whisper; Pause returns to Mic off. The shipped bundle has no llama framework or command activation/interpretation entry points.
+- The public ZIP was downloaded without GitHub authentication; its SHA-256 matched the uploaded checksum, and its Ed25519 signature verified against the app’s pinned key.
+- [Automatic tester-feed promotion passed](https://github.com/codebooker/StudioPrompter/actions/runs/35467862234).
+- Full local update smoke test: a separate app copy marked 0.0.9/build 2 detected the published 0.1.0/build 3 through the public tester feed. **Install Update → Install and Relaunch** downloaded the GitHub archive and replaced the app successfully. The resulting binary matched the release binary, code-signature verification passed, and all four existing Markdown scripts retained identical content hashes. The existing Whisper cache remained in place.
+
+This establishes the update path on the development Mac, using a deliberately older version label, not two independently shipped releases. It does not establish first-launch Gatekeeper approval, microphone permission recovery, or installation on the friend’s Mac. Those are still tester acceptance items.
