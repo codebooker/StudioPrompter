@@ -496,10 +496,11 @@ private func voiceCommandChecks() {
         ("Go back one paragraph", .paragraph(-1)), ("Start from the top of the document", .top),
         ("Increase the font size", .font(4)), ("Decrease the font size", .font(-4)),
         ("Go back to the last cue point", .cue(-1)), ("Go to the next cue", .cue(1)),
+        ("Start", .resume), ("Let’s go", .resume), ("Let us go", .resume), ("Start the script please", .resume),
         ("Pause", .pause), ("Resume please", .resume), ("Never mind", .cancel), ("Stop listening", .stopListening)
     ]
     for (text, command) in accepted { expectEqual(VoiceCommand.parse(text), command) }
-    for text in ["don't pause", "go back two lines and delete this script", "go back twenty lines", "we should increase the font size sometime", "", "pause resume"] {
+    for text in ["don't pause", "do not start", "let’s go back two lines and pause", "go back two lines and delete this script", "go back twenty lines", "we should increase the font size sometime", "", "pause resume"] {
         expectTrue(VoiceCommand.parse(text) == nil)
     }
     func words(_ text: String, from start: Double = 0) -> [CommandWord] {

@@ -10,7 +10,7 @@ public enum VoiceCommand: Equatable, Sendable {
         if phrase.hasSuffix(" please") { phrase.removeLast(7) }
         switch phrase {
         case "pause", "pause the script", "stop", "stop scrolling": return .pause
-        case "resume", "resume the script", "continue", "keep going", "start scrolling", "play", "play the script": return .resume
+        case "start", "start the script", "go", "resume", "resume the script", "continue", "keep going", "start scrolling", "play", "play the script": return .resume
         case "cancel", "never mind", "nevermind": return .cancel
         case "stop listening", "turn off the microphone", "turn off the mic": return .stopListening
         case "start from the top", "start from the top of the document", "start from the top of the script", "go to the top", "back to the top", "start over", "restart the script": return .top

@@ -10,6 +10,9 @@ func runVoiceCommandChecks(service: WhisperService, commandModelPath: String? = 
     let model = CommandModel()
     if let path = commandModelPath { try await model.load(path: path) }
     var fixtures: [(String, VoiceCommand?)] = [
+        ("Hey Teleprompter, start.", .resume),
+        ("Hey Teleprompter, let's go.", .resume),
+        ("Hey, Teleprompter, resume.", .resume),
         ("Hey Teleprompter, go back two lines.", .lines(-2)),
         ("Hey, Teleprompter, start this paragraph over.", .paragraph(0)),
         ("Hey Teleprompter, increase the font size.", .font(4)),

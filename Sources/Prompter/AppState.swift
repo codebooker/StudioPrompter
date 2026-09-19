@@ -361,6 +361,8 @@ final class AppState: ObservableObject {
     private func handleKey(_ event: NSEvent) -> NSEvent? {
         guard !event.modifierFlags.contains(.command), !event.modifierFlags.contains(.control), !event.modifierFlags.contains(.option),
               !(NSApp.keyWindow is NSPanel), NSApp.modalWindow == nil else { return event }
+        // Esc still stops the mic when the script-search field has focus.
+        if event.keyCode == 53 { pausePlayback(stopListening: true); return event }
         if let text = NSApp.keyWindow?.firstResponder as? NSTextView, text.isEditable { return event }
         switch event.keyCode {
         case 49: if !isEditing || NSApp.keyWindow?.identifier?.rawValue == "presentation" { togglePlayback(); return nil }
@@ -368,7 +370,6 @@ final class AppState: ObservableObject {
         case 125: update { $0.settings.wordsPerMinute = max(30, $0.settings.wordsPerMinute - 5) }; return nil
         case 123: playback.scrub(playback.transport.progress - 0.025); return nil
         case 124: playback.scrub(playback.transport.progress + 0.025); return nil
-        case 53: pausePlayback(stopListening: true); return event
         default:
             if event.charactersIgnoringModifiers?.lowercased() == "r" { playback.reset(); return nil }
             if event.charactersIgnoringModifiers?.lowercased() == "b" { playback.isBlackedOut.toggle(); return nil }

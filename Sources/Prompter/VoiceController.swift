@@ -98,6 +98,10 @@ final class VoiceController: ObservableObject {
         if isListening {
             if !enabled && state?.playback.transport.isPlaying != true { stop() }
             else { beginRetake() }
+        } else if enabled {
+            start()
+        } else if isStarting {
+            stop()
         }
     }
     func pauseForCommands() {
@@ -192,8 +196,9 @@ final class VoiceController: ObservableObject {
     }
     func start(playWhenReady: Bool = false) {
         guard !isListening, !isStarting else { return }
-        guard isDownloaded || isReady else { error = "Choose Download model in the right panel to set up voice prompting."; return }
-        guard selectedChannel > 0 else { error = "Choose the interviewer's input channel in Voice settings before starting."; return }
+        guard state?.isEditing != true else { handsFreeCommands = false; error = "Finish editing before starting voice prompting."; return }
+        guard isDownloaded || isReady else { handsFreeCommands = false; error = "Download the speech model first, then turn on Hands-free commands or press Play."; return }
+        guard selectedChannel > 0 else { handsFreeCommands = false; error = "Choose the interviewer's input channel before starting."; return }
         enabled = true
         isStarting = true
         state?.playback.transport.pause()
@@ -205,7 +210,7 @@ final class VoiceController: ObservableObject {
                 prepare(allowDownload: false)
                 await preparation?.value
                 guard generation == run, !Task.isCancelled else { return }
-                guard isReady else { isStarting = false; return }
+                guard isReady else { isStarting = false; handsFreeCommands = false; return }
             }
             let allowed: Bool
             switch AVCaptureDevice.authorizationStatus(for: .audio) {
@@ -216,6 +221,7 @@ final class VoiceController: ObservableObject {
             guard generation == run, !Task.isCancelled else { return }
             isStarting = false
             guard allowed else {
+                handsFreeCommands = false
                 error = "Allow Prompter microphone access in System Settings → Privacy & Security → Microphone."
                 return
             }
@@ -379,7 +385,7 @@ final class VoiceController: ObservableObject {
         meter?.invalidate(); meter = nil
         microphone.stop()
         retake = RetakeGate(); waitingForRetake = false
-        isListening = false; isStarting = false; speaking = false; decibels = -100
+        isListening = false; isStarting = false; handsFreeCommands = false; speaking = false; decibels = -100
         awaitingCommand = false; commandNotice = nil; commands = VoiceCommandRouter()
         state?.playback.voiceDrive = nil
         state?.playback.transport.pause()

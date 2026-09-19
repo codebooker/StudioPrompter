@@ -11,7 +11,9 @@ struct VoicePromptControls: View {
                 voice.enabled = $0
             })).font(.system(size: 12, weight: .medium)).toggleStyle(.switch)
             if voice.enabled {
-                VoiceModelSetup(voice: voice)
+                if !voice.isDownloaded || voice.isPreparing || voice.modelSetupFailed {
+                    VoiceModelSetup(voice: voice)
+                }
                 Picker("Voice mode", selection: $voice.mode) {
                     Text("Follow script").tag(VoiceMode.follow)
                     Text("Adaptive pace").tag(VoiceMode.pace)
@@ -33,22 +35,13 @@ struct VoicePromptControls: View {
                 Toggle("Hands-free commands", isOn: Binding(get: { voice.handsFreeCommands }, set: voice.setHandsFreeCommands))
                     .font(.system(size: 11, weight: .medium)).toggleStyle(.switch)
                 if voice.handsFreeCommands {
-                    Text("Say “Hey Teleprompter”")
-                        .font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.accent)
-                    Text("Then give a command and briefly pause.")
+                    Label(voice.isStarting ? "Starting microphone…" : "Listening for “Hey Teleprompter”", systemImage: "mic.fill")
+                        .font(.system(size: 10, weight: .medium)).foregroundStyle(Palette.green)
+                    Text("Say “Hey Teleprompter, let’s go” to begin.")
                         .font(.system(size: 10)).foregroundStyle(Palette.muted)
-                    NaturalCommandsSettings(assistant: voice.assistant, setEnabled: voice.setNaturalCommands)
-                    DisclosureGroup("Command examples") {
-                        Text("Go back two lines\nStart this paragraph over\nStart from the top of the document\nMove to the next paragraph\nGo back to the last cue point\nIncrease / decrease the font size\nPause / resume\nCancel / stop listening")
-                            .font(.system(size: 10)).foregroundStyle(Palette.muted).padding(.top, 5)
-                    }.font(.system(size: 10))
-                    Button(voice.isListening || voice.isStarting ? "Stop listening" : "Listen for commands") {
-                        if voice.isListening || voice.isStarting { voice.stop() }
-                        else { voice.start() }
-                    }.buttonStyle(QuietButton()).disabled(!voice.isDownloaded || state.isEditing)
                 }
                 Button("Advanced voice settings…", action: state.openVoiceLab).font(.system(size: 11)).buttonStyle(.plain).foregroundStyle(Palette.accent)
-                Text(voice.handsFreeCommands ? "Pause keeps the mic on for commands. Stop listening or Esc turns it off. Commands use only the selected microphone channel." : "Play starts listening. Pause stops the mic.")
+                Text(voice.handsFreeCommands ? "Pause keeps listening. Esc turns the mic off." : "Play starts listening. Pause stops the mic.")
                     .font(.system(size: 10)).foregroundStyle(Palette.muted)
             }
         }.padding(15).background(Palette.panel, in: RoundedRectangle(cornerRadius: 10))
@@ -140,6 +133,7 @@ struct VoiceLabView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     inputCard
                     promptingCard
+                    commandsCard
                     modelCard
                     tuningCard
                     diagnosticsCard
@@ -269,6 +263,19 @@ struct VoiceLabView: View {
                     .font(.system(size: 11)).foregroundStyle(Palette.muted).lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }.voiceCard()
+    }
+
+    private var commandsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            cardHeading("Hands-free commands", subtitle: "Say “Hey Teleprompter,” then give one command and briefly pause.", icon: "waveform.bubble")
+            NaturalCommandsSettings(assistant: voice.assistant, setEnabled: voice.setNaturalCommands)
+            DisclosureGroup("Command examples") {
+                Text("Start / resume / let’s go\nGo back two lines\nStart this paragraph over\nStart from the top of the document\nMove to the next paragraph\nGo back to the last cue point\nIncrease / decrease the font size\nPause / cancel / stop listening")
+                    .font(.system(size: 11)).foregroundStyle(Palette.muted).padding(.top, 8)
+            }.font(.system(size: 12))
+            Text("Turn on Hands-free commands in the script sidebar to start listening immediately. Pause keeps the microphone available for commands; Esc or “stop listening” turns it off. Only your selected microphone channel is used.")
+                .font(.system(size: 11)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
         }.voiceCard()
     }
 
@@ -413,7 +420,7 @@ private struct VoiceTransport: View {
             VStack(alignment: .trailing, spacing: 4) {
                 Text(playback.transport.isPlaying ? (voice.controlling && playback.voiceDrive?.speaking == false ? playback.voiceDrive?.holdReason ?? "Waiting for speech" : "Prompting") : "Script paused")
                     .font(.system(size: 11, weight: .medium))
-                Text("Play starts listening. Pause stops both.").font(.system(size: 10)).foregroundStyle(Palette.muted)
+                Text(voice.handsFreeCommands ? "Pause keeps listening for commands." : "Play starts listening. Pause stops both.").font(.system(size: 10)).foregroundStyle(Palette.muted)
             }
         }
     }
