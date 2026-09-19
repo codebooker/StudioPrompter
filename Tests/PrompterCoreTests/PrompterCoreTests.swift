@@ -170,6 +170,7 @@ private func expectThrows<T>(_ expression: @autoclosure () throws -> T, file: St
         recognitionRecoveryChecks()
         retakeChecks()
         layoutChecks()
+        voiceCommandChecks()
         print("\(assertions) assertions across playback, persistence, speech alignment, and cadence checks; \(failures) failures")
         if failures > 0 { exit(1) }
     }
@@ -485,4 +486,83 @@ private func editorChecks() throws {
     expectEqual(try Data(contentsOf: directory.appendingPathComponent("library-before-markdown.json")), original)
     expectEqual(try LibraryStore.load(from: url).scripts, [script])
     expectFalse(FileManager.default.fileExists(atPath: folder.path))
+}
+
+
+private func voiceCommandChecks() {
+    let accepted: [(String, VoiceCommand)] = [
+        ("Can we go back up two lines?", .lines(-2)), ("Please scroll down 3 lines", .lines(3)), ("rewind two lines", .lines(-2)), ("go back to lines", .lines(-2)),
+        ("Let's start this paragraph over", .paragraph(0)), ("Move to the next paragraph", .paragraph(1)),
+        ("Go back one paragraph", .paragraph(-1)), ("Start from the top of the document", .top),
+        ("Increase the font size", .font(4)), ("Decrease the font size", .font(-4)),
+        ("Go back to the last cue point", .cue(-1)), ("Go to the next cue", .cue(1)),
+        ("Pause", .pause), ("Resume please", .resume), ("Never mind", .cancel), ("Stop listening", .stopListening)
+    ]
+    for (text, command) in accepted { expectEqual(VoiceCommand.parse(text), command) }
+    for text in ["don't pause", "go back two lines and delete this script", "go back twenty lines", "we should increase the font size sometime", "", "pause resume"] {
+        expectTrue(VoiceCommand.parse(text) == nil)
+    }
+    func words(_ text: String, from start: Double = 0) -> [CommandWord] {
+        text.split(separator: " ").enumerated().map { CommandWord(String($0.element), start: start + Double($0.offset) * 0.2, end: start + Double($0.offset + 1) * 0.2) }
+    }
+    for phrase in ["Hey Prompter pause", "Hey Studio Prompter pause", "Hey Studio Control pause", "Hey Studio pause", "Hey the Studio Control pause", "The studio prompter is ready", "Hey the studio prompter pause"] {
+        var router = VoiceCommandRouter()
+        expectEqual(router.consume(words(phrase), audioEnd: 3, quiet: true), .reading)
+    }
+    var router = VoiceCommandRouter()
+    let full = words("Hey Teleprompter go back two lines")
+    expectEqual(router.consume(Array(full.prefix(2)), audioEnd: 0.7, quiet: false), .listening)
+    expectEqual(router.consume(Array(full.prefix(5)), audioEnd: 1.3, quiet: false), .listening)
+    expectEqual(router.consume(full, audioEnd: 1.8, quiet: false), .listening)
+    expectEqual(router.consume(full, audioEnd: 2.3, quiet: true), .execute(.lines(-2)))
+    expectFalse(router.isListening)
+    expectEqual(router.consume(full, audioEnd: 2.6, quiet: true), .reading)
+    expectEqual(router.consume(full, audioEnd: 3, quiet: true), .reading)
+    let again = words("Hey Teleprompter go back two lines", from: 3)
+    expectEqual(router.consume(again, audioEnd: 4.5, quiet: true), .listening)
+    expectEqual(router.consume(again, audioEnd: 4.9, quiet: true), .execute(.lines(-2)))
+    // A corrected hypothesis must settle before executing its final count.
+    var punctuation = VoiceCommandRouter()
+    let punctuated = words("HEY, TELEPROMPTER! pause.")
+    expectEqual(punctuation.consume(punctuated, audioEnd: 1.1, quiet: true), .listening)
+    expectEqual(punctuation.consume(punctuated, audioEnd: 1.5, quiet: true), .execute(.pause))
+    var revised = VoiceCommandRouter()
+    expectEqual(revised.consume(full, audioEnd: 1.8, quiet: true), .listening)
+    let correction = words("Hey Teleprompter go back three lines")
+    expectEqual(revised.consume(correction, audioEnd: 2.1, quiet: true), .listening)
+    expectEqual(revised.consume(correction, audioEnd: 2.5, quiet: true), .execute(.lines(-3)))
+    var timeout = VoiceCommandRouter()
+    expectEqual(timeout.consume(words("Hey Teleprompter"), audioEnd: 1, quiet: true), .listening)
+    expectEqual(timeout.consume([], audioEnd: 7.1, quiet: true), .unrecognized)
+    expectEqual(timeout.consume(words("Hey Teleprompter"), audioEnd: 7.4, quiet: true), .reading)
+    var late = VoiceCommandRouter(after: 4)
+    expectEqual(late.consume(full, audioEnd: 5, quiet: true), .reading)
+    var unknown = VoiceCommandRouter()
+    let invalid = words("Hey Teleprompter order a pizza")
+    expectEqual(unknown.consume(invalid, audioEnd: 2, quiet: true), .listening)
+    expectEqual(unknown.consume(invalid, audioEnd: 2.5, quiet: true), .unrecognized)
+    var speaking = VoiceCommandRouter()
+    expectEqual(speaking.consume(full, audioEnd: 2, quiet: false), .listening)
+    expectEqual(speaking.consume(full, audioEnd: 9, quiet: false), .unrecognized)
+
+    var script = Script(title: "Navigation", text: "First paragraph has enough words to wrap across several reading lines. Keep reading this opening.\n\nSecond paragraph is here with another sentence and more words.\n\nThird paragraph finishes the script.")
+    script.settings.fontSize = 58
+    let layout = ScriptCueLayout(script)
+    let second = (script.text as NSString).range(of: "Second").location
+    let third = (script.text as NSString).range(of: "Third").location
+    expectEqual(VoiceNavigation.destination(for: .paragraph(1), script: script, progress: 0), layout.progress(at: second))
+    expectEqual(VoiceNavigation.destination(for: .paragraph(0), script: script, progress: layout.progress(at: second) + 0.01), layout.progress(at: second))
+    expectEqual(VoiceNavigation.destination(for: .paragraph(-1), script: script, progress: layout.progress(at: third)), layout.progress(at: second))
+    expectEqual(VoiceNavigation.destination(for: .top, script: script, progress: 0.8), 0)
+    expectEqual(VoiceNavigation.destination(for: .lines(-10), script: script, progress: 0), 0)
+    let nextLine = VoiceNavigation.destination(for: .lines(1), script: script, progress: 0)!
+    expectTrue(nextLine > 0 && nextLine < layout.progress(at: second))
+    expectEqual(VoiceNavigation.destination(for: .lines(-1), script: script, progress: nextLine), 0)
+    expectTrue(VoiceNavigation.destination(for: .cue(-1), script: script, progress: 0.8) == nil)
+    script.cues = [Cue(title: "Second", progress: 0, characterOffset: second)]
+    expectEqual(VoiceNavigation.destination(for: .cue(-1), script: script, progress: layout.progress(at: third)), layout.progress(at: second))
+    expectEqual(VoiceNavigation.destination(for: .cue(1), script: script, progress: 0), layout.progress(at: second))
+    let empty = Script(title: "Empty", text: "")
+    expectEqual(VoiceNavigation.destination(for: .lines(2), script: empty, progress: 0), 0)
+    expectEqual(VoiceNavigation.destination(for: .paragraph(1), script: empty, progress: 0), 0)
 }

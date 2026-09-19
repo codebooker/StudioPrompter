@@ -33,7 +33,9 @@ Keep the controls on your Mac. Send a clean, full-screen script to the talent mo
 
 **Adaptive pace** adjusts to your speaking cadence, easing into faster speech and slowing down when you do. Nearby phrase matches help keep the guide close to your place.
 
-**Take over whenever you need to.** While voice prompting is running, scroll back to a line. The mic stays on; the script waits for fresh speech at the new position before following again. Pause still stops both the microphone and prompting. With voice prompting off, manual scrolling pauses fixed-speed playback.
+**Take over whenever you need to.** While voice prompting is running, scroll back to a line. The mic stays on; the script waits for fresh speech at the new position before following again. Pause stops both the microphone and prompting unless you enable Hands-free commands. With voice prompting off, manual scrolling pauses fixed-speed playback.
+
+**Control a solo session by voice.** Enable Hands-free commands and say “Hey Teleprompter,” followed by a command: go back two lines, restart a paragraph, jump to a cue, resize the text, or pause and resume. It uses the existing local Whisper model. In this mode Pause leaves the microphone available for commands; Stop listening turns it off. Commands and feedback stay separate from your script.
 
 Voice features are in beta. Recognition and responsiveness depend on your Mac, microphone, speaking style, and script. English is currently supported.
 

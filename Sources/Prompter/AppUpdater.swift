@@ -37,7 +37,7 @@ final class AppUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
     }
     func updater(_ updater: SPUUpdater, willInstallUpdate item: SUAppcastItem) {
         // Installation is user-confirmed. Preserve any edits made during download.
-        state?.pausePlayback()
+        state?.pausePlayback(stopListening: true)
         state?.save()
     }
     func updaterWillRelaunchApplication(_ updater: SPUUpdater) { state?.save() }

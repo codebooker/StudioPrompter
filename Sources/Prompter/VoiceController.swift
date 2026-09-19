@@ -35,6 +35,11 @@ final class VoiceController: ObservableObject {
     @Published var downloadProgress = 0.0
     @Published var status = "Local Whisper · English"
     @Published var transcript = ""
+    @Published var handsFreeCommands = false
+    @Published var awaitingCommand = false
+    @Published var commandNotice: String?
+    private var commandNoticeUntil = 0.0
+    private var commands = VoiceCommandRouter()
     @Published var decibels = -100.0
     @Published var speaking = false
     @Published var measuredPace: Double?
@@ -80,6 +85,28 @@ final class VoiceController: ObservableObject {
         return selectedChannel > 0 ? "\(device) · Channel \(selectedChannel)" : "Choose an input channel"
     }
     var controlling: Bool { isListening }
+    func setHandsFreeCommands(_ enabled: Bool) {
+        handsFreeCommands = enabled
+        commands = VoiceCommandRouter(after: microphone.snapshot().end)
+        awaitingCommand = false; commandNotice = nil
+        if isListening {
+            if !enabled && state?.playback.transport.isPlaying != true { stop() }
+            else { beginRetake() }
+        }
+    }
+    func pauseForCommands() {
+        state?.playback.transport.pause()
+        beginRetake()
+        status = "Script paused · listening for Hey Teleprompter"
+    }
+    private func showCommandNotice(_ text: String) {
+        commandNotice = text
+        commandNoticeUntil = ProcessInfo.processInfo.systemUptime + 4
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+            guard let self, !self.awaitingCommand, ProcessInfo.processInfo.systemUptime >= self.commandNoticeUntil else { return }
+            self.commandNotice = nil
+        }
+    }
     var effectivePace: Double {
         let heard = measuredPace ?? state?.current.settings.wordsPerMinute ?? 140
         return min(maximumPace, max(minimumPace, heard))
@@ -148,6 +175,7 @@ final class VoiceController: ObservableObject {
                 microphone.setThreshold(noiseFloor)
                 try microphone.start(deviceID: selectedMicrophone == 0 ? nil : selectedMicrophone, channel: selectedChannel)
                 isListening = true; transcript = ""; estimator = PaceEstimator(); measuredPace = nil
+                commands = VoiceCommandRouter(); awaitingCommand = false; commandNotice = nil
                 lastRecognition = 0; recognitionUpdates = RecognitionUpdates(); matchedWord = nil; matchConfidence = nil; minimumSpeechTime = 0
                 retake = RetakeGate(); waitingForRetake = false
                 status = "Listening — start speaking"
@@ -184,6 +212,7 @@ final class VoiceController: ObservableObject {
             let now = ProcessInfo.processInfo.systemUptime
             self.decibels = snapshot.decibels
             self.speaking = now - snapshot.lastVoice < self.pauseDelay
+            if !self.awaitingCommand && now > self.commandNoticeUntil { self.commandNotice = nil }
             if now - snapshot.lastBuffer > 3 {
                 self.stop(); self.error = "Microphone input stopped. Check the connection and start listening again."
                 return
@@ -193,7 +222,31 @@ final class VoiceController: ObservableObject {
         if let meter { RunLoop.main.add(meter, forMode: .common) }
     }
     private func consume(_ speech: HeardSpeech, snapshot: AudioSnapshot) {
-        let words = speech.words.filter { snapshot.start + $0.start >= minimumSpeechTime }
+        if handsFreeCommands {
+            let words = speech.words.map { CommandWord($0.text, start: snapshot.start + $0.start, end: snapshot.start + $0.end) }
+            let event = commands.consume(words, audioEnd: snapshot.end,
+                quiet: ProcessInfo.processInfo.systemUptime - snapshot.lastVoice >= 0.65)
+            switch event {
+            case .reading: break
+            case .listening:
+                if !awaitingCommand { beginRetake() }
+                awaitingCommand = true
+                commandNotice = "Listening for your command…"
+                updateDrive(); return
+            case .execute(let command):
+                awaitingCommand = false
+                beginRetake()
+                showCommandNotice(state?.performVoiceCommand(command) ?? "Command unavailable")
+                updateDrive(); return
+            case .unrecognized:
+                awaitingCommand = false
+                beginRetake()
+                showCommandNotice("Command not recognized · try again")
+                updateDrive(); return
+            }
+        }
+        let cutoff = max(minimumSpeechTime, handsFreeCommands ? commands.consumedThrough : 0)
+        let words = speech.words.filter { snapshot.start + $0.start >= cutoff }
         guard let last = words.last else { return }
         let phrase = words.map(\.text).joined(separator: " ")
         let end = snapshot.start + last.end
@@ -242,7 +295,7 @@ final class VoiceController: ObservableObject {
                 if matchedWord < scriptWords.count - 1 { target = min(target ?? 0, 0.999) }
                 else { target = 1 }
             }
-            let advancing = !retake.isWaiting && (mode == .follow ? target != nil : speaking && fresh && measuredPace != nil)
+            let advancing = !awaitingCommand && !retake.isWaiting && (mode == .follow ? target != nil : speaking && fresh && measuredPace != nil)
             let reason = retake.isWaiting ? "Ready for retake — read from here" : (mode == .follow && (speaking || fresh) ? "Finding your place" : "Waiting for speech")
             state.playback.voiceDrive = VoiceDrive(speaking: advancing, wordsPerMinute: effectivePace, target: target, followsScript: mode == .follow, lineStep: positions.lineStep, holdReason: reason)
         } else { state.playback.voiceDrive = nil }
@@ -271,6 +324,7 @@ final class VoiceController: ObservableObject {
         microphone.stop()
         retake = RetakeGate(); waitingForRetake = false
         isListening = false; isStarting = false; speaking = false; decibels = -100
+        awaitingCommand = false; commandNotice = nil; commands = VoiceCommandRouter()
         state?.playback.voiceDrive = nil
         state?.playback.transport.pause()
         status = isReady ? "Whisper ready · microphone off" : "Local Whisper · English"

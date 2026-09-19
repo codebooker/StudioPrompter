@@ -7,7 +7,7 @@ struct VoicePromptControls: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Toggle("Voice prompting", isOn: Binding(get: { voice.enabled }, set: {
-                state.pausePlayback()
+                state.pausePlayback(stopListening: true)
                 voice.enabled = $0
             })).font(.system(size: 12, weight: .medium)).toggleStyle(.switch)
             if voice.enabled {
@@ -29,8 +29,25 @@ struct VoicePromptControls: View {
                         ForEach(voice.channels) { channel in Text(channel.name).tag(channel.id) }
                     }.labelsHidden().accessibilityLabel("Input channel")
                 }.disabled(voice.isListening || voice.isStarting)
+                Divider().overlay(Palette.border)
+                Toggle("Hands-free commands", isOn: Binding(get: { voice.handsFreeCommands }, set: voice.setHandsFreeCommands))
+                    .font(.system(size: 11, weight: .medium)).toggleStyle(.switch)
+                if voice.handsFreeCommands {
+                    Text("Say “Hey Teleprompter”")
+                        .font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.accent)
+                    Text("Then give a command and briefly pause.")
+                        .font(.system(size: 10)).foregroundStyle(Palette.muted)
+                    DisclosureGroup("Command examples") {
+                        Text("Go back two lines\nStart this paragraph over\nStart from the top of the document\nMove to the next paragraph\nGo back to the last cue point\nIncrease / decrease the font size\nPause / resume\nCancel / stop listening")
+                            .font(.system(size: 10)).foregroundStyle(Palette.muted).padding(.top, 5)
+                    }.font(.system(size: 10))
+                    Button(voice.isListening || voice.isStarting ? "Stop listening" : "Listen for commands") {
+                        if voice.isListening || voice.isStarting { voice.stop() }
+                        else { voice.start() }
+                    }.buttonStyle(QuietButton()).disabled(!voice.isDownloaded || state.isEditing)
+                }
                 Button("Advanced voice settings…", action: state.openVoiceLab).font(.system(size: 11)).buttonStyle(.plain).foregroundStyle(Palette.accent)
-                Text("Play starts listening. Pause stops the mic.")
+                Text(voice.handsFreeCommands ? "Pause keeps the mic on for commands. Stop listening or Esc turns it off. Commands use only the selected microphone channel." : "Play starts listening. Pause stops the mic.")
                     .font(.system(size: 10)).foregroundStyle(Palette.muted)
             }
         }.padding(15).background(Palette.panel, in: RoundedRectangle(cornerRadius: 10))
@@ -39,6 +56,7 @@ struct VoicePromptControls: View {
 
 struct VoicePlaybackStatus: View {
     @ObservedObject var voice: VoiceController
+    @ObservedObject var playback: Playback
     var body: some View {
         if voice.enabled || voice.error != nil {
             HStack(spacing: 7) {
@@ -57,10 +75,14 @@ struct VoicePlaybackStatus: View {
     }
     private var message: String {
         if let error = voice.error { return error }
+        if let notice = voice.commandNotice { return notice }
         if voice.isStarting { return voice.isPreparing ? "Preparing voice recognition… Play again to cancel." : "Starting microphone…" }
         if voice.isPreparing { return voice.status }
         if !voice.isDownloaded { return "Download a speech model to enable voice prompting" }
         if voice.isListening {
+            if voice.handsFreeCommands {
+                return playback.transport.isPlaying ? "Mic on · Hey Teleprompter ready · \(voice.mode.rawValue)" : "Script paused · mic on · Say Hey Teleprompter, resume"
+            }
             if voice.waitingForRetake { return "Mic on · Ready for retake — read from here" }
             return "Listening · \(voice.mode.rawValue) · \(voice.inputSummary)"
         }

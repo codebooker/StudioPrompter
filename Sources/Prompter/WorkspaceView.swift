@@ -267,7 +267,7 @@ struct TransportBar: View {
                     (Text("\(Int(playback.voiceDrive?.wordsPerMinute ?? state.current.settings.wordsPerMinute))").font(.system(size: 21, weight: .regular, design: .monospaced)) + Text(" wpm").font(.system(size: 10)).foregroundColor(Palette.muted))
                 }.frame(width: 83, alignment: .trailing)
             }
-            VoicePlaybackStatus(voice: voice)
+            VoicePlaybackStatus(voice: voice, playback: playback)
         }.padding(compact ? 18 : 0).background(Palette.background)
     }
     private func iconButton(_ icon: String, help: String, action: @escaping () -> Void) -> some View {

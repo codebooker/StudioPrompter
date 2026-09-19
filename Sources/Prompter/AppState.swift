@@ -88,10 +88,10 @@ final class AppState: ObservableObject {
         configurePlayback()
         playback.onManualPosition = { [weak self] keepListening in
             guard let self else { return }
-            if keepListening { self.voice.beginRetake() }
+            if keepListening || (self.voice.handsFreeCommands && self.voice.isListening) { self.voice.beginRetake() }
             else { self.voice.stop(); self.voice.resetAnchor() }
         }
-        playback.onPlaybackEnded = { [weak self] in self?.voice.stop() }
+        playback.onPlaybackEnded = { [weak self] in self?.pausePlayback() }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             self?.handleKey(event) ?? event
         }
@@ -101,7 +101,7 @@ final class AppState: ObservableObject {
             if let id = self.outputScreenID {
                 if let screen = self.screens.first(where: { Self.screenID($0) == id }) {
                     self.outputWindow?.setFrame(screen.frame, display: true)
-                } else { self.stopOutput(); self.pausePlayback() }
+                } else { self.stopOutput(); self.pausePlayback(stopListening: true) }
             }
         }
     }
@@ -110,16 +110,55 @@ final class AppState: ObservableObject {
     func togglePlayback() {
         if playback.transport.isPlaying || voice.isStarting { pausePlayback(); return }
         if voice.enabled {
-            if voice.isListening { playback.toggle() }
+            if voice.isListening {
+                if voice.handsFreeCommands { voice.beginRetake() }
+                playback.toggle()
+            }
             else { voice.start(playWhenReady: true) }
         } else { playback.toggle() }
     }
-    func pausePlayback() { voice.stop(); playback.transport.pause() }
+    func pausePlayback(stopListening: Bool = false) {
+        if !stopListening && voice.handsFreeCommands && voice.isListening { voice.pauseForCommands() }
+        else { voice.stop(); playback.transport.pause() }
+    }
+    func performVoiceCommand(_ command: VoiceCommand) -> String {
+        guard (!isEditing && NSApp.modalWindow == nil) || command == .pause || command == .stopListening else { return "Close the editor or dialog to use voice commands" }
+        let position = playback.transport.progress
+        switch command {
+        case .pause:
+            voice.pauseForCommands(); return "Paused · say Hey Teleprompter, resume"
+        case .resume:
+            playback.transport.play(countdown: 0, hasContent: current.wordCount > 0)
+            voice.beginRetake(); return "Ready · start reading"
+        case .cancel: return "Command cancelled"
+        case .stopListening:
+            voice.stop(); return "Microphone off · use Play to listen again"
+        case .font(let delta):
+            let offset = ScriptCueLayout(current).offset(at: position)
+            let playing = playback.transport.isPlaying
+            update { $0.settings.fontSize = min(90, max(32, $0.settings.fontSize + Double(delta))) }
+            playback.transport.reposition(to: ScriptCueLayout(current).progress(at: offset), preservingPlayback: playing)
+            voice.beginRetake()
+            return "Text size \(Int(current.settings.fontSize))"
+        default:
+            guard let destination = VoiceNavigation.destination(for: command, script: current, progress: position) else { return "No cue in that direction" }
+            playback.transport.reposition(to: min(destination, 0.999999), preservingPlayback: false)
+            playback.transport.play(countdown: 0, hasContent: current.wordCount > 0)
+            voice.beginRetake()
+            switch command {
+            case .lines(let count): return "Moved \(abs(count)) \(abs(count) == 1 ? "line" : "lines") \(count < 0 ? "back" : "forward")"
+            case .paragraph(let delta): return delta == 0 ? "Restarted paragraph" : (delta < 0 ? "Previous paragraph" : "Next paragraph")
+            case .top: return "Back to the beginning"
+            default: return "\(command == .cue(-1) ? "Previous" : "Next") cue"
+            }
+        }
+    }
     var filteredScripts: [Script] {
         library.scripts.filter { search.isEmpty || $0.title.localizedCaseInsensitiveContains(search) || $0.text.localizedCaseInsensitiveContains(search) }
     }
     func select(_ id: UUID) {
         guard id != library.selectedID else { return }
+        voice.stop()
         playback.reset()
         library.selectedID = id
         configurePlayback()
@@ -164,6 +203,7 @@ final class AppState: ObservableObject {
         catch { saveStatus = "Could not save"; errorMessage = "Could not save your library: \(error.localizedDescription)" }
     }
     func newScript() {
+        voice.stop()
         playback.reset()
         let script = Script(title: "Untitled script", text: "")
         library.scripts.insert(script, at: 0)
@@ -195,7 +235,7 @@ final class AppState: ObservableObject {
         scheduleSave()
     }
     func toggleEditing() {
-        pausePlayback()
+        pausePlayback(stopListening: true)
         isEditing.toggle()
         if !isEditing { NSApp.keyWindow?.makeFirstResponder(nil) }
     }
@@ -327,7 +367,7 @@ final class AppState: ObservableObject {
         case 125: update { $0.settings.wordsPerMinute = max(30, $0.settings.wordsPerMinute - 5) }; return nil
         case 123: playback.scrub(playback.transport.progress - 0.025); return nil
         case 124: playback.scrub(playback.transport.progress + 0.025); return nil
-        case 53: pausePlayback(); return event
+        case 53: pausePlayback(stopListening: true); return event
         default:
             if event.charactersIgnoringModifiers?.lowercased() == "r" { playback.reset(); return nil }
             if event.charactersIgnoringModifiers?.lowercased() == "b" { playback.isBlackedOut.toggle(); return nil }

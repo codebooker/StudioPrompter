@@ -154,8 +154,32 @@ private struct TalentCanvas: View {
                 Text("\(Int(ceil(playback.transport.countdownRemaining)))")
                     .font(.system(size: 140, weight: .semibold, design: .rounded)).foregroundStyle(.white)
             }
+            VoiceCommandNotice(voice: state.voice, playback: playback)
+                .scaleEffect(x: state.current.settings.mirrorHorizontal ? -1 : 1,
+                             y: state.current.settings.mirrorVertical ? -1 : 1)
             if playback.isBlackedOut { Color.black }
         }.ignoresSafeArea()
+    }
+}
+
+private struct VoiceCommandNotice: View {
+    @ObservedObject var voice: VoiceController
+    @ObservedObject var playback: Playback
+    private var message: String? {
+        voice.commandNotice ?? (voice.handsFreeCommands && voice.isListening && !playback.transport.isPlaying
+            ? "Paused · say Hey Teleprompter, resume" : nil)
+    }
+    var body: some View {
+        VStack {
+            Spacer()
+            if let message {
+                Text(message).font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(.white).padding(.horizontal, 20).padding(.vertical, 12)
+                    .background(Color.black.opacity(0.88), in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Palette.accent.opacity(0.6)))
+                    .padding(24)
+            }
+        }.allowsHitTesting(false)
     }
 }
 

@@ -8,7 +8,7 @@ A green automated build is necessary, but does not establish comfortable live pr
 
 | Area | Repeatable check | Current evidence |
 | --- | --- | --- |
-| Transport and persistence | `swift run PrompterChecks` | 181 assertions pass: countdown, frame independence, pause/end, library round-trip, legacy font migration, typeface persistence, corrupt-file preservation, Markdown migration/round-trip, emphasis, cue anchors, and rich-text round-trip |
+| Transport and persistence | `swift run PrompterChecks` | 244 assertions pass: countdown, frame independence, pause/end, library round-trip, legacy font migration, typeface persistence, corrupt-file preservation, Markdown migration/round-trip, emphasis, cue anchors, and rich-text round-trip |
 | Speech matching and motion | Same runner | Skipped/filler words, unrelated speech rejection, recognition corrections, quiet-speech recovery logic, cadence smoothing, bounded motion, layout and focus geometry |
 | Retake control | Same runner | Active playback preserved, countdown cancelled, old/far location rejected, scrolling-settle gate, fresh nearby match releases hold, explicit pause preserved |
 | Input isolation | `swift run -c release WhisperCheck --channels` | Synthetic 20-channel planar/interleaved input: selected host channel reaches mono recognition, other channels remain silent, invalid channel rejected |
@@ -57,3 +57,12 @@ Native smoke check (2026-09-19): selected bold + underline, cleared and restored
 `check.sh` validates the embedded Sparkle helpers and runs `test-update-feed.py`. Release promotion additionally verifies the archive’s Ed25519 signature before extraction, Apple code signing, stapled notarization, and Gatekeeper acceptance. Test the menu’s busy-state gating, no-update result, network failure, cancellation, and a full Install & Relaunch between two signed/notarized builds before public distribution. Preserve the user’s library and model cache throughout. See [UPDATES.md](UPDATES.md).
 
 Development check (2026-09-19): the native update window read the public GitHub feed and reported the installed version up to date. The menu command was disabled during playback and enabled again when paused. Sparkle generated an appcast signed with the release Mac’s Keychain key; verification against the app’s pinned public key accepted the original archive and rejected a same-size tampered copy. The automated cryptographic self-test also rejects truncation and the wrong signing key. These checks used a local development archive; full signed/notarized installation, cancellation, and network-failure testing remain outstanding.
+
+
+## Hands-free command validation
+
+The core checks cover the complete wake phrase, rejection of shorter/interrupted phrases, bounded command parsing, negation and extra-instruction rejection, partial windows, revised recognition, repeat suppression, fresh repeated commands, activation cutoffs, silence/timeout handling, and rendered-line/paragraph/cue destinations. `swift run -c release WhisperCheck --commands` uses synthesized audio with the actual local Base English model in rolling windows; navigation, paragraph restart, and font-size commands each execute once, while the short wake phrase and ordinary conversation execute none. It never opens the microphone.
+
+Before release, test a live presenter with the selected microphone in both Follow script and Adaptive pace: wake detection and response time, pause/resume, commands at script end, repeated retakes, font reflow, cue boundaries, noise and guest speech, unknown commands, Stop listening/Esc, and mirrored talent feedback. The full wake phrase is “Hey Teleprompter”; the originally considered product-name phrase was misrecognized in the synthetic speech test. Synthetic success does not establish a live false-activation rate.
+
+Native smoke check (2026-09-19): enabled Hands-free commands, started microphone-only listening while paused, played and paused without stopping capture, and confirmed Stop listening returned to Mic off. The right panel shows the wake phrase and command examples. Live speaker recognition and command feedback on the talent display still require presenter acceptance.

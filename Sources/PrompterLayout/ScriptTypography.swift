@@ -104,3 +104,46 @@ public final class ScriptCueLayout {
         return layout.characterIndexForGlyph(at: min(glyph, max(0, layout.numberOfGlyphs - 1)))
     }
 }
+
+/// Navigation uses the rendered reading lines shared by both displays.
+public enum VoiceNavigation {
+    public static func destination(for command: VoiceCommand, script: Script, progress: Double) -> Double? {
+        let mapping = ScriptCueLayout(script)
+        let currentOffset = mapping.offset(at: progress)
+        switch command {
+        case .top: return 0
+        case .lines(let delta):
+            let storage = NSTextStorage(attributedString: ScriptTypography.text(script.text, settings: script.settings, emphasis: script.emphasis))
+            let layout = NSLayoutManager()
+            let container = NSTextContainer(size: NSSize(width: 1000 - script.settings.margin * 2, height: CGFloat.greatestFiniteMagnitude))
+            container.lineFragmentPadding = 0
+            layout.addTextContainer(container); storage.addLayoutManager(layout)
+            layout.ensureLayout(for: container)
+            var offsets: [Int] = []
+            layout.enumerateLineFragments(forGlyphRange: NSRange(location: 0, length: layout.numberOfGlyphs)) { _, _, _, glyphs, _ in
+                let range = layout.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
+                if !(script.text as NSString).substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { offsets.append(range.location) }
+            }
+            guard !offsets.isEmpty else { return 0 }
+            let index = offsets.lastIndex(where: { $0 <= currentOffset }) ?? 0
+            return mapping.progress(at: offsets[min(offsets.count - 1, max(0, index + delta))])
+        case .paragraph(let delta):
+            var offsets: [Int] = []
+            let text = script.text as NSString
+            var cursor = 0
+            while cursor < text.length {
+                let range = text.paragraphRange(for: NSRange(location: cursor, length: 0))
+                let content = text.rangeOfCharacter(from: .whitespacesAndNewlines.inverted, options: [], range: range)
+                if content.location != NSNotFound { offsets.append(content.location) }
+                cursor = NSMaxRange(range)
+            }
+            guard !offsets.isEmpty else { return 0 }
+            let index = offsets.lastIndex(where: { $0 <= currentOffset }) ?? 0
+            return mapping.progress(at: offsets[min(offsets.count - 1, max(0, index + delta))])
+        case .cue(let direction):
+            let positions = script.cues.map { $0.characterOffset.map(mapping.progress(at:)) ?? $0.progress }.sorted()
+            return direction < 0 ? positions.last(where: { $0 < progress - 0.005 }) : positions.first(where: { $0 > progress + 0.005 })
+        default: return nil
+        }
+    }
+}
