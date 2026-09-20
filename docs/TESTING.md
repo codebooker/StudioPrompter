@@ -207,3 +207,13 @@ This release also includes Webcam Layout, unified output selection, bookmarks, c
 - Full update from an unmodified copy of the published 0.1.0 archive: Check for Updates displayed 0.1.1, Install Update downloaded it, and Install and Relaunch completed. The installed app reported 0.1.1, matched the release executable, and passed code-signature verification. All four Markdown script content hashes remained unchanged; all 46 existing model-cache files remained present with the same sizes.
 
 This verifies the real 0.1.0-to-0.1.1 update on the development Mac. New-recipient first-launch approval, physical mixer/external-display behavior on this exact candidate, minimum-OS hardware, and 8 GB command-model performance still need broader tester feedback.
+
+## 0.2.0 release preparation · 2026-09-19
+
+- Companion source, saved-pairing protocol, and producer removal controls pushed in `6df19bb`. Hosted CI passed both Mac configurations and the iPad compile job.
+- Mac candidate 0.2.0 (build 5) packaged from `56308d5`, with experimental commands enabled under tester mode. Full core/layout, encrypted-link and saved-pairing, microphone-channel, bundle, feed-validation, and update-signature checks passed.
+- Draft GitHub prerelease contains the ZIP, checksum, build information, and signed tester appcast. It is not published; the public update feed still points to 0.1.1.
+- Candidate launched on the development Mac and loaded the four existing scripts and two Test Script bookmarks. All 52 checked script/metadata/model files remained unchanged (script/metadata hashes and model-file sizes). This is a local app-replacement smoke test, not yet a full Sparkle 0.1.1 → 0.2.0 Install & Relaunch test.
+- The Mac candidate is ad-hoc signed, not Developer ID signed/notarized. No Developer ID identity was present during preparation.
+- Companion Release archive and App Store Connect distribution export succeeded. Export inspection confirmed version 0.1.0, build 2, iPad-only device family, and included privacy manifest. This artifact has not yet been uploaded or installed through TestFlight.
+- App Store Connect authentication/app record, beta review contact, upload processing, internal TestFlight installation, full updater exercise, and longer-session smoothness remain before broader distribution. See TESTFLIGHT.md for the prepared submission material.

@@ -17,4 +17,19 @@ plistlib.dump({'method':'app-store-connect','destination':'export','signingStyle
 PY
 xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportOptionsPlist .build/companion-export-options.plist \
   -exportPath "$EXPORT" -allowProvisioningUpdates
+python3 - "$EXPORT" <<'PYVERIFY'
+import pathlib,plistlib,re,sys,zipfile
+spec=pathlib.Path('iPad/project.yml').read_text()
+version=re.search(r"MARKETING_VERSION: '([^']+)'",spec).group(1)
+build=re.search(r"CURRENT_PROJECT_VERSION: '([^']+)'",spec).group(1)
+with zipfile.ZipFile(pathlib.Path(sys.argv[1])/'StudioPrompterCompanion.ipa') as archive:
+    root='Payload/StudioPrompterCompanion.app/'
+    info=plistlib.loads(archive.read(root+'Info.plist'))
+    assert info['CFBundleShortVersionString']==version, 'Exported version differs from project'
+    assert info['CFBundleVersion']==build, 'Exported build differs from project'
+    assert info['UIDeviceFamily']==[2], 'Companion must be iPad-only'
+    assert info['CFBundleIdentifier']=='co.codebooker.studioprompter.companion'
+    assert root+'PrivacyInfo.xcprivacy' in archive.namelist(), 'Missing privacy manifest'
+print(f'Verified Companion {version} ({build}), iPad-only, with privacy manifest.')
+PYVERIFY
 echo "Exported Companion for App Store Connect to $EXPORT (not uploaded)."

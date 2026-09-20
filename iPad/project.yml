@@ -52,6 +52,8 @@ targets:
       path: StudioPrompterCompanion/Info.plist
       properties:
         CFBundleDisplayName: StudioPrompter Companion
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         NSLocalNetworkUsageDescription: Connect to your Mac to receive the script and live prompting controls on this iPad.
