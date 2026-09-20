@@ -1,18 +1,28 @@
 import AppKit
-// App Store icons must be square and opaque. Draw the same code-native wordmark
-// symbol as the Mac icon, using exact pixel dimensions independent of Retina.
+import ImageIO
+import UniformTypeIdentifiers
+
+// App Store icons are square and opaque. Render the Mac's code-native symbol
+// directly into a supported RGB Core Graphics buffer, independent of Retina.
 let output = URL(fileURLWithPath: CommandLine.arguments[1])
-let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1024, pixelsHigh: 1024,
-    bitsPerSample: 8, samplesPerPixel: 3, hasAlpha: false, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
-NSGraphicsContext.saveGraphicsState()
-NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
-NSColor(calibratedRed: 0.10, green: 0.115, blue: 0.14, alpha: 1).setFill()
-NSBezierPath(rect: NSRect(x: 0, y: 0, width: 1024, height: 1024)).fill()
-NSColor(calibratedRed: 1, green: 0.49, blue: 0.29, alpha: 1).setFill()
+let context = CGContext(data: nil, width: 1024, height: 1024,
+    bitsPerComponent: 8, bytesPerRow: 1024 * 4,
+    space: CGColorSpace(name: CGColorSpace.sRGB)!,
+    bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+context.setFillColor(CGColor(red: 0.10, green: 0.115, blue: 0.14, alpha: 1))
+context.fill(CGRect(x: 0, y: 0, width: 1024, height: 1024))
+context.setFillColor(CGColor(red: 1, green: 0.49, blue: 0.29, alpha: 1))
 for (index, width) in [480.0, 400, 480, 300].enumerated() {
-    NSBezierPath(roundedRect: NSRect(x: 320, y: 710 - Double(index) * 140, width: width, height: 55), xRadius: 24, yRadius: 24).fill()
+    let rect = CGRect(x: 320, y: 710 - Double(index) * 140, width: width, height: 55)
+    context.addPath(CGPath(roundedRect: rect, cornerWidth: 24, cornerHeight: 24, transform: nil))
+    context.fillPath()
 }
-let arrow = NSBezierPath()
-arrow.move(to: NSPoint(x: 150, y: 620)); arrow.line(to: NSPoint(x: 250, y: 550)); arrow.line(to: NSPoint(x: 150, y: 480)); arrow.close(); arrow.fill()
-NSGraphicsContext.restoreGraphicsState()
-try bitmap.representation(using: .png, properties: [:])!.write(to: output)
+context.move(to: CGPoint(x: 150, y: 620))
+context.addLine(to: CGPoint(x: 250, y: 550))
+context.addLine(to: CGPoint(x: 150, y: 480))
+context.closePath()
+context.fillPath()
+let image = context.makeImage()!
+let destination = CGImageDestinationCreateWithURL(output as CFURL, UTType.png.identifier as CFString, 1, nil)!
+CGImageDestinationAddImage(destination, image, nil)
+precondition(CGImageDestinationFinalize(destination), "Could not write icon PNG")

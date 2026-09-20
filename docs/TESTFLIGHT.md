@@ -11,7 +11,7 @@ The iPad app is **StudioPrompter Companion**, a reading display for **StudioProm
 - SKU: `studioprompter-companion-ipad`
 - Apple app ID: `6814059982`
 - [App Store Connect](https://appstoreconnect.apple.com/apps/6814059982/testflight)
-- Version: 0.1.0, build 3
+- Version: 0.1.0, build 4
 - Category suggestion: Photo & Video
 - Support: https://github.com/codebooker/StudioPrompter/issues
 - Privacy policy draft: [PRIVACY.md](PRIVACY.md)
@@ -20,7 +20,7 @@ The app record was created under the John Tawes account. Build 2 passed local ex
 
 The beta description, marketing/privacy URLs, feedback email, and review contact have been saved in App Store Connect. Personal review contact details remain there and are not committed to this repository.
 
-Build 3 uploaded successfully on 2026-09-20 and appeared in TestFlight as **Processing**. It has not yet been installed through TestFlight or submitted for external beta review.
+Build 3 finished processing on 2026-09-20 and was added to the **Studio Testing** internal group. The owner authorized an invitation to their existing App Store Connect account; App Store Connect confirmed **Invited**. Build 4 corrects an icon-rendering defect found during visual inspection. Neither build has yet been verified as installed through TestFlight or submitted for external beta review.
 
 ## Build and export
 
@@ -60,9 +60,9 @@ Add a review contact name, email, and phone number directly in App Store Connect
 
 ## Remaining submission gates
 
-- Completion of build processing in App Store Connect.
+- Upload and processing of the corrected icon in build 4.
 - Matching Mac release available for companion testers/reviewers.
-- Confirm upload processing, privacy/export-compliance answers, then internal installation from TestFlight.
+- Internal installation from TestFlight and verification of the icon and companion connection.
 - External beta review approval before inviting external testers.
 
 Apple references: [create an app record](https://developer.apple.com/help/app-store-connect/create-an-app-record/add-a-new-app), [upload builds](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds), [TestFlight](https://developer.apple.com/testflight/).
