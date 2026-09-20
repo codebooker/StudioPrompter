@@ -3,49 +3,41 @@
     <channel>
         <title>Prompter</title>
         <item>
-            <title>0.1.0</title>
-            <pubDate>Sat, 19 Sep 2026 16:33:41 -0400</pubDate>
-            <link>https://github.com/codebooker/StudioPrompter/releases/tag/0.1.0</link>
-            <sparkle:version>3</sparkle:version>
-            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+            <title>0.1.1</title>
+            <pubDate>Sat, 19 Sep 2026 22:26:49 -0400</pubDate>
+            <link>https://github.com/codebooker/StudioPrompter/releases/tag/0.1.1</link>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>13.3</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description sparkle:format="markdown"><![CDATA[# StudioPrompter 0.1.0 · First tester release
+            <description sparkle:format="markdown"><![CDATA[# StudioPrompter 0.1.1 · Webcam Layout & hands-free commands
 
-A native Mac teleprompter for the person on camera and the producer behind it.
+A simpler output workflow for solo creators, with smoother script following and experimental local voice commands.
 
-## Included
+## What’s new
 
-- Separate producer controls and clean, full-screen talent output, with mirroring, flipping, and blackout.
-- A Markdown script library, document import, bold and underline, and visible, named cue points.
-- Readable typefaces and adjustable size, spacing, margins, reading guide, and focus area.
-- Local Whisper **Follow script** and **Adaptive pace**, with one-click model download.
-- Microphone and individual input-channel selection for an isolated presenter feed.
-- Manual scrolling during voice prompting: reposition for a retake, then read from the new location.
-- **Check for Updates…** for subsequent tester releases, using signed update archives.
+- **Webcam Layout:** a compact floating prompter near your camera, with adjustable width, height, position, and reading guide. Placement accounts for built-in displays and camera notches; external webcams can be aligned manually.
+- **One output menu:** choose Webcam Layout or a connected monitor from **Prompter Output**. Removed the duplicate sidebar dropdown and rehearsal window. Mirror and flip controls appear only for external output.
+- **Smoother following:** completed lines bring the next words into the focus area sooner, and placing the webcam guide at the bottom no longer shifts the script between lines. Resize controls stay stationary while you adjust the window.
+- **Bookmarks:** the friendlier name for cue points. Existing saved positions carry over automatically.
+- **Experimental “Hey Teleprompter” commands:** hands-free start/pause, navigation, bookmarks, and appearance adjustments. Enable Voice prompting and Hands-free commands to listen; say the wake phrase, give a command, and briefly pause. Pause keeps listening for commands; Esc stops the microphone.
+- **Optional local command AI:** enable **Natural commands · Beta** in Advanced voice settings and choose **Download command AI** for flexible phrasing. The approximately 1.1 GB model downloads within the app and runs locally afterward. Clear commands can also use the built-in parser.
 
-The experimental **“Hey Teleprompter” commands and command AI are not included**. They need more live testing and will return in a later release.
+Commands remain experimental: ambiguous requests, background speech, and recognition errors can produce missed or incorrect actions. Keep the selected microphone isolated and verify the on-screen response. This is a tester release, not a general-production release.
 
-## Install
+## Update or install
 
-1. Download **StudioPrompter-0.1.0-macos-arm64.zip** below and unzip it.
-2. Move **Prompter.app** to Applications. It appears as **StudioPrompter**.
-3. Open it. This tester build is **not Developer ID signed or notarized**. If macOS blocks it, open **System Settings → Privacy & Security → Open Anyway** for StudioPrompter. [Apple’s first-launch instructions](https://support.apple.com/en-us/102445).
-4. Import or write a script. For voice prompting, select your microphone/channel and click **Download model**, then **Play**.
+Existing testers: pause prompting, stop the microphone, then choose **StudioPrompter → Check for Updates… → Install Update → Install and Relaunch**. Checks are manual. Your script library and downloaded models remain on your Mac.
 
-Requires an **Apple silicon Mac (M1 or newer)**. Deployment target: **macOS 13.3+**; the minimum OS has not yet been tested on physical hardware. Intel Macs are not supported by this download. English speech models are offered; Base English is recommended for latency.
+New testers: download **StudioPrompter-0.1.1-macos-arm64.zip**, unzip it, and move **Prompter.app** to Applications. It appears as **StudioPrompter**. This build is ad-hoc signed and **not Apple notarized**; first launch may require **System Settings → Privacy & Security → Open Anyway**. [Apple’s instructions](https://support.apple.com/en-us/102445).
 
-## Updates and testing status
+Requires **Apple silicon (M1 or newer), macOS 13.3+**. Intel is not supported. Minimum-OS hardware and 8 GB command-model performance still need broader testing. English speech models are offered; Base English is the default.
 
-Pause and stop the microphone, then choose **StudioPrompter → Check for Updates…**. Future published tester builds can download and install through the app. Updates use the separate tester feed and the app’s pinned Ed25519 signing key. Apple notarization and first-launch approval are separate from update archive verification.
+Audio and command processing stay on your Mac. Audio and transcripts are not saved during ordinary use. Models download separately; no cloud transcription account is required.
 
-Automated core/layout, audio-channel, bundle, and update-signature checks pass. Follow script, cadence changes, skipped words, and dual-display output have been exercised on the development Mac. A clean second-Mac installation, minimum-OS runtime, physical mixer routing, and broader retake acceptance still need tester feedback. This is an early testing release, not a production-readiness claim. See [testing details](https://github.com/codebooker/StudioPrompter/blob/main/docs/TESTING.md).
-
-Audio stays in memory on your Mac. The app does not save audio or transcripts. Scripts and downloaded speech models remain local and survive app updates.
-
-`SHA256SUMS.txt` verifies the archive; `BUILD-INFO.txt` records the exact source commit and signing status. Source is available under AGPL v3, with third-party notices included in the app.
+See [testing evidence and remaining checks](https://github.com/codebooker/StudioPrompter/blob/main/docs/TESTING.md). The ZIP’s SHA-256 checksum, exact source revision, build details, and signed update feed are attached below.
 ]]></description>
-            <enclosure url="https://github.com/codebooker/StudioPrompter/releases/download/0.1.0/StudioPrompter-0.1.0-macos-arm64.zip" length="2744775" type="application/octet-stream" sparkle:edSignature="5zpZQn4Tcmljl7tqUyBplNVyOgvAVXz/09j6nf8hno3cy0UmidWGOi1nrKHxI/xEljLA00NhY8nd2wXZSweeAw=="/>
+            <enclosure url="https://github.com/codebooker/StudioPrompter/releases/download/0.1.1/StudioPrompter-0.1.1-macos-arm64.zip" length="8695618" type="application/octet-stream" sparkle:edSignature="6LkBpGJYuNCiKWbjpgcHhVKfT/7S2s4AsMEHYBfd7dS3cXf6bWiDWersa95RoqzYjirr5tIhqKgCOYIilxRNBA=="/>
         </item>
     </channel>
 </rss>
