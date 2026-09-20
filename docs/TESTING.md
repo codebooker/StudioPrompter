@@ -227,3 +227,12 @@ This verifies the real 0.1.0-to-0.1.1 update on the development Mac. New-recipie
 - Build 3 subsequently finished processing, showed Ready to Test, and was added to Studio Testing. The owner authorized an internal invitation to their account; App Store Connect confirmed Invited. Build-specific test instructions were saved.
 - Visual inspection then found the source iPad icon was solid black despite satisfying dimension/opacity checks. Replaced the unsupported three-channel AppKit drawing buffer with an opaque Core Graphics RGB buffer. The regenerated 1024×1024 PNG was visually checked: orange script lines and reading arrow on a dark background, with no alpha channel. Build 4 contains this correction.
 - Build 4 archived/exported successfully, passed bundle metadata checks, and its extracted iPad icon was visually verified. Apple accepted the upload; processing and installation remain to be verified.
+
+### Mac 0.2.0 published tester release · 2026-09-20
+
+- Published [0.2.0](https://github.com/codebooker/StudioPrompter/releases/tag/0.2.0), build 5, from packaged source `56308d5`. Later changes before publication affected iPad packaging and documentation, not Mac code.
+- Rechecked the archive checksum and pinned Ed25519 signature. The unauthenticated public ZIP download matched the packaged SHA-256 checksum.
+- [Update-feed promotion passed](https://github.com/codebooker/StudioPrompter/actions/runs/35488866200), publishing 0.2.0 to the tester feed.
+- Started an unmodified copy of the published 0.1.1 archive, selected Check for Updates, downloaded 0.2.0, and completed Install and Relaunch. The installed bundle reported 0.2.0 (5), matched the release executable, and passed deep/strict code-signature verification.
+- All 53 tracked library/model/pairing files were retained. Four Markdown scripts matched their original content hashes, including emphasis/bookmarks; model files retained their sizes, and saved pairing data retained its hash. The library index matched after normalizing only its expected atomic-save generation UUID. The relaunched workspace showed four scripts and the two Test Script bookmarks.
+- Restored the normal development app afterward, paused with voice prompting off. This verifies the update on the development Mac; clean-machine, minimum-OS, and longer-session acceptance remain tester work. The Mac release is still ad-hoc signed and not notarized.

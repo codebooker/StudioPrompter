@@ -61,7 +61,6 @@ Add a review contact name, email, and phone number directly in App Store Connect
 ## Remaining submission gates
 
 - Processing of build 4 (upload accepted), followed by adding it to Studio Testing.
-- Matching Mac release available for companion testers/reviewers.
 - Internal installation from TestFlight and verification of the icon and companion connection.
 - External beta review approval before inviting external testers.
 
