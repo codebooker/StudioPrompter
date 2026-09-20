@@ -108,7 +108,7 @@ Command wording keeps text layout separate from the reading guide: “line heigh
 
 ## Camera view
 
-`CameraPromptView` shares playback, script geometry, manual-retake handling, and voice status with the workspace. A floating, key-capable window supports local keyboard controls and dragging. Its guide position is scaled toward the top for reading close to a webcam; the inverse mapping preserves the workspace's guide control. The script's font, text layout, and progress mapping are unchanged.
+`CameraPromptView` shares playback, script geometry, manual-retake handling, and voice status with the workspace. A floating, key-capable window supports local keyboard controls and dragging. Its initial guide position is near the webcam, then Camera view keeps its own position for the session. Dragging is bounded by the actual canvas height and the reading band expanded to complete text lines, rather than a fixed top-of-screen percentage. Rendering and pointer hit testing share the same resolved position. Voice commands that move the guide address Camera view while it is visible. The script's font, text layout, and progress mapping are unchanged.
 
 `CGDisplayIsBuiltin` selects a built-in display when available; no model-name lookup is required. `NSScreen.safeAreaInsets.top` and `visibleFrame` keep initial placement below a notch/menu bar. The notch layout has a smaller initial footprint and gap than the plain-screen layout. Desktops fall back to the workspace display. Width/height are independently adjustable, and manual placement remains available on every device. Reopening during the session retains the window frame; re-centering uses the window's current display. Display changes reposition an open panel within a safe display frame.
 

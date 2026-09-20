@@ -60,6 +60,7 @@ final class AppState: ObservableObject {
     @Published var saveStatus = "Saved on this Mac"
     @Published var screens: [NSScreen] = NSScreen.screens
     @Published var outputScreenID: String?
+    @Published var cameraGuidePosition = 0.095
     @Published var cameraViewSize = CGSize(width: 580, height: 240)
     private var cameraWindow: CameraPromptWindow?
     private var cameraSizePanel: NSPanel?
@@ -142,6 +143,9 @@ final class AppState: ObservableObject {
             voice.mode = command == .toggleVoiceMode ? (voice.mode == .follow ? .pace : .follow) : (command == .followScript ? .follow : .pace)
             voice.beginRetake()
             return voice.mode.rawValue
+        case .guidePosition(let direction) where cameraWindow?.isVisible == true:
+            cameraGuidePosition = min(1, max(0, cameraGuidePosition + Double(direction.signum()) * 0.03))
+            return "Camera reading guide moved \(direction < 0 ? "up" : "down")"
         case .font, .fontSize, .typeface, .lineSpacing, .margins, .guideVisible, .guidePosition, .guideHeight, .guideLines, .focusLine:
             let offset = ScriptCueLayout(current).offset(at: position)
             let playing = playback.transport.isPlaying
@@ -367,6 +371,7 @@ final class AppState: ObservableObject {
         if let cameraWindow { cameraWindow.makeKeyAndOrderFront(nil); return }
         guard let screen = cameraScreen else { return }
         if isEditing { toggleEditing() }
+        cameraGuidePosition = current.settings.guidePosition * 0.25
         let rect = CameraViewGeometry.frame(screen: screen.frame, visible: screen.visibleFrame, safeTop: screen.safeAreaInsets.top)
         let window = CameraPromptWindow(contentRect: rect, styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
         window.title = "StudioPrompter — Camera view"

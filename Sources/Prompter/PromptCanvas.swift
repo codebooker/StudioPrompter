@@ -8,6 +8,7 @@ struct PromptCanvas: NSViewRepresentable {
     let progress: Double
     var mirrored = false
     var guidePositionRange: ClosedRange<Double> = 0.15...0.65
+    var keepsGuideInBounds = false
     var onScroll: ((Double) -> Void)?
     var onGuideChange: ((Double) -> Void)?
     func makeNSView(context: Context) -> ScriptCanvas { ScriptCanvas() }
@@ -16,6 +17,7 @@ struct PromptCanvas: NSViewRepresentable {
         view.progress = progress
         view.mirrored = mirrored
         view.guidePositionRange = guidePositionRange
+        view.keepsGuideInBounds = keepsGuideInBounds
         view.onScroll = onScroll
         view.onGuideChange = onGuideChange
         view.needsDisplay = true
@@ -34,6 +36,7 @@ final class ScriptCanvas: NSView {
     private var dragPoint: NSPoint?
     private var draggingGuide = false
     var guidePositionRange: ClosedRange<Double> = 0.15...0.65
+    var keepsGuideInBounds = false
     var progress: Double = 0
     var mirrored = false
     var onScroll: ((Double) -> Void)?
@@ -68,13 +71,36 @@ final class ScriptCanvas: NSView {
         setAccessibilityValue(text)
     }
 
+    private var effectiveGuideRange: ClosedRange<Double> {
+        guard keepsGuideInBounds, bounds.width > 0, bounds.height > 0 else { return guidePositionRange }
+        let scale = bounds.width / 1000
+        let guideHeight = lineHeight * settings.guideLines + 12
+        // Measure at guideY = 0. Translation then lets us fit the whole focus
+        // band, including its expansion to complete text lines, above the footer.
+        let originY = -settings.fontSize * 0.2 - progress * max(0, textHeight - settings.fontSize * 1.2)
+        let scan = NSRect(x: 0, y: -originY - lineHeight, width: 1000, height: guideHeight + lineHeight * 2)
+        var lines: [CGRect] = []
+        layout.enumerateLineFragments(forGlyphRange: layout.glyphRange(forBoundingRect: scan, in: container)) { _, used, _, range, _ in
+            let characters = self.layout.characterRange(forGlyphRange: range, actualGlyphRange: nil)
+            if !(self.storage.string as NSString).substring(with: characters).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                lines.append(used.offsetBy(dx: self.settings.margin, dy: originY))
+            }
+        }
+        let band = FocusGeometry.band(nominal: CGRect(x: 0, y: -8, width: 1000, height: guideHeight), textLines: lines)
+        return CameraViewGeometry.guideRange(viewportHeight: bounds.height / scale, band: band)
+    }
+    private var effectiveGuidePosition: Double {
+        let range = effectiveGuideRange
+        return min(range.upperBound, max(range.lowerBound, settings.guidePosition))
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         NSColor(calibratedRed: 0.055, green: 0.06, blue: 0.069, alpha: 1).setFill()
         bounds.fill()
         guard let context = NSGraphicsContext.current?.cgContext, bounds.width > 0 else { return }
         let scale = bounds.width / 1000
         let logicalHeight = bounds.height / scale
-        let guideY = logicalHeight * settings.guidePosition
+        let guideY = logicalHeight * (keepsGuideInBounds ? effectiveGuidePosition : settings.guidePosition)
         let guideHeight = lineHeight * settings.guideLines + 12
         let travel = max(0, textHeight - settings.fontSize * 1.2)
         let origin = NSPoint(x: settings.margin, y: guideY - settings.fontSize * 0.2 - progress * travel)
@@ -119,7 +145,7 @@ final class ScriptCanvas: NSView {
         dragPoint = convert(event.locationInWindow, from: nil)
         if let point = dragPoint {
             let scale = bounds.width / 1000
-            draggingGuide = settings.showGuide && onGuideChange != nil && point.x < 65 * scale && abs(point.y - (bounds.height * settings.guidePosition + 23 * scale)) < 35 * scale
+            draggingGuide = settings.showGuide && onGuideChange != nil && point.x < 65 * scale && abs(point.y - (bounds.height * (keepsGuideInBounds ? effectiveGuidePosition : settings.guidePosition) + 23 * scale)) < 35 * scale
         }
         if onScroll != nil { NSCursor.closedHand.push() }
     }
@@ -129,7 +155,8 @@ final class ScriptCanvas: NSView {
         defer { dragPoint = point }
         guard let previous = dragPoint else { return }
         if draggingGuide {
-            onGuideChange?(min(guidePositionRange.upperBound, max(guidePositionRange.lowerBound, (point.y - 23 * bounds.width / 1000) / max(1, bounds.height))))
+            let range = effectiveGuideRange
+            onGuideChange?(min(range.upperBound, max(range.lowerBound, (point.y - 23 * bounds.width / 1000) / max(1, bounds.height))))
             return
         }
         let travel = max(1, textHeight - settings.fontSize * 1.2)

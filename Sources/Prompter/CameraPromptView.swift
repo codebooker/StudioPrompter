@@ -18,7 +18,7 @@ struct CameraPromptView: View {
     private var cameraScript: PrompterCore.Script {
         var script = state.current
         // Keep the same text geometry/reading anchor, but place the guide close to the lens.
-        script.settings.guidePosition *= 0.25
+        script.settings.guidePosition = state.cameraGuidePosition
         return script
     }
 
@@ -26,9 +26,9 @@ struct CameraPromptView: View {
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
                 PromptCanvas(script: cameraScript, progress: playback.transport.progress,
-                             guidePositionRange: 0.0375...0.1625,
+                             guidePositionRange: 0...1, keepsGuideInBounds: true,
                              onScroll: { playback.scrub(playback.transport.progress + $0) },
-                             onGuideChange: { value in state.update { $0.settings.guidePosition = value * 4 } })
+                             onGuideChange: { state.cameraGuidePosition = $0 })
                 Capsule().fill(Palette.accent.opacity(0.8)).frame(width: 20, height: 3).padding(.top, 4)
                     .allowsHitTesting(false).accessibilityHidden(true)
                 if playback.transport.countdownRemaining > 0 {
