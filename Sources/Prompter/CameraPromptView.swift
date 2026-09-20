@@ -10,15 +10,10 @@ final class CameraPromptWindow: NSWindow, NSWindowDelegate {
     override var canBecomeMain: Bool { false }
 }
 
-private final class CameraViewUI: ObservableObject {
-    @Published var showingSize = false
-}
-
 struct CameraPromptView: View {
     @ObservedObject var state: AppState
     @ObservedObject var playback: Playback
     @ObservedObject var voice: VoiceController
-    @StateObject private var ui = CameraViewUI()
 
     private var cameraScript: PrompterCore.Script {
         var script = state.current
@@ -49,20 +44,8 @@ struct CameraPromptView: View {
                         .help("Drag to move Camera view. Drag the window edges to resize.")
                     Text("Camera view").font(.system(size: 11, weight: .semibold))
                     Spacer(minLength: 4)
-                    Button { ui.showingSize.toggle() } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
+                    Button(action: state.openCameraSizeControls) { Image(systemName: "arrow.up.left.and.arrow.down.right") }
                         .help("Adjust width and height").accessibilityLabel("Camera view size")
-                        .popover(isPresented: $ui.showingSize) {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Camera view size").font(.headline)
-                                Text("Width · \(Int(state.cameraViewSize.width))")
-                                Slider(value: Binding(get: { state.cameraViewSize.width }, set: { state.resizeCameraView(width: $0) }), in: 360...1000, step: 10)
-                                    .accessibilityLabel("Camera view width")
-                                Text("Height · \(Int(state.cameraViewSize.height))")
-                                Slider(value: Binding(get: { state.cameraViewSize.height }, set: { state.resizeCameraView(height: $0) }), in: 180...600, step: 10)
-                                    .accessibilityLabel("Camera view height")
-                                Text("Drag the handle to align with your webcam.").font(.caption).foregroundStyle(.secondary)
-                            }.padding(18).frame(width: 260).preferredColorScheme(.dark)
-                        }
                     Button(action: state.centerCameraView) { Image(systemName: "viewfinder") }
                         .help("Center below the camera").accessibilityLabel("Center below camera")
                     Button(action: playback.reset) { Image(systemName: "backward.end") }
@@ -94,6 +77,29 @@ struct CameraPromptView: View {
         .foregroundStyle(.white).background(Palette.background)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.border))
+    }
+}
+
+/// Kept in an independent panel so changing the camera frame cannot move a slider
+/// underneath the pointer or cause a popover to flip during a drag.
+struct CameraSizeControls: View {
+    @ObservedObject var state: AppState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Width · \(Int(state.cameraViewSize.width))")
+            Slider(value: Binding(get: { state.cameraViewSize.width }, set: { state.resizeCameraView(width: $0) }), in: 360...1000, step: 10)
+                .accessibilityLabel("Camera view width")
+            Text("Height · \(Int(state.cameraViewSize.height))")
+            Slider(value: Binding(get: { state.cameraViewSize.height }, set: { state.resizeCameraView(height: $0) }), in: 180...600, step: 10)
+                .accessibilityLabel("Camera view height")
+            HStack {
+                Text("Drag the camera view’s handle to align with your webcam.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Done", action: state.closeCameraSizeControls).keyboardShortcut(.cancelAction)
+            }
+        }.padding(18).frame(width: 280).preferredColorScheme(.dark)
     }
 }
 

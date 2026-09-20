@@ -94,7 +94,7 @@ Pause prompting and stop the microphone, then choose **StudioPrompter → Check 
 
 Choose **Camera view** in the main toolbar, or **Prompt → Open Camera View** (⌘⇧K). A compact reading window floats above other apps. It initially uses the built-in display when available; otherwise it uses the producer workspace’s display. Notched screens place the panel below the camera cutout. Other screens use a top-centered position.
 
-Drag the grip beside “Camera view” left, right, or down to align with your webcam. Use the resize button for independent **Width** and **Height** sliders, or resize the window edges. The center button returns it to the top center of its current screen. Size and position are retained when you close and reopen the view during the same app session.
+Drag the grip beside “Camera view” left, right, or down to align with your webcam. Use the resize button for independent **Width** and **Height** sliders in a stationary panel, or resize the window edges. The size panel stays in place while the camera window changes; choose **Done** when finished. The center button returns it to the top center of its current screen. Size and position are retained when you close and reopen the view during the same app session.
 
 Scroll or drag the script manually. Play/Pause, Reset, Space, arrows, and Esc share the main window’s controls; Esc stops the microphone. The sliders button returns to producer controls. Configure your microphone, voice mode, and experimental hands-free commands there before opening Camera view. The camera view stays unmirrored and keeps the reading guide near the top without changing your saved script font or its canonical line wrapping. It does not require camera permission.
 

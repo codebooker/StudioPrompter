@@ -62,6 +62,7 @@ final class AppState: ObservableObject {
     @Published var outputScreenID: String?
     @Published var cameraViewSize = CGSize(width: 580, height: 240)
     private var cameraWindow: CameraPromptWindow?
+    private var cameraSizePanel: NSPanel?
     let playback = Playback()
     lazy var voice = VoiceController(state: self)
     let storeURL: URL
@@ -383,6 +384,35 @@ final class AppState: ObservableObject {
         window.setFrame(rect, display: true)
         window.makeKeyAndOrderFront(nil)
     }
+    func openCameraSizeControls() {
+        guard let cameraWindow else { return }
+        if let cameraSizePanel, cameraSizePanel.isVisible {
+            cameraSizePanel.makeKeyAndOrderFront(nil)
+            return
+        }
+        let panel = cameraSizePanel ?? NSPanel(contentRect: NSRect(x: 0, y: 0, width: 316, height: 212),
+                                              styleMask: [.titled, .closable, .utilityWindow], backing: .buffered, defer: false)
+        panel.title = "Camera view size"
+        panel.identifier = NSUserInterfaceItemIdentifier("camera-size")
+        panel.isReleasedWhenClosed = false
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.contentView = NSHostingView(rootView: CameraSizeControls(state: self))
+        // Position once when opened. Do not attach as a child window or track the
+        // camera frame: the controls must remain stationary throughout resizing.
+        if let screen = cameraWindow.screen ?? cameraScreen {
+            let visible = screen.visibleFrame
+            let x = min(max(visible.minX, cameraWindow.frame.midX - panel.frame.width / 2), visible.maxX - panel.frame.width)
+            let y = min(max(visible.minY, cameraWindow.frame.minY - panel.frame.height - 12), visible.maxY - panel.frame.height)
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
+        }
+        cameraSizePanel = panel
+        panel.makeKeyAndOrderFront(nil)
+    }
+    func closeCameraSizeControls() {
+        cameraSizePanel?.close()
+        if cameraWindow?.isVisible == true { cameraWindow?.makeKeyAndOrderFront(nil) }
+    }
     func centerCameraView() {
         guard let window = cameraWindow, let screen = window.screen ?? cameraScreen else { return }
         window.setFrame(CameraViewGeometry.frame(screen: screen.frame, visible: screen.visibleFrame, safeTop: screen.safeAreaInsets.top, size: window.frame.size), display: true)
@@ -397,7 +427,7 @@ final class AppState: ObservableObject {
         let top = min(window.frame.maxY, screen.frame.maxY - screen.safeAreaInsets.top, available.maxY)
         window.setFrame(CGRect(x: x, y: max(available.minY, top - size.height), width: size.width, height: size.height), display: true)
     }
-    func closeCameraView() { cameraWindow?.close() }
+    func closeCameraView() { cameraSizePanel?.close(); cameraWindow?.close() }
     func showProducerWorkspace() {
         closeCameraView()
         NSApp.windows.first(where: { $0.identifier?.rawValue == "workspace" })?.makeKeyAndOrderFront(nil)
