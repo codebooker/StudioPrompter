@@ -16,12 +16,12 @@ All 0.1.1 features remain, including Webcam Layout and experimental “Hey Telep
 ## Compatibility and availability
 
 - Mac: Apple silicon, macOS 13.3 or later; the oldest supported OS still needs runtime verification.
-- Companion: iPadOS 16 or later, with the matching durable-pairing protocol. The first Companion TestFlight build is being prepared separately; it is not included in this Mac ZIP.
+- Companion: iPadOS 16 or later, with the matching durable-pairing protocol. The companion is in internal TestFlight testing and is not included in this Mac ZIP. External invitations are not available yet.
 - The original temporary-pairing prototype requires one new pairing after both apps are updated.
 - One iPad receives the live feed at a time. Use the same local network; router-free peer-to-peer operation has not been validated.
 
 ## Tester status
 
-This is a prerelease candidate, not a production release. Live tests have covered iPad prompting, mirror/flip, bookmark jumps, Wi-Fi recovery, app restarts without re-pairing, and offline device removal. Automated checks cover persistence, authorization, transport framing, and removal notices. Longer-session smoothness and fresh-machine setup remain part of beta testing.
+This is an early tester prerelease, not a production release. Live tests have covered iPad prompting, mirror/flip, bookmark jumps, Wi-Fi recovery, app restarts without re-pairing, and offline device removal. Automated checks cover persistence, authorization, transport framing, and removal notices. Longer-session smoothness and fresh-machine setup remain part of beta testing.
 
-The initial package uses an ad-hoc Mac signature and is not Apple notarized. Existing testers use **StudioPrompter → Check for Updates…** after publication; scripts, bookmarks, downloaded models, and saved device pairings remain outside the app bundle.
+The initial package uses an ad-hoc Mac signature and is not Apple notarized. Existing testers use **StudioPrompter → Check for Updates…** to install this release; scripts, bookmarks, downloaded models, and saved device pairings remain outside the app bundle.

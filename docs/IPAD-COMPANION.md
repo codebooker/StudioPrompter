@@ -1,6 +1,6 @@
 # StudioPrompter Companion
 
-A native iPad reading display for StudioPrompter on macOS. This is a development prototype, not part of the published 0.1.1 release and not yet distributed through TestFlight or the App Store.
+A native iPad reading display for StudioPrompter on macOS. Mac output support is included in the 0.2.0 tester release. The companion is in internal TestFlight testing; external invitations and App Store distribution are not available yet.
 
 ## Pairing
 

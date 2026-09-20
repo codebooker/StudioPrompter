@@ -27,9 +27,9 @@ Record solo with a compact script near your webcam, or keep the controls on your
 | Microphone **and individual input channel** selection | Mirrored or flipped output for prompter glass |
 | Instant blackout and synchronized display controls | A producer who can step in for a retake |
 
-## iPad companion · in development
+## Your iPad, in sync
 
-**StudioPrompter Companion** turns an iPad into a reading display controlled from your Mac, including mirrored output for teleprompter glass. Pair over the local network; scripts, microphone selection, and voice processing stay on the Mac. The matching **Mac 0.2.0 beta** and **Companion TestFlight** are being prepared; the published 0.1.1 release does not include iPad output. Pairings survive restarts, and the producer can remove an iPad’s access even while it is offline. [Setup and development status](docs/IPAD-COMPANION.md).
+**StudioPrompter Companion** turns an iPad into a reading display controlled from your Mac, including mirrored output for teleprompter glass. Pair over the local network; scripts, microphone selection, and voice processing stay on the Mac. **Mac 0.2.0** includes iPad output. The companion is in internal TestFlight testing; external invitations are not available yet. Pairings survive restarts, and the producer can remove an iPad’s access even while it is offline. [Setup and development status](docs/IPAD-COMPANION.md).
 
 ## Read near your webcam
 
@@ -61,7 +61,7 @@ Voice features are in beta. Recognition and responsiveness depend on your Mac, m
 ## Start in four steps
 
 1. **Open a script.** Write directly in the app or import TXT, Markdown, RTF, RTFD, DOC, or DOCX. Emphasize key passages with bold and underline, and place named bookmarks directly in the editor.
-2. **Choose your output.** Open **Prompter Output** and select **Webcam Layout** or a connected monitor. Mirror and flip controls appear only when an external display is selected.
+2. **Choose your output.** Open **Prompter Output** and select **Webcam Layout**, a connected monitor, or **Connect iPad…**. Mirror and flip controls are available for monitor and iPad output.
 3. **Choose your pace.** Use fixed speed, or turn on **Voice prompting**, choose a mode and microphone channel, and click **Download model** once.
 4. **Press Play.** Voice mode starts listening and prompting together. Or enable **Hands-free commands** and say “Hey Teleprompter, let’s go.” Space pauses prompting; Esc stops the mic.
 
@@ -80,13 +80,13 @@ Using an audio interface? Select the interviewer's isolated channel so the guest
 
 ## Get StudioPrompter
 
-**[Download StudioPrompter 0.1.1 — tester release](https://github.com/codebooker/StudioPrompter/releases/tag/0.1.1)**
+**[Download StudioPrompter 0.2.0 — tester release](https://github.com/codebooker/StudioPrompter/releases/tag/0.2.0)**
 
 For **Apple silicon Macs (M1 or newer), macOS 13.3+**. Unzip the download, move `Prompter.app` to Applications, and open it. It appears as **StudioPrompter**. This early build is not notarized: if macOS blocks the first launch, use **System Settings → Privacy & Security → Open Anyway** for StudioPrompter. See [Apple’s instructions](https://support.apple.com/en-us/102445).
 
-Follow script, Adaptive pace, the Markdown editor, bookmarks, dual-display output, and **Webcam Layout** are included. **“Hey Teleprompter” commands and optional local command AI are available as experimental features** in this tester release. This is a tester release, not a production-readiness claim; [remaining validation](docs/TESTING.md) is documented.
+Follow script, Adaptive pace, the Markdown editor, bookmarks, dual-display output, **Webcam Layout**, and **iPad output** are included. **“Hey Teleprompter” commands and optional local command AI are available as experimental features** in this tester release. This is a tester release, not a production-readiness claim; [remaining validation](docs/TESTING.md) is documented.
 
-[What changed in 0.1.1](docs/RELEASE-NOTES-0.1.1.md): Webcam Layout, hands-free commands, smoother completed-line following, stable guide movement, a single output selector, and friendlier bookmark terminology. Existing cue points carry over automatically.
+[What changed in 0.2.0](docs/RELEASE-NOTES-0.2.0.md): iPad output, saved pairings, connection recovery, producer access controls, and an uncluttered companion display. Webcam Layout and experimental hands-free commands remain included.
 
 Future tester releases arrive through **StudioPrompter → Check for Updates…**. Signed update archives are verified before installation; scripts and downloaded models stay on your Mac.
 
@@ -98,7 +98,7 @@ cd StudioPrompter
 ./scripts/run.sh
 ```
 
-For the hands-free features included in the 0.1.1 tester, use `STUDIO_EXPERIMENTAL_COMMANDS=1 ./scripts/run.sh`. Ordinary source builds leave the experiment disabled.
+For the hands-free features included in the 0.2.0 tester, use `STUDIO_EXPERIMENTAL_COMMANDS=1 ./scripts/run.sh`. Ordinary source builds leave the experiment disabled.
 
 This creates and opens `dist/Prompter.app` with a local ad-hoc signature. It is a development build, not a notarized distribution. The app appears as **StudioPrompter** in macOS.
 
