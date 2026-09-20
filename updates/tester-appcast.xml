@@ -3,41 +3,42 @@
     <channel>
         <title>Prompter</title>
         <item>
-            <title>0.1.1</title>
-            <pubDate>Sat, 19 Sep 2026 22:26:49 -0400</pubDate>
-            <link>https://github.com/codebooker/StudioPrompter/releases/tag/0.1.1</link>
-            <sparkle:version>4</sparkle:version>
-            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <title>0.2.0</title>
+            <pubDate>Sat, 19 Sep 2026 23:47:39 -0400</pubDate>
+            <link>https://github.com/codebooker/StudioPrompter/releases/tag/0.2.0</link>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>13.3</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description sparkle:format="markdown"><![CDATA[# StudioPrompter 0.1.1 · Webcam Layout & hands-free commands
+            <description sparkle:format="markdown"><![CDATA[# StudioPrompter 0.2.0 · Your iPad joins the studio
 
-A simpler output workflow for solo creators, with smoother script following and experimental local voice commands.
+Keep the producer controls on your Mac and put the script on an iPad with **StudioPrompter Companion**.
 
-## What’s new
+## New in this tester release
 
-- **Webcam Layout:** a compact floating prompter near your camera, with adjustable width, height, position, and reading guide. Placement accounts for built-in displays and camera notches; external webcams can be aligned manually.
-- **One output menu:** choose Webcam Layout or a connected monitor from **Prompter Output**. Removed the duplicate sidebar dropdown and rehearsal window. Mirror and flip controls appear only for external output.
-- **Smoother following:** completed lines bring the next words into the focus area sooner, and placing the webcam guide at the bottom no longer shifts the script between lines. Resize controls stay stationary while you adjust the window.
-- **Bookmarks:** the friendlier name for cue points. Existing saved positions carry over automatically.
-- **Experimental “Hey Teleprompter” commands:** hands-free start/pause, navigation, bookmarks, and appearance adjustments. Enable Voice prompting and Hands-free commands to listen; say the wake phrase, give a command, and briefly pause. Pause keeps listening for commands; Esc stops the microphone.
-- **Optional local command AI:** enable **Natural commands · Beta** in Advanced voice settings and choose **Download command AI** for flexible phrasing. The approximately 1.1 GB model downloads within the app and runs locally afterward. Clear commands can also use the built-in parser.
+- **iPad output:** choose **Prompter Output → Connect iPad…**, then pair the companion on the same local network. The Mac sends text and playback position over an encrypted connection; the iPad renders the script locally.
+- **Your familiar controls:** scrolling, bookmarks, typography, reading guide, horizontal mirroring, vertical flipping, and blackout carry through to the iPad.
+- **Pair once:** the companion remembers its Mac across app and device restarts. Disconnect keeps the pairing; Reconnect resumes at the Mac’s current position.
+- **Producer access controls:** Remove iPad revokes a saved device. Even an iPad that was offline learns why it cannot reconnect when it next reaches the Mac.
+- **A clean reading display:** the iPad’s controls fade out after five seconds. Tap to bring them back; connection warnings stay visible.
+- **Connection guidance:** setup explains the same-network requirement and how guest networks can block discovery. A dropped connection holds the script in place rather than continuing to scroll.
 
-Commands remain experimental: ambiguous requests, background speech, and recognition errors can produce missed or incorrect actions. Keep the selected microphone isolated and verify the on-screen response. This is a tester release, not a general-production release.
+All 0.1.1 features remain, including Webcam Layout and experimental “Hey Teleprompter” commands. Speech recognition, microphone/channel selection, and command processing stay on the Mac.
 
-## Update or install
+## Compatibility and availability
 
-Existing testers: pause prompting, stop the microphone, then choose **StudioPrompter → Check for Updates… → Install Update → Install and Relaunch**. Checks are manual. Your script library and downloaded models remain on your Mac.
+- Mac: Apple silicon, macOS 13.3 or later; the oldest supported OS still needs runtime verification.
+- Companion: iPadOS 16 or later, with the matching durable-pairing protocol. The first Companion TestFlight build is being prepared separately; it is not included in this Mac ZIP.
+- The original temporary-pairing prototype requires one new pairing after both apps are updated.
+- One iPad receives the live feed at a time. Use the same local network; router-free peer-to-peer operation has not been validated.
 
-New testers: download **StudioPrompter-0.1.1-macos-arm64.zip**, unzip it, and move **Prompter.app** to Applications. It appears as **StudioPrompter**. This build is ad-hoc signed and **not Apple notarized**; first launch may require **System Settings → Privacy & Security → Open Anyway**. [Apple’s instructions](https://support.apple.com/en-us/102445).
+## Tester status
 
-Requires **Apple silicon (M1 or newer), macOS 13.3+**. Intel is not supported. Minimum-OS hardware and 8 GB command-model performance still need broader testing. English speech models are offered; Base English is the default.
+This is a prerelease candidate, not a production release. Live tests have covered iPad prompting, mirror/flip, bookmark jumps, Wi-Fi recovery, app restarts without re-pairing, and offline device removal. Automated checks cover persistence, authorization, transport framing, and removal notices. Longer-session smoothness and fresh-machine setup remain part of beta testing.
 
-Audio and command processing stay on your Mac. Audio and transcripts are not saved during ordinary use. Models download separately; no cloud transcription account is required.
-
-See [testing evidence and remaining checks](https://github.com/codebooker/StudioPrompter/blob/main/docs/TESTING.md). The ZIP’s SHA-256 checksum, exact source revision, build details, and signed update feed are attached below.
+The initial package uses an ad-hoc Mac signature and is not Apple notarized. Existing testers use **StudioPrompter → Check for Updates…** after publication; scripts, bookmarks, downloaded models, and saved device pairings remain outside the app bundle.
 ]]></description>
-            <enclosure url="https://github.com/codebooker/StudioPrompter/releases/download/0.1.1/StudioPrompter-0.1.1-macos-arm64.zip" length="8695618" type="application/octet-stream" sparkle:edSignature="6LkBpGJYuNCiKWbjpgcHhVKfT/7S2s4AsMEHYBfd7dS3cXf6bWiDWersa95RoqzYjirr5tIhqKgCOYIilxRNBA=="/>
+            <enclosure url="https://github.com/codebooker/StudioPrompter/releases/download/0.2.0/StudioPrompter-0.2.0-macos-arm64.zip" length="8813984" type="application/octet-stream" sparkle:edSignature="vFOqMQcSVbJlcc7zxG483P2ieomI7VASGolYefRc9jy2/PK7FIb0UH743vXBSHN2n8m3RemegavvsYywQsYmDg=="/>
         </item>
     </channel>
 </rss>
