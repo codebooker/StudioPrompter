@@ -17,9 +17,9 @@ if not candidates:
 _,version,dmg=max(candidates)
 folder=pathlib.Path('website')
 (folder/'release.json').write_text(json.dumps({'version':version,'dmg':dmg})+'\n')
-path=folder/'index.html'
-html=path.read_text()
-html=re.sub(r'https://github.com/codebooker/StudioPrompter/releases/download/[^"\s]+\.dmg',dmg,html)
-html=re.sub(r'(<span id="release-version">)[^<]+',lambda m:m[1]+version,html)
-path.write_text(html)
+for path in (folder/'index.html', folder/'demo/index.html'):
+    html=path.read_text()
+    html=re.sub(r'https://github.com/codebooker/StudioPrompter/releases/download/[^"\s]+\.dmg',dmg,html)
+    html=re.sub(r'(<span id="release-version">)[^<]+',lambda m:m[1]+version,html)
+    path.write_text(html)
 print(f'Website download: {version} — {dmg}',file=sys.stderr)

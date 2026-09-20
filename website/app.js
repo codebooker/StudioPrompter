@@ -1,7 +1,12 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
+const assetURL = new URL("icons.svg", document.currentScript.src).href;
 const icon = (name) =>
-  `<svg class="icon" aria-hidden="true"><use href="icons.svg#${name}"/></svg>`;
+  `<svg class="icon" aria-hidden="true"><use href="${assetURL}#${name}"/></svg>`;
+const demoAvailable = () =>
+  !window.matchMedia(
+    "(max-width: 899px), (hover: none) and (max-height: 500px)",
+  ).matches;
 const KEY = "studioprompter-web-v1";
 const defaults = () => ({
   version: 1,
@@ -149,7 +154,7 @@ let playing = false,
   elapsed = 0,
   lastFrame = 0,
   frame = 0,
-  carry = 0,
+  playhead = 0,
   saveTimer,
   toastTimer,
   drag = null;
@@ -188,8 +193,8 @@ function duration() {
 function maxScroll() {
   return Math.max(0, reader.scrollHeight - reader.clientHeight);
 }
-function ratio() {
-  return maxScroll() ? reader.scrollTop / maxScroll() : 0;
+function ratio(limit = maxScroll()) {
+  return limit ? reader.scrollTop / limit : 0;
 }
 function fill(input) {
   input.style.setProperty(
@@ -197,14 +202,15 @@ function fill(input) {
     `${((input.value - input.min) / (input.max - input.min)) * 100}%`,
   );
 }
-function metrics() {
+function metrics(limit = maxScroll()) {
   const total = duration();
+  const position = ratio(limit);
   $("script-title").textContent = current().title || "Untitled script";
   $("script-info").textContent =
     `${words(current().text)} words  ·  ≈ ${time(total)} at current pace`;
-  $("current-time").textContent = time(ratio() * total);
-  $("remaining-time").textContent = "−" + time(total * (1 - ratio()));
-  $("progress").value = ratio() * 1000;
+  $("current-time").textContent = time(position * total);
+  $("remaining-time").textContent = "−" + time(total * (1 - position));
+  $("progress").value = position * 1000;
   fill($("progress"));
   $("elapsed").textContent = time(elapsed);
 }
@@ -273,6 +279,7 @@ function render() {
 function applySettings() {
   const s = state.settings;
   const pos = ratio();
+  const stageHeight = stage.clientHeight;
   $("speed").value = s.speed;
   $("font-size").value = s.size;
   $("line-spacing").value = s.spacing;
@@ -295,37 +302,32 @@ function applySettings() {
   content.style.fontFamily = fonts[s.font];
   content.style.fontSize = s.size + "px";
   content.style.lineHeight = s.spacing;
-  const band = Math.min(
-    stage.clientHeight,
-    parseFloat(getComputedStyle(content).fontSize) *
-      s.spacing *
-      s.guideHeight *
-      1.18,
-  );
+  const band = Math.min(stageHeight, s.size * s.spacing * s.guideHeight * 1.18);
   stage.style.setProperty("--guide-height", band + "px");
   stage.style.setProperty(
     "--guide-y",
     Math.min(
-      (stage.clientHeight * s.guidePosition) / 100,
-      Math.max(0, stage.clientHeight - band),
+      (stageHeight * s.guidePosition) / 100,
+      Math.max(0, stageHeight - band),
     ) + "px",
   );
   stage.classList.toggle("no-guide", !s.guide);
   document.querySelectorAll("input[type=range]").forEach(fill);
   reader.scrollTop = pos * maxScroll();
+  playhead = reader.scrollTop;
   metrics();
 }
 function pause(message = "Paused · take your time") {
   playing = false;
   cancelAnimationFrame(frame);
-  carry = 0;
+  playhead = reader.scrollTop;
   $("play-symbol").innerHTML = icon("play");
   $("play").setAttribute("aria-label", "Play script");
   $("play-status").textContent = message;
   $("play-dot").classList.remove("playing");
 }
 function play() {
-  if (editing) return;
+  if (editing || !demoAvailable()) return;
   if (!words(current().text)) {
     toast("Add a few words to your script first.");
     return;
@@ -337,7 +339,7 @@ function play() {
   if (ratio() > 0.998) reader.scrollTop = 0;
   playing = true;
   lastFrame = performance.now();
-  carry = 0;
+  playhead = reader.scrollTop;
   $("play-symbol").innerHTML = icon("pause");
   $("play").setAttribute("aria-label", "Pause script");
   $("play-status").textContent = "Prompting · you set the pace";
@@ -349,14 +351,11 @@ function tick(now) {
   const dt = Math.min((now - lastFrame) / 1000, 0.08);
   lastFrame = now;
   elapsed += dt;
-  carry += (maxScroll() / Math.max(duration(), 1)) * dt;
-  const whole = Math.floor(carry);
-  if (whole) {
-    reader.scrollTop += whole;
-    carry -= whole;
-  }
-  metrics();
-  if (reader.scrollTop >= maxScroll() - 1) {
+  const limit = maxScroll();
+  playhead = Math.min(limit, playhead + (limit / Math.max(duration(), 1)) * dt);
+  reader.scrollTop = playhead;
+  metrics(limit);
+  if (playhead >= limit) {
     pause("That’s a wrap. Make it another take?");
     return;
   }
@@ -699,6 +698,7 @@ function focusMode() {
   );
   applySettings();
   reader.scrollTop = pos * maxScroll();
+  playhead = reader.scrollTop;
   reader.focus();
 }
 function newScript(title = "Untitled script", text = "") {
@@ -744,7 +744,9 @@ $("bookmark").onclick = () => addBookmark(editing);
 $("editor-bookmark").onclick = () => addBookmark(true);
 $("new-script").onclick = () => newScript();
 $("progress").oninput = (e) => seek(+e.target.value / 1000);
-reader.onscroll = metrics;
+reader.onscroll = () => {
+  if (!playing) metrics();
+};
 for (const event of ["wheel", "touchstart", "pointerdown"])
   reader.addEventListener(
     event,
@@ -872,6 +874,7 @@ $("guide-handle").onpointercancel = () => {
 $("guide-handle").onkeydown = (e) => {
   if (["ArrowUp", "ArrowDown"].includes(e.key)) {
     e.preventDefault();
+    e.stopPropagation();
     state.settings.guidePosition = clamp(
       state.settings.guidePosition + (e.key === "ArrowUp" ? -1 : 1),
       10,
@@ -890,6 +893,19 @@ document.addEventListener("keydown", (e) => {
     }
     return;
   }
+  if (
+    !e.target.closest("#workspace") &&
+    !document.body.classList.contains("focus-mode")
+  )
+    return;
+  if (
+    !demoAvailable() ||
+    e.defaultPrevented ||
+    editing ||
+    e.target.closest("summary") ||
+    $("output-menu").open
+  )
+    return;
   if (
     e.ctrlKey ||
     e.metaKey ||
@@ -923,9 +939,18 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && playing) pause("Paused while this tab was away");
 });
-window.addEventListener("resize", () => applySettings());
+let resizeFrame = 0;
+window.addEventListener("resize", () => {
+  if (!demoAvailable() && playing)
+    pause("Paused · open the demo on a larger screen");
+  if (resizeFrame) return;
+  resizeFrame = requestAnimationFrame(() => {
+    resizeFrame = 0;
+    applySettings();
+  });
+});
 const helpHTML =
-  '<p class="eyebrow">WELCOME TO THE BROWSER STUDIO</p><h2>Your first take, in a few clicks.</h2><ul><li>Pick a sample script, or use <b>Edit script</b> to make it yours. Import accepts TXT and Markdown.</li><li>Press <b>Play</b> or Space. Change reading pace, typeface, and text size to suit you.</li><li>Scroll to retake a line. Manual scrolling pauses playback. Press Play to continue.</li><li>Add a <b>bookmark</b> to return to a paragraph. In the editor, place your cursor and choose Add bookmark.</li><li><b>Prompter Output → Focus view</b> fills your browser with the script. Escape brings you back.</li></ul><p>This browser demo uses fixed-speed prompting. Voice following, hands-free AI, external-display controls, and iPad pairing are features of the native Mac app.</p>';
+  '<p class="eyebrow">WELCOME TO THE BROWSER STUDIO</p><h2>Your first take, in a few clicks.</h2><ul><li>Pick a sample script, or use <b>Edit script</b> to make it yours. Import accepts TXT and Markdown.</li><li>Press <b>Play</b> or Space. Change reading pace, typeface, and text size to suit you.</li><li>Scroll to retake a line. Manual scrolling pauses playback. Press Play to continue.</li><li>Add a <b>bookmark</b> to return to a paragraph. In the editor, place your cursor and choose Add bookmark.</li><li><b>Prompter Output → Focus view</b> shows only the script with the script. Escape brings you back.</li></ul><p>This browser demo uses fixed-speed prompting. Voice following, hands-free AI, external-display controls, and iPad pairing are features of the native Mac app.</p>';
 const privacyHTML =
   '<p class="eyebrow">YOUR SCRIPT STAYS WITH YOU</p><h2>A browser, not a cloud library.</h2><p>The demo stores scripts and appearance settings in this browser’s local storage. It does not upload scripts or use your microphone. There are no analytics, ads, or AI model downloads on this site.</p><p>Browser storage can be cleared by you or your browser. Use <b>Export .md</b> in the editor to keep a copy. On a shared computer, clear this site’s browser data when you’re done.</p><p>GitHub Pages hosts this site and may log ordinary web requests. Download links take you to GitHub. StudioPrompter is open source under the <a href="https://github.com/codebooker/StudioPrompter/blob/main/LICENSE">AGPL-3.0 license ↗</a>.</p>';
 function info(html) {
@@ -949,17 +974,3 @@ $("info-dialog").onclick = (e) => {
   }
 };
 render();
-// A small build-time manifest keeps download links current, including tester releases.
-fetch("release.json")
-  .then((r) => (r.ok ? r.json() : Promise.reject()))
-  .then((r) => {
-    if (
-      !/^https:\/\/github\.com\/codebooker\/StudioPrompter\/releases\/download\/[A-Za-z0-9._-]+\/StudioPrompter-[A-Za-z0-9._-]+\.dmg$/.test(
-        r.dmg,
-      )
-    )
-      return;
-    document.querySelectorAll("a.download").forEach((a) => (a.href = r.dmg));
-    $("release-version").textContent = r.version;
-  })
-  .catch(() => {});

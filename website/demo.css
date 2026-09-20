@@ -1,0 +1,151 @@
+/* The desktop demo is an app-sized workspace, not a section of the landing page. */
+html:has(.demo-page) {
+  scroll-behavior: auto;
+}
+.demo-page {
+  overflow: hidden;
+}
+.demo-desktop {
+  height: 100dvh;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+.demo-navigation {
+  min-height: 48px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--stroke);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.demo-navigation > a {
+  color: var(--text-secondary);
+  padding: 12px 0;
+}
+.demo-navigation > span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.demo-navigation > div {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.demo-navigation .text-button {
+  min-height: 40px;
+}
+.demo-page .studio {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  grid-template-columns: 224px minmax(0, 1fr) 256px;
+  grid-template-rows: 66px minmax(0, 1fr) 34px;
+}
+.demo-page .studio.editing {
+  grid-template-columns: 224px minmax(0, 1fr);
+}
+.demo-page .main-workspace {
+  height: auto;
+  min-height: 0;
+  padding: 24px;
+}
+.demo-page .library,
+.demo-page .settings {
+  min-height: 0;
+  max-height: none;
+}
+.demo-page .script-list {
+  min-height: 80px;
+}
+.demo-page .bookmarks {
+  min-height: 150px;
+}
+.demo-page .reader-stage {
+  min-height: 0;
+  height: auto;
+}
+.demo-screen-message {
+  display: none;
+}
+@media (max-width: 1100px) {
+  .demo-navigation > span {
+    display: none;
+  }
+  .demo-page .studio {
+    grid-template-columns: 190px minmax(0, 1fr) 224px;
+  }
+  .demo-page .studio.editing {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+  .demo-page .main-workspace {
+    padding: 18px;
+  }
+}
+@media (max-height: 599px) and (min-width: 900px) {
+  .demo-page {
+    overflow-y: auto;
+  }
+}
+@media (max-width: 899px), (hover: none) and (max-height: 500px) {
+  .demo-desktop {
+    display: none;
+  }
+  .demo-page {
+    overflow: auto;
+  }
+  .demo-screen-message {
+    display: flex;
+    min-height: 100svh;
+    padding: 40px 28px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .demo-screen-message h1 {
+    font-size: 36px;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin: 25px 0 15px;
+  }
+  .demo-screen-message p {
+    color: var(--text-secondary);
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 350px;
+    margin: 0 0 24px;
+  }
+}
+/* Keep the rich editor usable in laptop-height browser windows. */
+.demo-page .editor {
+  padding: 16px;
+}
+.demo-page .editor-heading {
+  margin-bottom: 8px;
+}
+.demo-page .editor > input {
+  padding: 3px 0 8px;
+}
+.demo-page .editor-tools {
+  padding: 6px 0 10px;
+}
+.demo-page .rich-editor {
+  min-height: 0;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.demo-page .editor-bookmarks {
+  padding-top: 8px;
+  margin-bottom: 8px;
+  max-height: 95px;
+}
+.demo-page .editor-footer {
+  padding-top: 6px;
+}

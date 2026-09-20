@@ -11,7 +11,7 @@
 
 <p align="center"><strong>A native Mac teleprompter built for the person on camera—and the producer behind it.</strong></p>
 <p align="center">At your webcam or across the studio. A script that follows your voice.</p>
-<p align="center"><a href="https://studioprompter.app">Try the browser studio</a> · <a href="https://github.com/codebooker/StudioPrompter/releases">Releases</a> · <a href="docs/USER-GUIDE.md">User guide</a> · <a href="docs/TESTING.md">Testing & release status</a> · <a href="https://github.com/codebooker/StudioPrompter/issues">Feedback</a></p>
+<p align="center"><a href="https://studioprompter.app">Website & browser demo</a> · <a href="https://github.com/codebooker/StudioPrompter/releases">Releases</a> · <a href="docs/USER-GUIDE.md">User guide</a> · <a href="docs/TESTING.md">Testing & release status</a> · <a href="https://github.com/codebooker/StudioPrompter/issues">Feedback</a></p>
 
 ---
 

@@ -1,6 +1,6 @@
 # StudioPrompter website
 
-The site at https://studioprompter.app is a static, dependency-free browser demo hosted on GitHub Pages. Source lives in `website/`. The demo provides fixed-speed playback, manual scrolling, sample scripts, visual rich-text editing with bold/underline and undo, paragraph bookmarks, a resizable reading guide, and focus view. Voice models, microphone capture, native display management, and iPad pairing are intentionally reserved for the Mac app.
+The site at https://studioprompter.app is a static, dependency-free product homepage hosted on GitHub Pages. It uses a real screenshot of the native Mac app and links to a dedicated full-browser demo at `/demo/`. Demo links are hidden below 900 px; direct small-screen visits show a return-to-site message. The interactive workspace never runs playback while hidden on a small screen. Source lives in `website/`. The demo provides fixed-speed playback, manual scrolling, sample scripts, visual rich-text editing with bold/underline and undo, paragraph bookmarks, a resizable reading guide, and focus view. Voice models, microphone capture, native display management, and iPad pairing are intentionally reserved for the Mac app.
 
 ## Run locally
 
@@ -8,7 +8,7 @@ The site at https://studioprompter.app is a static, dependency-free browser demo
 python3 -m http.server 8765 --directory website
 ```
 
-Open http://localhost:8765. There is no build step. Scripts/settings use localStorage with a versioned, validated schema and stay in the visitor's browser. Imports accept TXT/Markdown up to 100 KB; the browser library supports 30 scripts. Rendering escapes imported text before applying the small supported Markdown subset. The editor displays emphasis directly and serializes it as Markdown for storage/export; pasted text is kept plain and arbitrary HTML is never imported. Bookmark markers and editable bookmark names appear inside the editor. Export saves the current script as Markdown. There are no remote fonts, analytics scripts, or AI downloads.
+Open http://localhost:8765 for the homepage, or http://localhost:8765/demo/ for the desktop demo. There is no build step. Scripts/settings use localStorage with a versioned, validated schema and stay in the visitor's browser. Imports accept TXT/Markdown up to 100 KB; the browser library supports 30 scripts. Rendering escapes imported text before applying the small supported Markdown subset. The editor displays emphasis directly and serializes it as Markdown for storage/export; pasted text is kept plain and arbitrary HTML is never imported. Bookmark markers and editable bookmark names appear inside the editor. Export saves the current script as Markdown. There are no remote fonts, analytics scripts, or AI downloads. The homepage loads only the download-link script; prompting and editor code load on the demo route. Both routes share browser storage under the same origin.
 
 ## Deploy and downloads
 
@@ -20,8 +20,22 @@ The custom domain is configured in GitHub Pages settings/API. The `website/CNAME
 
 ## Native appearance
 
-The desktop demo follows `WorkspaceView.swift`: 66 px toolbar, 224 px library, 256 px inspector, 34 px footer, 68 × 48 px Play button, system UI typography, and the native charcoal/orange palette. `icons.svg` contains original vector drawings matching the native controls’ semantics. Mobile layouts reflow the controls. Browser rendering and non-Mac font fallbacks can differ from AppKit.
+The desktop demo follows `WorkspaceView.swift`: 66 px toolbar, 224 px library, 256 px inspector, 34 px footer, 68 × 48 px Play button, system UI typography, and the native charcoal/orange palette. `icons.svg` contains original vector drawings matching the native controls’ semantics. The demo fills the desktop viewport, including when editing; its text and inspector scroll internally. Small screens receive a dedicated explanatory page instead of the studio. Touch-capable larger screens get larger control hit areas. Browser rendering and non-Mac font fallbacks can differ from AppKit.
 
 ## Verification
 
 Before deployment, check playback/pause and manual-scroll handoff; editing, formatting and persistence after reload; bookmark creation/jumps; reading-guide size/position; focus mode/Escape; responsive layout; and direct DMG/GitHub/license links. Never imply that browser scripts are synced with the native app. Clearing browser site data removes the local demo library; users should export anything they want to keep.
+
+## Social preview
+
+`app-screenshot.jpg` is an actual captured Mac-app window with a bundled sample script. `social-preview.jpg` is a 1200 × 630 composition of that screenshot, referenced by Open Graph and Twitter-card metadata. Regenerate the composition with `python3 scripts/site-social-preview.py`, serve `.build/site-social-preview`, and capture its page at 1200 × 630. Do not capture private user scripts for public assets.
+
+## Accessibility and motion checks
+
+The homepage has no prompting shortcuts. Demo shortcuts require focus inside the workspace, leave inputs and menus alone, and keep Escape available. A skip link moves focus directly to the feature/download section. Playback retains a fractional playhead instead of rounding to whole CSS pixels; each tick reads its scroll limit once. Resize updates are coalesced with requestAnimationFrame.
+
+The download panel uses the dark panel token with scoped foreground colors; feature detail text uses the muted token at 12 px. The pace stepper has 28 × 28 px desktop targets and 44 × 44 px touch targets. Core desktop replica labels retain native sizes; landing-page copy and controls use larger website typography. This is targeted verification, not a claim of a complete accessibility audit.
+
+## TestFlight requests
+
+The Companion feature card links to the owner's Mailhide contact page in a new tab. No contact email or encoded equivalent is embedded in the site. Mailhide provides its own human-verification/reveal flow; availability and verification behavior depend on that third-party service. Visitors send requests through their own email app. There is no form backend, tracking, or automatic invitation on this site.

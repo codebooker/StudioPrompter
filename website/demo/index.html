@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>StudioPrompter — Stay present. Keep your place.</title>
+    <meta
+      name="description"
+      content="A native Mac teleprompter for the person on camera and the producer behind it. Try the interactive browser demo. No account. No upload."
+    />
+    <meta name="theme-color" content="#131418" />
+    <meta
+      property="og:title"
+      content="StudioPrompter — Stay present. Keep your place."
+    />
+    <meta
+      property="og:description"
+      content="Try a working teleprompter in your browser. Meet the native Mac app that follows your voice."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://studioprompter.app/" />
+    <meta
+      property="og:image"
+      content="https://studioprompter.app/social-preview.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The StudioPrompter Mac app with a script library, reading guide, playback controls, and appearance settings."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="StudioPrompter — Stay present. Keep your place."
+    />
+    <meta
+      name="twitter:description"
+      content="Try the browser studio. Download the free, open-source Mac teleprompter."
+    />
+    <meta
+      name="twitter:image"
+      content="https://studioprompter.app/social-preview.jpg"
+    />
+    <meta name="twitter:image:alt" content="The StudioPrompter Mac app." />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://studioprompter.app/demo/" />
+    <link rel="icon" href="../icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="../demo.css" />
+    <script src="../release.js" defer></script>
+    <script src="../app.js" defer></script>
+  </head>
+  <body class="demo-page">
+    <div class="demo-screen-message">
+      <img src="../icon.svg" width="48" height="48" alt="" />
+      <h1>A little more room to prompt.</h1>
+      <p>Please open the interactive demo on a computer or a larger screen.</p>
+      <a class="button" href="../">Back to StudioPrompter</a>
+    </div>
+    <div class="demo-desktop">
+      <nav class="demo-navigation" aria-label="Demo navigation">
+        <a href="../">← Back to StudioPrompter</a
+        ><span>Browser demo · Your scripts stay in this browser</span>
+        <div>
+          <button id="help" class="text-button">How to use</button
+          ><button id="privacy" class="text-button">Privacy</button
+          ><a
+            class="download button compact"
+            href="https://github.com/codebooker/StudioPrompter/releases/download/0.2.0/StudioPrompter-0.2.0-macos-arm64.dmg"
+            >Get the Mac app ↗</a
+          >
+        </div>
+      </nav>
+      <div class="studio" id="workspace">
+        <div class="app-topbar">
+          <div class="app-identity">
+            <span class="wordmark-icon"
+              ><svg class="icon" aria-hidden="true">
+                <use href="../icons.svg#text" /></svg></span
+            ><span class="app-wordmark">Studio<strong>Prompter</strong></span
+            ><span class="demo-badge">WEB DEMO</span>
+          </div>
+          <div class="top-actions">
+            <button class="button compact" id="import">
+              <svg class="icon" aria-hidden="true">
+                <use href="../icons.svg#import" /></svg
+              ><span>Import</span>
+            </button>
+            <details class="output-menu" id="output-menu">
+              <summary class="button compact output-button">
+                <svg class="icon" aria-hidden="true">
+                  <use href="../icons.svg#displays" /></svg
+                ><span>Prompter Output</span
+                ><svg class="icon" aria-hidden="true">
+                  <use href="../icons.svg#chevron" />
+                </svg>
+              </summary>
+              <div class="output-options">
+                <button id="focus">
+                  <svg class="icon" aria-hidden="true">
+                    <use href="../icons.svg#expand" /></svg
+                  >Focus view
+                </button>
+                <p>
+                  External displays, Webcam Layout, and iPad output are
+                  available in the Mac app.
+                </p>
+                <a href="../#native">Explore the Mac app</a>
+              </div>
+            </details>
+          </div>
+          <input
+            id="file"
+            type="file"
+            accept=".txt,.md,.markdown,text/plain,text/markdown"
+            hidden
+          />
+        </div>
+        <aside class="library" aria-label="Script library">
+          <div class="section-label">
+            YOUR SCRIPTS
+            <button class="icon-button" id="new-script" aria-label="New script">
+              <svg class="icon" aria-hidden="true">
+                <use href="../icons.svg#plus" />
+              </svg>
+            </button>
+          </div>
+          <label class="script-search"
+            ><svg class="icon" aria-hidden="true">
+              <use href="../icons.svg#search" /></svg
+            ><input
+              id="script-search"
+              type="search"
+              placeholder="Find a script"
+              aria-label="Find a script"
+          /></label>
+          <div id="scripts" class="script-list"></div>
+          <div class="bookmarks">
+            <div class="section-label">
+              BOOKMARKS
+              <button
+                class="icon-button"
+                id="bookmark"
+                aria-label="Bookmark current paragraph"
+              >
+                <svg class="icon" aria-hidden="true">
+                  <use href="../icons.svg#plus" />
+                </svg>
+              </button>
+            </div>
+            <div id="bookmarks"></div>
+            <p class="sidebar-hint" id="bookmark-hint">
+              Add a bookmark to jump back to a key moment in your script.
+            </p>
+          </div>
+          <p class="local-note">
+            <svg class="icon" aria-hidden="true">
+              <use href="../icons.svg#drive" /></svg
+            ><span id="library-count">3 scripts · Browser library</span>
+          </p>
+        </aside>
+        <div class="main-workspace">
+          <div class="script-heading">
+            <div>
+              <h2 id="script-title"></h2>
+              <p id="script-info" class="muted"></p>
+            </div>
+            <button id="edit" class="button compact">
+              <svg class="icon" aria-hidden="true">
+                <use href="../icons.svg#edit" /></svg
+              >Edit script
+            </button>
+          </div>
+          <div class="reader-shell" id="reader-shell">
+            <div class="preview-header">
+              <span
+                ><span class="live-dot"></span>
+                <span id="preview-label">PRODUCER PREVIEW</span></span
+              ><span
+                ><svg class="icon" aria-hidden="true">
+                  <use href="../icons.svg#hand" /></svg
+                >Scroll or drag to prompt manually</span
+              ><button id="exit-focus" class="button compact" hidden>
+                Exit focus
+                <svg class="icon" aria-hidden="true">
+                  <use href="../icons.svg#close" />
+                </svg>
+              </button>
+            </div>
+            <div class="reader-stage" id="reader-stage">
+              <div
+                class="reader"
+                id="reader"
+                tabindex="0"
+                role="region"
+                aria-label="Script preview. Scroll manually or press Space to play."
+              >
+                <div id="script-content" class="script-content"></div>
+              </div>
+              <div class="focus-shade top-shade"></div>
+              <div class="focus-shade bottom-shade"></div>
+              <div class="reading-guide" id="reading-guide">
+                <button
+                  id="guide-handle"
+                  aria-label="Drag reading guide; arrow keys adjust position"
+                  title="Drag to move the reading guide"
+                >
+                  <svg class="icon" aria-hidden="true">
+                    <use href="../icons.svg#play" />
+                  </svg>
+                </button>
+              </div>
+              <div id="blackout-cover" hidden>
+                <span>OUTPUT BLACKED OUT</span>
+              </div>
+            </div>
+            <div class="preview-footer">
+              <span id="display-label"
+                ><svg class="icon" aria-hidden="true">
+                  <use href="../icons.svg#displays" /></svg
+                >Browser preview</span
+              ><span>Operator view stays unmirrored</span>
+            </div>
+          </div>
+          <div class="editor" id="editor" hidden>
+            <div class="editor-heading">
+              <span class="section-label">SCRIPT EDITOR</span
+              ><span>Markdown · Autosaved</span>
+            </div>
+            <label for="title-input" class="sr-only">Script title</label
+            ><input
+              id="title-input"
+              maxlength="80"
+              placeholder="Untitled script"
+            />
+            <div class="editor-tools">
+              <button data-format="bold" aria-label="Bold selected text">
+                <b>B</b></button
+              ><button
+                data-format="underline"
+                aria-label="Underline selected text"
+              >
+                <u>U</u></button
+              ><button data-format="clear" aria-label="Clear emphasis">
+                Aa</button
+              ><span class="toolbar-divider"></span
+              ><button id="editor-bookmark">
+                <svg class="icon" aria-hidden="true">
+                  <use href="../icons.svg#bookmark" /></svg
+                >Add bookmark</button
+              ><span class="muted">Select words to emphasize</span>
+            </div>
+            <div
+              id="editor-text"
+              class="rich-editor"
+              contenteditable="true"
+              role="textbox"
+              aria-multiline="true"
+              aria-label="Script text"
+              spellcheck="true"
+            ></div>
+            <section class="editor-bookmarks">
+              <div class="section-label">
+                BOOKMARKS<span id="editor-bookmark-count">0</span>
+              </div>
+              <div id="editor-bookmark-list"></div>
+            </section>
+            <div class="editor-footer">
+              <span
+                >Emphasis appears in the preview. Bookmarks stay with their
+                passage.</span
+              ><button class="text-button" id="export">
+                Export .md
+                <svg class="icon" aria-hidden="true">
+                  <use href="../icons.svg#external" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="transport" id="transport">
+            <div class="timeline">
+              <span id="current-time">00:00</span
+              ><label for="progress" class="sr-only">Script position</label
+              ><input
+                id="progress"
+                type="range"
+                min="0"
+                max="1000"
+                value="0"
+              /><span id="remaining-time">−00:00</span>
+            </div>
+            <div class="playback-row">
+              <div class="transport-stat">
+                <span class="section-label">ELAPSED</span
+                ><span id="elapsed">00:00</span>
+              </div>
+              <div class="playback-buttons">
+                <button
+                  id="reset"
+                  class="icon-button"
+                  aria-label="Reset to beginning"
+                  title="Reset (R)"
+                >
+                  <svg class="icon" aria-hidden="true">
+                    <use href="../icons.svg#reset" />
+                  </svg></button
+                ><button
+                  id="previous"
+                  class="icon-button"
+                  aria-label="Previous bookmark"
+                  title="Previous bookmark"
+                >
+                  <svg class="icon" aria-hidden="true">
+                    <use href="../icons.svg#previous" />
+                  </svg></button
+                ><button id="play" class="play-button" aria-label="Play script">
+                  <span id="play-symbol"
+                    ><svg class="icon" aria-hidden="true">
+                      <use href="../icons.svg#play" /></svg
+                  ></span></button
+                ><button
+                  id="next"
+                  class="icon-button"
+                  aria-label="Next bookmark"
+                  title="Next bookmark"
+                >
+                  <svg class="icon" aria-hidden="true">
+                    <use href="../icons.svg#next" />
+                  </svg></button
+                ><button
+                  id="blackout"
+                  class="icon-button"
+                  aria-label="Black out preview"
+                  aria-pressed="false"
+                  title="Blackout (B)"
+                >
+                  <svg class="icon" aria-hidden="true">
+                    <use href="../icons.svg#eye" />
+                  </svg>
+                </button>
+              </div>
+              <div class="transport-stat right">
+                <span class="section-label">PACE</span
+                ><span
+                  ><span id="pace-number">130</span><small> wpm</small></span
+                >
+              </div>
+            </div>
+            <div class="playback-status">
+              <span class="live-dot" id="play-dot"></span
+              ><span id="play-status">Ready for your first take</span>
+            </div>
+          </div>
+        </div>
+        <aside class="settings" id="settings" aria-label="Prompt settings">
+          <h3 class="section-label">PROMPT SETTINGS</h3>
+          <div class="pace-card">
+            <label for="speed"
+              ><svg class="icon" aria-hidden="true">
+                <use href="../icons.svg#speed" /></svg
+              >Reading pace</label
+            >
+            <div class="pace-readout">
+              <output id="speed-value">130</output><span>words / min</span>
+              <div class="pace-stepper">
+                <button id="pace-up" aria-label="Increase reading pace">
+                  <svg class="icon" aria-hidden="true">
+                    <use href="../icons.svg#up" />
+                  </svg></button
+                ><button id="pace-down" aria-label="Decrease reading pace">
+                  <svg class="icon" aria-hidden="true">
+                    <use href="../icons.svg#chevron" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <input
+              id="speed"
+              type="range"
+              min="40"
+              max="260"
+              step="5"
+              value="130"
+            />
+            <div class="range-labels">
+              <span>RELAXED</span><span>BRISK</span>
+            </div>
+          </div>
+          <div class="settings-divider"></div>
+          <h3 class="section-label">APPEARANCE</h3>
+          <div class="typeface-setting">
+            <label for="font">Typeface</label>
+            <div class="select-field">
+              <select id="font">
+                <option value="system">System</option>
+                <option value="avenir">Avenir Next</option>
+                <option value="verdana">Verdana</option>
+                <option value="georgia">Georgia</option></select
+              ><svg class="icon" aria-hidden="true">
+                <use href="../icons.svg#select" />
+              </svg>
+            </div>
+          </div>
+          <div class="setting-block">
+            <label for="font-size"
+              >Text size <output id="font-size-value">38</output></label
+            ><input
+              id="font-size"
+              type="range"
+              min="24"
+              max="72"
+              value="38"
+              step="2"
+            />
+          </div>
+          <div class="setting-block">
+            <label for="line-spacing"
+              >Line spacing <output id="line-spacing-value">1.5×</output></label
+            ><input
+              id="line-spacing"
+              type="range"
+              min="1.2"
+              max="2"
+              value="1.5"
+              step="0.1"
+            />
+          </div>
+          <div class="setting-block">
+            <label for="margins"
+              >Side margins <output id="margins-value">10%</output></label
+            ><input id="margins" type="range" min="5" max="22" value="10" />
+          </div>
+          <label class="toggle-row"
+            >Reading guide
+            <input id="guide-toggle" type="checkbox" role="switch" checked
+          /></label>
+          <div class="setting-block">
+            <label for="guide-position"
+              >Guide position
+              <output id="guide-position-value">28%</output></label
+            ><input
+              id="guide-position"
+              type="range"
+              min="10"
+              max="70"
+              value="28"
+            />
+          </div>
+          <div class="setting-block">
+            <label for="guide-height"
+              >Reading area height
+              <output id="guide-height-value">1 line</output></label
+            ><input
+              id="guide-height"
+              type="range"
+              min="1"
+              max="3"
+              value="1"
+              step="1"
+            />
+          </div>
+          <p class="guide-hint">Drag the orange arrow to reposition.</p>
+          <label class="toggle-row"
+            >Focus current line<input
+              id="focus-line"
+              type="checkbox"
+              role="switch"
+              checked
+          /></label>
+          <div class="voice-teaser">
+            <span class="voice-icon"
+              ><svg class="icon" aria-hidden="true">
+                <use href="../icons.svg#waveform" /></svg
+            ></span>
+            <div>
+              <strong>Let your voice lead.</strong>
+              <p>Local Whisper follows your script in the Mac app.</p>
+              <a href="../#native">Meet voice prompting ↗</a>
+            </div>
+          </div>
+        </aside>
+        <div class="app-status">
+          <span id="save-status"
+            ><span class="live-dot"></span> Saved in this browser</span
+          >
+          <div>
+            <span><kbd>SPACE</kbd> Play / pause</span
+            ><span><kbd>↑ ↓</kbd> Pace</span><span><kbd>← →</kbd> Scroll</span
+            ><span><kbd>R</kbd> Reset</span><span><kbd>B</kbd> Blackout</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <dialog id="info-dialog">
+      <button id="close-dialog" class="icon-button" aria-label="Close dialog">
+        <svg class="icon" aria-hidden="true">
+          <use href="../icons.svg#close" />
+        </svg>
+      </button>
+      <div id="dialog-content"></div>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

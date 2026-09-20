@@ -8,6 +8,10 @@
   --muted: #858f9e;
   --orange: #ff7d4a;
   --green: #7acea6;
+  --text-secondary: #aeb6bf;
+  --control-surface: #ffffff0b;
+  --control-hover: #ffffff19;
+  --control-thumb: #999;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
 }
@@ -95,7 +99,7 @@ button:focus:not(:focus-visible) {
   display: flex;
   gap: 29px;
   margin-left: auto;
-  color: #aeb4bc;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 .site-header nav a:hover,
@@ -358,7 +362,7 @@ h1 span {
   background: #24262a;
 }
 .script-item .script-icon {
-  color: #8993a2;
+  color: var(--muted);
   font-size: 18px;
   padding-top: 1px;
 }
@@ -416,7 +420,7 @@ h1 span {
 .sidebar-hint {
   font-size: 11px;
   line-height: 1.8;
-  color: #7f8895;
+  color: var(--muted);
   padding: 0 10px;
 }
 .local-note {
@@ -425,7 +429,7 @@ h1 span {
   margin: auto 9px 0;
   padding-top: 32px;
   font-size: 9px;
-  color: #7f8997;
+  color: var(--muted);
   align-items: center;
 }
 .local-note .live-dot {
@@ -469,7 +473,7 @@ h2 {
   padding: 13px 17px;
   font-size: 8px;
   letter-spacing: 1.6px;
-  color: #929caa;
+  color: var(--muted);
   background: #101214;
 }
 .preview-header > span:first-child {
@@ -600,7 +604,7 @@ h2 {
   margin-top: 21px;
   font-size: 10px;
   font-variant-numeric: tabular-nums;
-  color: #929ba8;
+  color: var(--muted);
 }
 .timeline input {
   flex: 1;
@@ -672,7 +676,7 @@ h2 {
   align-items: center;
   margin-top: 19px;
   font-size: 10px;
-  color: #929ba8;
+  color: var(--muted);
 }
 .playback-status .live-dot {
   background: #818b99;
@@ -698,7 +702,7 @@ h2 {
   gap: 8px;
 }
 .settings output {
-  color: #939da9;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 400;
 }
@@ -711,7 +715,7 @@ h2 {
 .range-labels {
   display: flex;
   justify-content: space-between;
-  color: #727e8c;
+  color: var(--muted);
   font-size: 6px;
   letter-spacing: 1px;
   margin-top: 9px;
@@ -837,7 +841,7 @@ select {
   justify-content: space-between;
   padding: 0 20px;
   font-size: 8px;
-  color: #8893a1;
+  color: var(--muted);
   gap: 10px;
 }
 .app-status > span {
@@ -857,7 +861,7 @@ kbd {
   font-family: inherit;
   font-size: 7px;
   background: #25292e;
-  color: #929dac;
+  color: var(--muted);
   border-radius: 3px;
   padding: 4px;
   margin-right: 3px;
@@ -867,12 +871,12 @@ kbd {
   justify-content: space-between;
   gap: 20px;
   font-size: 10px;
-  color: #7f8997;
+  color: var(--muted);
   line-height: 1.6;
   padding: 17px 5px;
 }
 .demo-note a {
-  color: #bfc5ce;
+  color: var(--text-secondary);
 }
 .native-section {
   max-width: 1440px;
@@ -914,19 +918,20 @@ kbd {
   font-weight: 550;
 }
 .feature-grid p {
-  color: #969fa9;
+  color: var(--text-secondary);
   line-height: 1.8;
   font-size: 13px;
 }
 .feature-detail {
   display: block;
-  color: #686f7a;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: 12px;
   margin-top: 22px;
   line-height: 1.8;
 }
 .download-panel {
-  background: #d0d0d0;
+  background: var(--panel);
+  color: var(--text);
   border: 1px solid #303438;
   border-radius: 12px;
   padding: 30px;
@@ -953,11 +958,11 @@ kbd {
 }
 .release-note {
   font-size: 10px;
-  color: #858f9c;
+  color: var(--muted);
   margin-top: 17px;
 }
 .release-note a {
-  color: #b6bfc9;
+  color: var(--text-secondary);
 }
 footer {
   max-width: 1440px;
@@ -973,7 +978,7 @@ footer .brand {
   letter-spacing: -0.5px;
 }
 footer p {
-  color: #79828e;
+  color: var(--muted);
   font-size: 10px;
   line-height: 1.6;
 }
@@ -983,7 +988,7 @@ footer > div {
   gap: 25px;
   align-items: center;
   font-size: 10px;
-  color: #aeb6bf;
+  color: var(--text-secondary);
 }
 .footer-note {
   display: none;
@@ -1197,11 +1202,11 @@ dialog .eyebrow {
 .studio .button {
   gap: 7px;
   font-weight: 500;
-  background: #ffffff0b;
+  background: var(--control-surface);
   border-color: var(--stroke);
 }
 .studio .button:hover {
-  background: #ffffff19;
+  background: var(--control-hover);
 }
 .studio .button .icon {
   font-size: 14px;
@@ -1489,8 +1494,10 @@ dialog .eyebrow {
 .pace-stepper button {
   background: #ffffff10;
   border: 0;
-  padding: 1px 5px;
-  font-size: 10px;
+  padding: 4px 7px;
+  min-width: 28px;
+  min-height: 28px;
+  font-size: 12px;
 }
 .pace-stepper button + button {
   border-top: 1px solid #ffffff18;
@@ -1529,13 +1536,13 @@ dialog .eyebrow {
 .settings input[type="range"]::-webkit-slider-thumb {
   width: 7px;
   height: 13px;
-  background: #999;
+  background: var(--control-thumb);
   border-radius: 5px;
 }
 .settings input[type="range"]::-moz-range-thumb {
   width: 7px;
   height: 13px;
-  background: #999;
+  background: var(--control-thumb);
   border-radius: 5px;
 }
 .toggle-row {
@@ -2331,12 +2338,12 @@ dialog .eyebrow {
   color: var(--orange);
 }
 .timeline input::-webkit-slider-thumb {
-  background: #999;
+  background: var(--control-thumb);
   width: 20px;
   height: 20px;
 }
 .timeline input::-moz-range-thumb {
-  background: #999;
+  background: var(--control-thumb);
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -2417,5 +2424,293 @@ dialog .eyebrow {
   }
   .editor-bookmarks {
     max-height: 120px;
+  }
+}
+
+/* Website accessibility, outside the native desktop replica. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 16px;
+  z-index: 200;
+  transform: translateY(-180%);
+  padding: 14px 18px;
+  border-radius: 8px;
+  background: var(--orange);
+  color: var(--bg);
+  font-weight: 600;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+.studio-caption-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.studio-caption-actions > * {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+.feature-number,
+.demo-note,
+.release-note,
+footer p,
+footer > div {
+  font-size: 12px;
+}
+.download-panel p {
+  font-size: 13px;
+}
+.native-section:focus {
+  outline: none;
+}
+@media (max-width: 800px) {
+  .site-header {
+    flex-wrap: wrap;
+    gap: 12px 20px;
+  }
+  .site-header nav {
+    display: flex;
+    flex-basis: 100%;
+    order: 3;
+    margin: 0;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .site-header nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 13px;
+  }
+  .site-header .download {
+    min-height: 44px;
+  }
+  .feature-detail,
+  .release-note,
+  .demo-note,
+  footer p,
+  footer > div {
+    font-size: 12px;
+  }
+  .download-panel p {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+}
+/* Touch layouts retain the same glyphs while increasing their hit areas. */
+@media (max-width: 800px), (any-pointer: coarse) {
+  .studio button,
+  .studio summary,
+  .studio select,
+  .studio input[type="search"],
+  .studio input[type="text"],
+  .text-button {
+    min-height: 44px;
+  }
+  .studio .icon-button,
+  .pace-stepper button,
+  .editor-tools button {
+    min-width: 44px;
+  }
+  .playback-buttons {
+    gap: 4px;
+  }
+  .play-button {
+    min-width: 52px;
+  }
+  .pace-stepper {
+    flex-direction: row-reverse;
+    gap: 1px;
+  }
+  .pace-stepper button + button {
+    border-top: 0;
+    border-right: 1px solid var(--stroke);
+  }
+  .pace-readout {
+    flex-wrap: wrap;
+  }
+  .settings label,
+  .settings .toggle-row,
+  .settings output,
+  .select-field select {
+    font-size: 13px;
+  }
+  .select-field .icon {
+    top: 16px;
+  }
+  .studio .section-label,
+  .preview-header,
+  .preview-footer,
+  .script-heading p,
+  .playback-status,
+  .app-status,
+  .editor-heading,
+  .editor-footer {
+    font-size: 11px;
+  }
+  .settings input[type="range"],
+  .timeline input[type="range"] {
+    height: 44px;
+    background-size: 100% 3px;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin: 0;
+  }
+  .settings input[type="range"] {
+    background-image: linear-gradient(var(--stroke), var(--stroke));
+    background-color: transparent;
+  }
+  .settings input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    height: 24px;
+  }
+  .settings input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 24px;
+  }
+  .toggle-row {
+    min-height: 44px;
+  }
+  .toggle-row input {
+    width: 40px;
+    height: 24px;
+  }
+  .toggle-row input:before {
+    width: 20px;
+    height: 20px;
+  }
+  .toggle-row input:checked:before {
+    transform: translateX(16px);
+  }
+  .editor-tools {
+    flex-wrap: wrap;
+  }
+  .editor-bookmarks {
+    max-height: 170px;
+  }
+  .editor-bookmark-row {
+    flex-wrap: wrap;
+  }
+  .editor-bookmark-row input {
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .editor-bookmark-row .text-button {
+    font-size: 12px;
+  }
+  .editor-bookmark-row .bookmark-badge {
+    height: 44px;
+  }
+  .reader-stage .reading-guide button {
+    min-width: 44px;
+    left: 0;
+  }
+  .output-options button,
+  .output-options a {
+    min-height: 44px;
+  }
+}
+@media (max-width: 580px) {
+  .site-header {
+    padding-bottom: 6px;
+  }
+  .studio-caption {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    font-size: 10px;
+  }
+  .studio-caption-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .studio-caption-actions .text-button {
+    font-size: 12px;
+  }
+  .library > .section-label {
+    display: flex;
+    margin: 0 0 6px;
+  }
+  .script-item strong {
+    font-size: 13px;
+  }
+  .bookmarks {
+    display: block;
+    margin: 10px 0 0;
+  }
+  .bookmarks .section-label {
+    margin: 0;
+  }
+  #bookmarks {
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 140px;
+  }
+  .bookmark-row {
+    min-width: 0;
+    width: 100%;
+  }
+  .bookmark-jump {
+    font-size: 12px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding: 5px 10px;
+  }
+  .bookmark-remove {
+    flex-shrink: 0;
+  }
+  .playback-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .playback-buttons {
+    order: 3;
+    justify-content: center;
+    width: 100%;
+    gap: 8px;
+  }
+  .transport-stat {
+    width: auto;
+  }
+  .transport-stat > span:last-child {
+    font-size: 20px;
+  }
+  .preview-header {
+    height: 39px;
+  }
+  .preview-header > span:first-child {
+    letter-spacing: 1px;
+  }
+  .settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pace-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pace-readout {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .pace-readout > span {
+    font-size: 12px;
+  }
+  .rich-editor {
+    font-size: 17px;
+  }
+  .editor-footer .text-button {
+    font-size: 12px;
+  }
+  .app-status {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 800px) {
+  .site-header .download {
+    font-size: 12px;
   }
 }
