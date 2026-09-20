@@ -8,13 +8,17 @@ The iPad app is **StudioPrompter Companion**, a reading display for **StudioProm
 - Name: StudioPrompter Companion
 - Primary language: English (U.S.)
 - Bundle ID: `co.codebooker.studioprompter.companion`
-- Suggested SKU: `studioprompter-companion-ipad`
+- SKU: `studioprompter-companion-ipad`
+- Apple app ID: `6814059982`
+- [App Store Connect](https://appstoreconnect.apple.com/apps/6814059982/testflight)
 - Version: 0.1.0, build 2
 - Category suggestion: Photo & Video
 - Support: https://github.com/codebooker/StudioPrompter/issues
 - Privacy policy draft: [PRIVACY.md](PRIVACY.md)
 
-Confirm the publishing Apple Developer team in App Store Connect. Development-device signing does not prove that App Store distribution credentials or the app record are ready. Account agreements must be reviewed and accepted by the account holder.
+The app record was created under the John Tawes account. The Release archive and App Store Connect distribution export have succeeded for 0.1.0 (2). Account agreements must be reviewed and accepted by the account holder.
+
+The beta description, marketing/privacy URLs, feedback email, and review contact have been saved in App Store Connect. Personal review contact details remain there and are not committed to this repository.
 
 ## Build and export
 
@@ -54,9 +58,7 @@ Add a review contact name, email, and phone number directly in App Store Connect
 
 ## Remaining submission gates
 
-- Authenticated App Store Connect access and app record creation.
-- App Store distribution export/validation and upload.
-- Review contact details and beta feedback email.
+- Successful upload and processing in App Store Connect.
 - Matching Mac release available for companion testers/reviewers.
 - Confirm upload processing, privacy/export-compliance answers, then internal installation from TestFlight.
 - External beta review approval before inviting external testers.
