@@ -20,6 +20,8 @@ The app record was created under the John Tawes account. Build 2 passed local ex
 
 The beta description, marketing/privacy URLs, feedback email, and review contact have been saved in App Store Connect. Personal review contact details remain there and are not committed to this repository.
 
+Build 3 uploaded successfully on 2026-09-20 and appeared in TestFlight as **Processing**. It has not yet been installed through TestFlight or submitted for external beta review.
+
 ## Build and export
 
 Run with full Xcode and a team authorized for distribution:
@@ -58,7 +60,7 @@ Add a review contact name, email, and phone number directly in App Store Connect
 
 ## Remaining submission gates
 
-- Successful upload and processing in App Store Connect.
+- Completion of build processing in App Store Connect.
 - Matching Mac release available for companion testers/reviewers.
 - Confirm upload processing, privacy/export-compliance answers, then internal installation from TestFlight.
 - External beta review approval before inviting external testers.

@@ -223,4 +223,4 @@ This verifies the real 0.1.0-to-0.1.1 update on the development Mac. New-recipie
 - Created the StudioPrompter Companion app record (`6814059982`) and saved beta description, privacy/marketing links, feedback email, and review contact details. Personal contact details are kept in App Store Connect.
 - Apple rejected build 2 during upload validation because both embedded frameworks lacked `CFBundleShortVersionString`. Local export alone did not catch that omission.
 - Build 3 shares marketing/build version settings across the app and frameworks. The archive script now verifies both embedded framework versions in the exported IPA. Release archive/export and the expanded metadata checks passed.
-- Upload acceptance, TestFlight processing and installation, and external beta review remain separate gates; local export success does not establish them.
+- Build 3 passed Apple upload validation and uploaded successfully. App Store Connect displayed 0.1.0 (3) as Processing. TestFlight processing and installation, and external beta review remain separate gates.
