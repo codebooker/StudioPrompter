@@ -297,7 +297,7 @@ final class VoiceController: ObservableObject {
                     guard snapshot.end - processedEnd >= 0.3, snapshot.samples.count >= 16000 else { continue }
                     processedEnd = snapshot.end
                     let started = ProcessInfo.processInfo.systemUptime
-                    let result = try await service.transcribe(snapshot.samples)
+                    let result = try await service.transcribe(snapshot.samples, collectingCommand: handsFreeCommands && awaitingCommand)
                     guard generation == run, !Task.isCancelled else { return }
                     inferenceSeconds = ProcessInfo.processInfo.systemUptime - started
                     consume(result, snapshot: snapshot)

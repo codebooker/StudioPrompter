@@ -134,7 +134,30 @@ import PrompterCommands
             ("Can this change the font to Georgia", nil),
             ("I discussed the other mode yesterday", nil),
             ("Increase line spacing by two", nil),
-            ("Use Helvetica", nil)
+            ("Use Helvetica", nil),
+            ("Increase the reading guide height", .guideHeight(1)),
+            ("Decrease the reading guide height", .guideHeight(-1)),
+            ("Make the reading guide taller", .guideHeight(1)),
+            ("Could you make the reading guide shorter", .guideHeight(-1)),
+            ("Make the reading guide bigger", .guideHeight(1)),
+            ("Shrink the reading guide", .guideHeight(-1)),
+            ("Show more lines in the reading guide", .guideHeight(1)),
+            ("Show fewer lines in the reading guide", .guideHeight(-1)),
+            ("Make the focus area taller", .guideHeight(1)),
+            ("Set the reading guide height to two lines", .guideLines(2)),
+            ("Make the reading window three lines tall", .guideLines(3)),
+            ("Show one line in the reading guide", .guideLines(1)),
+            ("Set the guide height to four lines", nil),
+            ("Move the reading guide up two lines", nil),
+            ("Don't change the reading guide height", nil),
+            ("Increase the guide height and move it up", nil),
+            ("Set guide height to zero", nil),
+            ("Increase the line height", .lineSpacing(1)),
+            ("Increase the line height a little bit", .lineSpacing(1)),
+            ("Up the line height", .lineSpacing(1)),
+            ("Can you make the line height bigger", .lineSpacing(1)),
+            ("Decrease the line height", .lineSpacing(-1)),
+            ("Set line height to two lines", nil)
         ]
         var failed = 0
         var wrongActions = 0

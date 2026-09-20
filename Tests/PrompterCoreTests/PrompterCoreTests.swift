@@ -687,6 +687,58 @@ private func voiceCommandChecks() {
         ("Increase line spacing by two", "{\"action\":\"increase_line_spacing\"}")
     ] { expectTrue(CommandIntent.interpret(output, request: request) == nil) }
 
+    for request in ["Increase the line height", "Increase the line height a little bit", "Up the line height", "Can you make the line height bigger", "Increase the line spacing"] {
+        expectEqual(CommandIntent.interpret("{\"action\":\"increase_line_spacing\"}", request: request), .lineSpacing(1))
+        expectTrue(CommandIntent.interpret("{\"action\":\"increase_guide_height\"}", request: request) == nil)
+        expectTrue(CommandIntent.interpret("{\"action\":\"move_guide_up\"}", request: request) == nil)
+    }
+    for request in ["Increase the reading guide height", "Make the reading guide bigger"] {
+        expectEqual(CommandIntent.interpret("{\"action\":\"increase_guide_height\"}", request: request), .guideHeight(1))
+        expectTrue(CommandIntent.interpret("{\"action\":\"increase_line_spacing\"}", request: request) == nil)
+    }
+    expectFalse(VoiceCommand.isIncomplete("Turn the line height up"))
+    // Guide height must not become guide movement or script navigation.
+    for (request, output, expected) in [
+        ("Make the reading guide taller", "{\"action\":\"increase_guide_height\"}", VoiceCommand.guideHeight(1)),
+        ("Show fewer lines in the reading guide", "{\"action\":\"decrease_guide_height\"}", .guideHeight(-1)),
+        ("Set guide height to two lines", "{\"action\":\"set_guide_height\",\"value\":2}", .guideLines(2)),
+        ("Make the focus area taller", "{\"action\":\"increase_guide_height\"}", .guideHeight(1))
+    ] { expectEqual(CommandIntent.interpret(output, request: request), expected) }
+    for (request, output) in [
+        ("Turn the guide height up", "{\"action\":\"move_guide_up\"}"),
+        ("Move the guide up", "{\"action\":\"increase_guide_height\"}"),
+        ("Set guide height to two lines", "{\"action\":\"forward_2_lines\"}"),
+        ("Set guide height to two lines", "{\"action\":\"set_guide_height\",\"value\":3}"),
+        ("Move the guide up two lines", "{\"action\":\"set_guide_height\",\"value\":2}"),
+        ("Show more lines in the guide", "{\"action\":\"show_reading_guide\"}"),
+        ("Set guide height to four lines", "{\"action\":\"set_guide_height\",\"value\":4}")
+    ] { expectTrue(CommandIntent.interpret(output, request: request) == nil) }
+    settings.guideLines = 1
+    let preservedPosition = settings.guidePosition
+    _ = VoiceCommand.guideHeight(-1).applyAppearance(to: &settings)
+    expectEqual(settings.guideLines, 1)
+    _ = VoiceCommand.guideHeight(1).applyAppearance(to: &settings)
+    expectEqual(settings.guideLines, 2)
+    _ = VoiceCommand.guideLines(3).applyAppearance(to: &settings)
+    _ = VoiceCommand.guideHeight(1).applyAppearance(to: &settings)
+    expectEqual(settings.guideLines, 3)
+    expectEqual(settings.guidePosition, preservedPosition)
+    expectFalse(settings.showGuide)
+
+    let laptopScreen = CGRect(x: 0, y: 0, width: 1470, height: 956)
+    let laptopVisible = CGRect(x: 0, y: 64, width: 1470, height: 859)
+    let cameraFrame = CameraViewGeometry.frame(screen: laptopScreen, visible: laptopVisible, safeTop: 32)
+    expectTrue(laptopVisible.contains(cameraFrame))
+    expectTrue(cameraFrame.maxY < laptopScreen.maxY - 32)
+    expectEqual(cameraFrame.midX, laptopScreen.midX)
+    let external = CGRect(x: -1920, y: 0, width: 1920, height: 1080)
+    let externalCamera = CameraViewGeometry.frame(screen: external, visible: external.insetBy(dx: 0, dy: 24), safeTop: 0)
+    expectTrue(external.contains(externalCamera))
+    expectEqual(externalCamera.midX, external.midX)
+    let smallScreen = CGRect(x: 0, y: 0, width: 800, height: 600)
+    let smallCamera = CameraViewGeometry.frame(screen: smallScreen, visible: smallScreen, safeTop: 0, size: CGSize(width: 1000, height: 900))
+    expectTrue(smallScreen.contains(smallCamera))
+
     var script = Script(title: "Navigation", text: "First paragraph has enough words to wrap across several reading lines. Keep reading this opening.\n\nSecond paragraph is here with another sentence and more words.\n\nThird paragraph finishes the script.")
     script.settings.fontSize = 58
     let layout = ScriptCueLayout(script)

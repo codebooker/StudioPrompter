@@ -62,6 +62,8 @@ struct WorkspaceView: View {
                     .fixedSize()
             }
             Spacer()
+            Button(action: state.openCameraView) { Label("Camera view", systemImage: "person.crop.rectangle") }.buttonStyle(QuietButton())
+                .help("Read close to your webcam · drag and resize to fit")
             Button(action: state.importScript) { Label("Import", systemImage: "square.and.arrow.down") }.buttonStyle(QuietButton())
             OutputMenu(state: state, prominent: true)
         }.padding(.horizontal, 24).frame(height: 66)
@@ -388,6 +390,7 @@ struct OutputMenu: View {
                 Button("Send to \(screen.localizedName) (\(Int(screen.frame.width)) × \(Int(screen.frame.height)))") { state.startOutput(on: screen) }
             }
             Divider()
+            Button("Open Camera view") { state.openCameraView() }
             Button("Open rehearsal window") { state.present() }
             if state.outputScreenID != nil { Button("Stop talent output") { state.stopOutput() } }
         } label: {

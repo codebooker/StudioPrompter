@@ -41,6 +41,7 @@ struct PrompterApp: App {
                 Button("Next Cue") { state.jumpCue(forward: true) }.keyboardShortcut(.rightArrow, modifiers: .command)
                 Divider()
                 Button("Toggle Talent Blackout") { state.playback.isBlackedOut.toggle() }.keyboardShortcut("b", modifiers: [.command, .shift])
+                Button("Open Camera View", action: state.openCameraView).keyboardShortcut("k", modifiers: [.command, .shift])
                 Button("Open Rehearsal Window") { state.present() }.keyboardShortcut("p", modifiers: [.command, .shift])
                 Button("Stop Talent Output", action: state.stopOutput).keyboardShortcut(".", modifiers: [.command, .shift])
             }

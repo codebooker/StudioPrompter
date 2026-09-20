@@ -1,7 +1,7 @@
 import Foundation
 
 public enum VoiceCommand: Equatable, Sendable {
-    case lines(Int), paragraph(Int), paragraphNumber(Int), lastParagraph, top, cue(Int), cueNumber(Int), font(Int), fontSize(Int), followScript, adaptivePace, toggleVoiceMode, typeface(ScriptTypeface), lineSpacing(Int), margins(Int), guideVisible(Bool), guidePosition(Int), focusLine(Bool), pause, resume, cancel, stopListening
+    case lines(Int), paragraph(Int), paragraphNumber(Int), lastParagraph, top, cue(Int), cueNumber(Int), font(Int), fontSize(Int), followScript, adaptivePace, toggleVoiceMode, typeface(ScriptTypeface), lineSpacing(Int), margins(Int), guideVisible(Bool), guidePosition(Int), guideHeight(Int), guideLines(Int), focusLine(Bool), pause, resume, cancel, stopListening
 
     /// Applies bounded appearance changes. The app preserves the current reading anchor.
     public func applyAppearance(to settings: inout PromptSettings) -> String? {
@@ -13,6 +13,8 @@ public enum VoiceCommand: Equatable, Sendable {
         case .margins(let direction): settings.margin = min(220, max(55, settings.margin + Double(direction.signum()) * 10))
         case .guideVisible(let visible): settings.showGuide = visible
         case .guidePosition(let direction): settings.guidePosition = min(0.65, max(0.15, settings.guidePosition + Double(direction.signum()) * 0.03))
+        case .guideHeight(let direction): settings.guideLines = min(3, max(1, settings.guideLines + Double(direction.signum())))
+        case .guideLines(let lines): settings.guideLines = min(3, max(1, Double(lines)))
         case .focusLine(let enabled): settings.focusMode = enabled
         default: return nil
         }
@@ -23,6 +25,7 @@ public enum VoiceCommand: Equatable, Sendable {
         case .margins: return "Side margins · \(Int(settings.margin / 10))%"
         case .guideVisible: return "Reading guide \(settings.showGuide ? "on" : "off")"
         case .guidePosition: return "Guide position · \(Int((settings.guidePosition * 100).rounded()))%"
+        case .guideHeight, .guideLines: return "Guide height · \(Int(settings.guideLines)) \(settings.guideLines == 1 ? "line" : "lines")"
         case .focusLine: return "Focus current line \(settings.focusMode ? "on" : "off")"
         default: return nil
         }
@@ -75,7 +78,7 @@ public enum VoiceCommand: Equatable, Sendable {
     public static func isIncomplete(_ text: String) -> Bool {
         let words = requestTokens(text)
         guard let last = words.last, parse(text) == nil else { return false }
-        if words.contains("guide"), ["up", "down"].contains(last) { return false }
+        if (words.contains("guide") || words.contains("spacing") || (words.contains("line") && words.contains("height"))), ["up", "down"].contains(last) { return false }
         if ["to", "from", "the", "a", "an", "by", "up", "down", "back", "forward", "with", "and", "of"].contains(last) { return true }
         if words.contains("from"), !words.contains("to"), !Set(words).isDisjoint(with: ["switch", "change"]) { return true }
         let countEnding = Int(last) != nil || ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"].contains(last)

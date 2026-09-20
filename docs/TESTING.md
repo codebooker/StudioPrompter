@@ -118,3 +118,15 @@ Quitting the second-pass app with the local command model loaded produced a llam
 Third-pass automated results: 378 deterministic assertions passed; the local-model corpus matched 97/97 cases with zero incorrect actions (median approximately 0.48 seconds, excluding Whisper and end-of-command settling); all 30 synthetic speech fixtures passed, including both mid-command pauses. These remain development regression fixtures. Another live presenter pass is required to accept timing and natural phrasing.
 
 Ordinary release checks passed after these changes, including exclusion of command activation and the llama runtime. The experimental bundle built, signed, and reopened successfully. The microphone remained off during model shutdown checks.
+
+### Guide-height and line-height wording follow-up
+
+The command contract now supports guide-height increases/decreases and exact 1–3-line heights. “Line height” maps to text line spacing; “reading guide height” maps to the reading area. Regression fixtures include the presenter’s variants: “increase the line height,” “increase the line height a little bit,” “up the line height,” “can you make the line height bigger,” “increase the reading guide height,” and “make the reading guide bigger.” Checks reject wrong-control substitutions, movement interpreted as sizing, and unsupported guide heights.
+
+Follow-up results: 420 deterministic assertions passed; all 120 local-model text cases matched with zero unexpected actions; all 39 synthetic speech cases passed. Ordinary release checks and the signed experimental build passed. The first-token confidence cutoff is relaxed only while collecting a command after a confirmed wake phrase; ordinary script transcription retains its existing cutoff and segment/word filters still apply.
+
+### Camera view (development build)
+
+The compact floating window shares script progress and controls with the producer workspace. Geometry checks cover notched built-in screens, notch-free external screens with negative coordinates, and constrained screen sizes. The initial placement uses the built-in screen when available and respects its camera safe area. Width and height are independent; a native drag handle allows placement beneath an external webcam, and a center button restores top-center placement on the current screen.
+
+Native checks on the MacBook passed for opening Camera view, displaying the current script and microphone state, and changing the width/height from 580×240 to 360×180 using the sliders. The compact footer remained readable at the minimum size. The presenter began hands-free playback during this check, so further UI automation was stopped to avoid interrupting that pass. Native drag/recenter, reopen retention, and external-webcam placement remain live acceptance checks; external hardware was disconnected. Camera view and these command changes have not been published as a release.

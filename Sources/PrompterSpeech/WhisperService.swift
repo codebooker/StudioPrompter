@@ -68,11 +68,13 @@ public actor WhisperService {
         try folder.path.write(to: marker, atomically: true, encoding: .utf8)
         loadedModel = model
     }
-    public func transcribe(_ samples: [Float]) async throws -> HeardSpeech {
+    public func transcribe(_ samples: [Float], collectingCommand: Bool = false) async throws -> HeardSpeech {
         try await enter()
         defer { busy = false }
         guard let engine else { throw NSError(domain: "Prompter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Load a Whisper model first."]) }
-        let options = DecodingOptions(language: "en", temperatureFallbackCount: 0, sampleLength: 160, skipSpecialTokens: true, wordTimestamps: true, suppressBlank: true, concurrentWorkerCount: 1)
+        // Once a wake phrase is confirmed, let the complete utterance decode even when
+        // its first token is uncertain. Whole-segment confidence filtering still applies.
+        let options = DecodingOptions(language: "en", temperatureFallbackCount: 0, sampleLength: 160, skipSpecialTokens: true, wordTimestamps: true, suppressBlank: true, firstTokenLogProbThreshold: collectingCommand ? nil : -1.5, concurrentWorkerCount: 1)
         let results = try await engine.transcribe(audioArray: samples, decodeOptions: options)
         let segments = results.flatMap(\.segments).filter { $0.noSpeechProb < 0.65 && $0.avgLogprob > -1.2 }
         // Keep this explicit so Swift 6.0/6.1 can type-check it as well as

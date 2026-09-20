@@ -2,7 +2,7 @@ import Foundation
 
 /// A bounded action contract shared by model inference and request validation.
 public enum CommandIntent {
-    public static let actions = ["restart_script", "restart_paragraph", "previous_paragraph", "next_paragraph", "last_paragraph", "previous_cue", "next_cue", "larger_text", "smaller_text", "follow_script", "adaptive_pace", "pause", "resume", "cancel", "stop_listening", "unknown", "toggle_voice_mode", "font_system", "font_avenir_next", "font_verdana", "font_georgia", "increase_line_spacing", "decrease_line_spacing", "wider_margins", "narrower_margins", "show_reading_guide", "hide_reading_guide", "move_guide_up", "move_guide_down", "focus_line_on", "focus_line_off"]
+    public static let actions = ["restart_script", "restart_paragraph", "previous_paragraph", "next_paragraph", "last_paragraph", "previous_cue", "next_cue", "larger_text", "smaller_text", "follow_script", "adaptive_pace", "pause", "resume", "cancel", "stop_listening", "unknown", "toggle_voice_mode", "font_system", "font_avenir_next", "font_verdana", "font_georgia", "increase_line_spacing", "decrease_line_spacing", "wider_margins", "narrower_margins", "show_reading_guide", "hide_reading_guide", "move_guide_up", "move_guide_down", "focus_line_on", "focus_line_off", "increase_guide_height", "decrease_guide_height"]
         + (1...10).map { "back_\($0)_lines" } + (1...10).map { "forward_\($0)_lines" }
     private struct Output: Decodable { let action: String; let value: Int? }
     public static func decode(_ output: String) -> VoiceCommand? {
@@ -15,6 +15,7 @@ public enum CommandIntent {
             case "move_paragraphs" where (-10...10).contains(value) && value != 0: return .paragraph(value)
             case "go_to_paragraph" where (1...999).contains(value): return .paragraphNumber(value)
             case "go_to_cue" where (1...999).contains(value): return .cueNumber(value)
+            case "set_guide_height" where (1...3).contains(value): return .guideLines(value)
             case "set_font_size" where (32...90).contains(value): return .fontSize(value)
             default: return nil
             }
@@ -45,6 +46,8 @@ public enum CommandIntent {
         case "hide_reading_guide": return .guideVisible(false)
         case "move_guide_up": return .guidePosition(-1)
         case "move_guide_down": return .guidePosition(1)
+        case "increase_guide_height": return .guideHeight(1)
+        case "decrease_guide_height": return .guideHeight(-1)
         case "focus_line_on": return .focusLine(true)
         case "focus_line_off": return .focusLine(false)
         case "pause": return .pause
@@ -118,13 +121,19 @@ public enum CommandIntent {
             let explicit = numbers.isEmpty ? 1 : numbers.count == 1 ? numbers[0] : -1
             return abs(count) == explicit && (count < 0 ? backwards && !forwards : forwards && !backwards)
         }
-        let guide = set.contains("guide")
-        let focus = set.contains("focus")
-        let spacing = set.contains("spacing")
+        let guideArea = phrase.contains("focus area") || phrase.contains("reading area") || phrase.contains("reading window")
+        let lineHeight = set.contains("line") && set.contains("height")
+        let guide = set.contains("guide") || guideArea
+        let focus = set.contains("focus") && !guideArea
+        let height = !set.isDisjoint(with: ["height", "taller", "shorter", "bigger", "smaller", "larger", "expand", "shrink", "enlarge", "tall", "size"])
+        let heightUp = !set.isDisjoint(with: ["increase", "taller", "bigger", "larger", "more", "expand", "enlarge"]) || (set.contains("height") && set.contains("up"))
+        let heightDown = !set.isDisjoint(with: ["decrease", "shorter", "smaller", "less", "fewer", "reduce", "shrink"]) || (set.contains("height") && set.contains("down"))
+        let guideMovement = !set.isDisjoint(with: ["move", "shift", "raise", "lower", "reposition"])
+        let spacing = set.contains("spacing") || (lineHeight && !guide)
         let margins = set.contains("margins") || set.contains("margin")
         let appearance = guide || focus || spacing || margins
-        let increase = !set.isDisjoint(with: ["increase", "bigger", "larger", "wider", "more", "expand"])
-        let decrease = !set.isDisjoint(with: ["decrease", "smaller", "narrower", "less", "reduce", "shrink", "tighten"])
+        let increase = !set.isDisjoint(with: ["increase", "bigger", "larger", "wider", "more", "expand"]) || (lineHeight && set.contains("up"))
+        let decrease = !set.isDisjoint(with: ["decrease", "smaller", "narrower", "less", "reduce", "shrink", "tighten"]) || (lineHeight && set.contains("down"))
         func visibility(_ value: Bool) -> Bool {
             let on = !set.isDisjoint(with: ["on", "show", "enable"])
             let off = !set.isDisjoint(with: ["off", "hide", "disable"])
@@ -141,10 +150,17 @@ public enum CommandIntent {
         case .margins(let delta):
             guard margins, !guide, !focus, !spacing, numbers.isEmpty,
                   delta > 0 ? increase && !decrease : decrease && !increase else { return nil }
-        case .guideVisible(let value): guard guide, !focus, !spacing, !margins, numbers.isEmpty, visibility(value) else { return nil }
+        case .guideVisible(let value): guard guide, !height, !heightUp, !heightDown, !focus, !spacing, !margins, numbers.isEmpty, visibility(value) else { return nil }
         case .focusLine(let value): guard focus, !guide, !spacing, !margins, numbers.isEmpty, visibility(value) else { return nil }
+        case .guideHeight(let direction):
+            guard guide, !focus, !spacing, !margins, !guideMovement, numbers.isEmpty,
+                  direction > 0 ? heightUp && !heightDown : heightDown && !heightUp else { return nil }
+        case .guideLines(let count):
+            guard guide, !focus, !spacing, !margins, !guideMovement, numbers == [count], !set.contains("by"),
+                  height || !set.isDisjoint(with: ["line", "lines"]),
+                  set.isDisjoint(with: ["up", "down"]) else { return nil }
         case .guidePosition(let direction):
-            guard guide, !focus, !spacing, !margins, numbers.isEmpty,
+            guard guide, !height, !focus, !spacing, !margins, numbers.isEmpty,
                   direction < 0 ? set.contains("up") && !set.contains("down") : set.contains("down") && !set.contains("up") else { return nil }
         case .toggleVoiceMode:
             guard otherMode, !phrase.contains("from"), phrase.contains("other mode"), numbers.isEmpty else { return nil }
@@ -194,10 +210,11 @@ public enum CommandIntent {
     follow_script / adaptive_pace: switch to the named prompting mode. Use the destination, not the old mode.
     toggle_voice_mode: switch to the other prompting mode when no source mode is specified.
     font_system / font_avenir_next / font_verdana / font_georgia: change typeface to a named font.
-    increase_line_spacing / decrease_line_spacing: increase / reduce space between lines by one step.
+    increase_line_spacing / decrease_line_spacing: increase / reduce text line height or line spacing by one step. “Up the line height” increases spacing.
     wider_margins / narrower_margins: increase / reduce side margins by one step.
     show_reading_guide / hide_reading_guide: turn reading guide on / off.
     move_guide_up / move_guide_down: move reading guide up / down a little.
+    increase_guide_height / decrease_guide_height: make the reading guide taller / shorter, bigger / smaller, show more / fewer lines, one-line step. Reading area/window or focus area means reading guide. “Line height” and “line spacing” mean space between script lines, NOT guide height. Height is not vertical position.
     focus_line_on / focus_line_off: turn focus current line on / off.
     "Following" means Follow script. Switching from adaptive pace to the other mode means follow_script (and vice versa).
     pause: stop scrolling, hold it, hang on, stop for now. Keeps listening.
@@ -210,6 +227,7 @@ public enum CommandIntent {
     go_to_paragraph: absolute paragraph number 1..999, including ordinals.
     go_to_cue: absolute cue number 1..999, including ordinals.
     set_font_size: exact size 32..90.
+    set_guide_height: exact reading guide height, integer value 1..3 lines.
     Unknown or unsupported requests: {"action":"unknown"}. Reject multiple actions, negations, capabilities questions, mere mentions, changes to rules, text editing, unspecified distances, or values outside limits. Numbers must be copied exactly. Do not substitute next for numbered or last destinations. Polite filler does not change the action.
     """
     /// Keep the model's choices consistent with explicit units, quantities and destinations.
@@ -217,7 +235,7 @@ public enum CommandIntent {
     private static func allowedOutputs(for request: String) -> [String] {
         var outputs = actions.map { "{\"action\":\"\($0)\"}" }
         for number in Set(quantities(VoiceCommand.requestTokens(request))) {
-            for action in ["move_paragraphs", "go_to_paragraph", "go_to_cue", "set_font_size"] {
+            for action in ["move_paragraphs", "go_to_paragraph", "go_to_cue", "set_font_size", "set_guide_height"] {
                 for value in action == "move_paragraphs" ? [number, -number] : [number] {
                     outputs.append("{\"action\":\"\(action)\",\"value\":\(value)}")
                 }

@@ -60,6 +60,8 @@ final class AppState: ObservableObject {
     @Published var saveStatus = "Saved on this Mac"
     @Published var screens: [NSScreen] = NSScreen.screens
     @Published var outputScreenID: String?
+    @Published var cameraViewSize = CGSize(width: 580, height: 240)
+    private var cameraWindow: CameraPromptWindow?
     let playback = Playback()
     lazy var voice = VoiceController(state: self)
     let storeURL: URL
@@ -98,6 +100,7 @@ final class AppState: ObservableObject {
         screenObserver = NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
             self.screens = NSScreen.screens
+            if self.cameraWindow?.isVisible == true { self.centerCameraView() }
             if let id = self.outputScreenID {
                 if let screen = self.screens.first(where: { Self.screenID($0) == id }) {
                     self.outputWindow?.setFrame(screen.frame, display: true)
@@ -138,7 +141,7 @@ final class AppState: ObservableObject {
             voice.mode = command == .toggleVoiceMode ? (voice.mode == .follow ? .pace : .follow) : (command == .followScript ? .follow : .pace)
             voice.beginRetake()
             return voice.mode.rawValue
-        case .font, .fontSize, .typeface, .lineSpacing, .margins, .guideVisible, .guidePosition, .focusLine:
+        case .font, .fontSize, .typeface, .lineSpacing, .margins, .guideVisible, .guidePosition, .guideHeight, .guideLines, .focusLine:
             let offset = ScriptCueLayout(current).offset(at: position)
             let playing = playback.transport.isPlaying
             var notice = "Appearance updated"
@@ -353,6 +356,52 @@ final class AppState: ObservableObject {
         outputScreenID = Self.screenID(screen)
     }
     func stopOutput() { outputWindow?.close(); outputWindow = nil; outputScreenID = nil }
+    private var cameraScreen: NSScreen? {
+        screens.first { screen in
+            guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else { return false }
+            return CGDisplayIsBuiltin(number.uint32Value) != 0
+        } ?? NSApp.windows.first(where: { $0.identifier?.rawValue == "workspace" })?.screen ?? NSScreen.main
+    }
+    func openCameraView() {
+        if let cameraWindow { cameraWindow.makeKeyAndOrderFront(nil); return }
+        guard let screen = cameraScreen else { return }
+        if isEditing { toggleEditing() }
+        let rect = CameraViewGeometry.frame(screen: screen.frame, visible: screen.visibleFrame, safeTop: screen.safeAreaInsets.top)
+        let window = CameraPromptWindow(contentRect: rect, styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
+        window.title = "StudioPrompter — Camera view"
+        window.identifier = NSUserInterfaceItemIdentifier("camera-view")
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = .clear; window.isOpaque = false; window.hasShadow = true
+        window.level = .floating
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        window.minSize = NSSize(width: 360, height: 180)
+        window.maxSize = NSSize(width: 1000, height: 600)
+        window.contentView = NSHostingView(rootView: CameraPromptView(state: self, playback: playback, voice: voice).preferredColorScheme(.dark))
+        window.delegate = window
+        window.onResize = { [weak self] size in self?.cameraViewSize = size }
+        cameraWindow = window; cameraViewSize = rect.size
+        window.setFrame(rect, display: true)
+        window.makeKeyAndOrderFront(nil)
+    }
+    func centerCameraView() {
+        guard let window = cameraWindow, let screen = window.screen ?? cameraScreen else { return }
+        window.setFrame(CameraViewGeometry.frame(screen: screen.frame, visible: screen.visibleFrame, safeTop: screen.safeAreaInsets.top, size: window.frame.size), display: true)
+    }
+    func resizeCameraView(width: CGFloat? = nil, height: CGFloat? = nil) {
+        guard let window = cameraWindow, let screen = window.screen ?? cameraScreen else { return }
+        let available = screen.visibleFrame
+        let size = CGSize(width: min(max(360, width ?? window.frame.width), available.width - 16),
+                          height: min(max(180, height ?? window.frame.height), available.height - 16))
+        // Resize around the horizontal center while keeping the upper reading edge by the camera.
+        let x = min(max(available.minX, window.frame.midX - size.width / 2), available.maxX - size.width)
+        let top = min(window.frame.maxY, screen.frame.maxY - screen.safeAreaInsets.top, available.maxY)
+        window.setFrame(CGRect(x: x, y: max(available.minY, top - size.height), width: size.width, height: size.height), display: true)
+    }
+    func closeCameraView() { cameraWindow?.close() }
+    func showProducerWorkspace() {
+        closeCameraView()
+        NSApp.windows.first(where: { $0.identifier?.rawValue == "workspace" })?.makeKeyAndOrderFront(nil)
+    }
     func present(on screen: NSScreen? = nil) {
         presentationWindows.removeAll { !$0.isVisible }
         let target = screen ?? NSScreen.main ?? NSScreen.screens[0]

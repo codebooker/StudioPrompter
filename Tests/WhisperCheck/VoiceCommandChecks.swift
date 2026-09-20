@@ -41,6 +41,15 @@ func runVoiceCommandChecks(service: WhisperService, commandModelPath: String? = 
             ("Hey Teleprompter, turn off the reading guide.", .guideVisible(false)),
             ("Hey Teleprompter, move the reading guide up a little.", .guidePosition(-1)),
             ("Hey Teleprompter, turn off focus current line.", .focusLine(false)),
+            ("Hey Teleprompter, make the reading guide taller.", .guideHeight(1)),
+            ("Hey Teleprompter, increase the line height.", .lineSpacing(1)),
+            ("Hey Teleprompter, increase the line height a little bit.", .lineSpacing(1)),
+            ("Hey Teleprompter, up the line height.", .lineSpacing(1)),
+            ("Hey Teleprompter, can you make the line height bigger?", .lineSpacing(1)),
+            ("Hey Teleprompter, increase the reading guide height.", .guideHeight(1)),
+            ("Hey Teleprompter, make the reading guide bigger.", .guideHeight(1)),
+            ("Hey Teleprompter, decrease the reading guide height.", .guideHeight(-1)),
+            ("Hey Teleprompter, set the reading guide height to two lines.", .guideLines(2)),
             ("Hey Teleprompter, go back up | two paragraphs.", .paragraph(-2)),
             ("Hey Teleprompter, switch from adaptive pace to | follow script.", .followScript)
         ]
@@ -72,7 +81,7 @@ func runVoiceCommandChecks(service: WhisperService, commandModelPath: String? = 
         var lastText = ""
         for frame in stride(from: 16000, through: samples.count, by: 4800) {
             let lower = max(0, frame - 8 * 16000)
-            let result = try await service.transcribe(Array(samples[lower..<frame]))
+            let result = try await service.transcribe(Array(samples[lower..<frame]), collectingCommand: router.isListening)
             lastText = result.text
             let words = result.words.map { CommandWord($0.text, start: Double(lower) / 16000 + $0.start, end: Double(lower) / 16000 + $0.end) }
             let event = router.consume(words, audioEnd: Double(frame) / 16000, quiet: frame >= raw.count + 10400 || pauses.contains(where: { frame >= $0.lowerBound + 10400 && frame < $0.upperBound }), interpretUnknown: commandModelPath != nil)

@@ -7,6 +7,7 @@ struct PromptCanvas: NSViewRepresentable {
     let script: Script
     let progress: Double
     var mirrored = false
+    var guidePositionRange: ClosedRange<Double> = 0.15...0.65
     var onScroll: ((Double) -> Void)?
     var onGuideChange: ((Double) -> Void)?
     func makeNSView(context: Context) -> ScriptCanvas { ScriptCanvas() }
@@ -14,6 +15,7 @@ struct PromptCanvas: NSViewRepresentable {
         view.configure(text: script.text, settings: script.settings, emphasis: script.emphasis)
         view.progress = progress
         view.mirrored = mirrored
+        view.guidePositionRange = guidePositionRange
         view.onScroll = onScroll
         view.onGuideChange = onGuideChange
         view.needsDisplay = true
@@ -31,6 +33,7 @@ final class ScriptCanvas: NSView {
     private var lineHeight: CGFloat = 80
     private var dragPoint: NSPoint?
     private var draggingGuide = false
+    var guidePositionRange: ClosedRange<Double> = 0.15...0.65
     var progress: Double = 0
     var mirrored = false
     var onScroll: ((Double) -> Void)?
@@ -126,7 +129,7 @@ final class ScriptCanvas: NSView {
         defer { dragPoint = point }
         guard let previous = dragPoint else { return }
         if draggingGuide {
-            onGuideChange?(min(0.65, max(0.15, (point.y - 23 * bounds.width / 1000) / max(1, bounds.height))))
+            onGuideChange?(min(guidePositionRange.upperBound, max(guidePositionRange.lowerBound, (point.y - 23 * bounds.width / 1000) / max(1, bounds.height))))
             return
         }
         let travel = max(1, textHeight - settings.fontSize * 1.2)
