@@ -10,14 +10,14 @@
 </p>
 
 <p align="center"><strong>A native Mac teleprompter built for the person on camera—and the producer behind it.</strong></p>
-<p align="center">Two screens. One shared script. A pace that follows the conversation.</p>
+<p align="center">At your webcam or across the studio. A script that follows your voice.</p>
 <p align="center"><a href="https://github.com/codebooker/StudioPrompter/releases">Releases</a> · <a href="docs/USER-GUIDE.md">User guide</a> · <a href="docs/TESTING.md">Testing & release status</a> · <a href="https://github.com/codebooker/StudioPrompter/issues">Feedback</a></p>
 
 ---
 
 ## Your studio, in sync
 
-Keep the controls on your Mac. Send a clean, full-screen script to the talent monitor. Adjust the type, move the reading guide, or take over the scroll without making your presenter navigate a single menu.
+Record solo with a compact script near your webcam, or keep the controls on your Mac while a clean, full-screen script appears on the talent monitor. Choose either from **Prompter Output**. Adjust the type, move the reading guide, or take over the scroll from the producer workspace.
 
 | For the producer | For the presenter |
 | :--- | :--- |
@@ -27,22 +27,39 @@ Keep the controls on your Mac. Send a clean, full-screen script to the talent mo
 | Microphone **and individual input channel** selection | Mirrored or flipped output for prompter glass |
 | Instant blackout and synchronized display controls | A producer who can step in for a retake |
 
+## Read near your webcam
+
+Choose **Webcam Layout** from the **Prompter Output** dropdown alongside your monitors. This compact, floating reading window is designed for solo recording. It starts near the webcam on a built-in display, respects camera cutouts, and can be dragged beneath an external webcam. Adjust width and height independently while keeping the same script position and controls.
+
+## Hands-free takes · experimental
+
+Stay in front of the camera. Enable **Voice prompting**, select your microphone/channel, and turn on **Hands-free commands**. The app listens even while prompting is paused. Say **“Hey Teleprompter”**, give one command, and briefly pause:
+
+- “Start” or “pause.”
+- “Go back two lines” or “start this paragraph over.”
+- “Go to the next bookmark.”
+- “Make the font bigger” or “increase the reading guide height.”
+
+For more flexible wording, enable **Natural commands · Beta** in **Advanced voice settings** and click **Download command AI**. The optional Qwen 2.5 1.5B model downloads in the app (about 1.1 GB), then interprets supported commands locally through llama.cpp. Clear commands can also use the built-in parser without that extra model. No cloud account or API key is required.
+
+Commands remain experimental; recognition can miss or misinterpret a request. Check the visible response. Pause keeps command listening available; **Esc** turns the microphone off. [Voice-command setup and behavior](docs/USER-GUIDE.md#voice-commands).
+
 ## Read naturally
 
 **Follow script** listens for nearby phrases and moves the script with you. Skip a word, add a filler, or pause to think. Smooth movement keeps recognized text near the reading guide.
 
 **Adaptive pace** adjusts to your speaking cadence, easing into faster speech and slowing down when you do. Nearby phrase matches help keep the guide close to your place.
 
-**Take over whenever you need to.** While voice prompting is running, scroll back to a line. The mic stays on; the script waits for fresh speech at the new position before following again. Pause stops both the microphone and prompting. With voice prompting off, manual scrolling pauses fixed-speed playback.
+**Take over whenever you need to.** While voice prompting is running, scroll back to a line. The mic stays on; the script waits for fresh speech at the new position before following again. Pause stops prompting and the microphone unless hands-free commands are enabled; in that mode, the mic stays available for your next command. **Esc** stops listening. With voice prompting off, manual scrolling pauses fixed-speed playback.
 
 Voice features are in beta. Recognition and responsiveness depend on your Mac, microphone, speaking style, and script. English is currently supported.
 
 ## Start in four steps
 
 1. **Open a script.** Write directly in the app or import TXT, Markdown, RTF, RTFD, DOC, or DOCX. Emphasize key passages with bold and underline, and place named bookmarks directly in the editor.
-2. **Send it to your display.** Connect an extended display and choose **Send to display**. The producer workspace stays on your Mac.
+2. **Choose your output.** Open **Prompter Output** and select **Webcam Layout** or a connected monitor. Mirror and flip controls appear only when an external display is selected.
 3. **Choose your pace.** Use fixed speed, or turn on **Voice prompting**, choose a mode and microphone channel, and click **Download model** once.
-4. **Press Play.** Voice mode starts listening and prompting together. Space pauses both.
+4. **Press Play.** Voice mode starts listening and prompting together. Or enable **Hands-free commands** and say “Hey Teleprompter, let’s go.” Space pauses prompting; Esc stops the mic.
 
 Everyday controls live in the main window. **Advanced voice settings** is there when you want to tune—not a stop you have to make before every take.
 
@@ -65,6 +82,8 @@ For **Apple silicon Macs (M1 or newer), macOS 13.3+**. Unzip the download, move 
 
 Follow script, Adaptive pace, the Markdown editor, bookmarks, dual-display output, and **Webcam Layout** are included. **“Hey Teleprompter” commands and optional local command AI are available as experimental features** in this tester release. This is a tester release, not a production-readiness claim; [remaining validation](docs/TESTING.md) is documented.
 
+[What changed in 0.1.1](docs/RELEASE-NOTES-0.1.1.md): Webcam Layout, hands-free commands, smoother completed-line following, stable guide movement, a single output selector, and friendlier bookmark terminology. Existing cue points carry over automatically.
+
 Future tester releases arrive through **StudioPrompter → Check for Updates…**. Signed update archives are verified before installation; scripts and downloaded models stay on your Mac.
 
 Developers can build now on macOS 13.3 or later with a recent Xcode or Swift toolchain:
@@ -75,11 +94,9 @@ cd StudioPrompter
 ./scripts/run.sh
 ```
 
+For the hands-free features included in the 0.1.1 tester, use `STUDIO_EXPERIMENTAL_COMMANDS=1 ./scripts/run.sh`. Ordinary source builds leave the experiment disabled.
+
 This creates and opens `dist/Prompter.app` with a local ad-hoc signature. It is a development build, not a notarized distribution. The app appears as **StudioPrompter** in macOS.
-
-## Read near your webcam
-
-Choose **Webcam Layout** from the **Prompter Output** dropdown alongside your monitors. This compact, floating reading window is designed for solo recording. It starts near the webcam on a built-in display, respects camera cutouts, and can be dragged beneath an external webcam. Adjust width and height independently while keeping the same script position and controls.
 
 ## Built for the Mac
 
@@ -95,7 +112,7 @@ See [development and packaging](docs/DEVELOPMENT.md) for architecture, signing, 
 
 ## Open source
 
-StudioPrompter is licensed under [GNU AGPL v3](LICENSE). [WhisperKit and its bundled notices](ThirdParty) retain their respective licenses. Thanks to the Whisper and WhisperKit teams for making local speech recognition possible.
+StudioPrompter is licensed under [GNU AGPL v3](LICENSE). [WhisperKit and its bundled notices](ThirdParty) retain their respective licenses. Thanks to the Whisper, WhisperKit, Qwen, and llama.cpp teams for the local speech and command models and runtimes. Their licenses and notices are included in [ThirdParty](ThirdParty).
 
 ### Updates without the download dance
 
