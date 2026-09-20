@@ -180,7 +180,7 @@ final class VoiceController: ObservableObject {
             commands = VoiceCommandRouter(after: microphone.snapshot().end)
             beginRetake()
             if let result { executeCommand(result, source: "LLM") }
-            else { showCommandNotice("Please name a line count, paragraph, cue, or text-size change") }
+            else { showCommandNotice("I couldn’t match that command · please try again") }
             updateDrive()
         }
         commandTimeout = Task { @MainActor [weak self] in

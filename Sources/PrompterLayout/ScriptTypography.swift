@@ -127,7 +127,7 @@ public enum VoiceNavigation {
             guard !offsets.isEmpty else { return 0 }
             let index = offsets.lastIndex(where: { $0 <= currentOffset }) ?? 0
             return mapping.progress(at: offsets[min(offsets.count - 1, max(0, index + delta))])
-        case .paragraph(let delta):
+        case .paragraph, .paragraphNumber, .lastParagraph:
             var offsets: [Int] = []
             let text = script.text as NSString
             var cursor = 0
@@ -137,9 +137,22 @@ public enum VoiceNavigation {
                 if content.location != NSNotFound { offsets.append(content.location) }
                 cursor = NSMaxRange(range)
             }
-            guard !offsets.isEmpty else { return 0 }
-            let index = offsets.lastIndex(where: { $0 <= currentOffset }) ?? 0
-            return mapping.progress(at: offsets[min(offsets.count - 1, max(0, index + delta))])
+            guard !offsets.isEmpty else { if case .paragraph = command { return 0 }; return nil }
+            let index: Int
+            switch command {
+            case .paragraph(let delta):
+                index = (offsets.lastIndex(where: { $0 <= currentOffset }) ?? 0) + delta
+                guard offsets.indices.contains(index) else { return nil }
+            case .paragraphNumber(let number):
+                guard (1...offsets.count).contains(number) else { return nil }
+                index = number - 1
+            default: index = offsets.count - 1
+            }
+            return mapping.progress(at: offsets[index])
+        case .cueNumber(let number):
+            let positions = script.cues.map { $0.characterOffset.map(mapping.progress(at:)) ?? $0.progress }.sorted()
+            guard number > 0, number <= positions.count else { return nil }
+            return positions[number - 1]
         case .cue(let direction):
             let positions = script.cues.map { $0.characterOffset.map(mapping.progress(at:)) ?? $0.progress }.sorted()
             return direction < 0 ? positions.last(where: { $0 < progress - 0.005 }) : positions.first(where: { $0 > progress + 0.005 })

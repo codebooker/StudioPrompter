@@ -134,21 +134,32 @@ final class AppState: ObservableObject {
         case .cancel: return "Command cancelled"
         case .stopListening:
             voice.stop(); return "Microphone off · use Play to listen again"
-        case .font(let delta):
+        case .followScript, .adaptivePace:
+            voice.mode = command == .followScript ? .follow : .pace
+            voice.beginRetake()
+            return voice.mode.rawValue
+        case .font, .fontSize:
             let offset = ScriptCueLayout(current).offset(at: position)
             let playing = playback.transport.isPlaying
-            update { $0.settings.fontSize = min(90, max(32, $0.settings.fontSize + Double(delta))) }
+            let size: Double
+            if case .fontSize(let value) = command { size = Double(value) }
+            else if case .font(let delta) = command { size = current.settings.fontSize + Double(delta) }
+            else { return "Text size unchanged" }
+            update { $0.settings.fontSize = min(90, max(32, size)) }
             playback.transport.reposition(to: ScriptCueLayout(current).progress(at: offset), preservingPlayback: playing)
             voice.beginRetake()
             return "Text size \(Int(current.settings.fontSize))"
         default:
-            guard let destination = VoiceNavigation.destination(for: command, script: current, progress: position) else { return "No cue in that direction" }
+            guard let destination = VoiceNavigation.destination(for: command, script: current, progress: position) else { return "That paragraph or cue isn’t in this script" }
             playback.transport.reposition(to: min(destination, 0.999999), preservingPlayback: false)
             playback.transport.play(countdown: 0, hasContent: current.wordCount > 0)
             voice.beginRetake()
             switch command {
             case .lines(let count): return "Moved \(abs(count)) \(abs(count) == 1 ? "line" : "lines") \(count < 0 ? "back" : "forward")"
-            case .paragraph(let delta): return delta == 0 ? "Restarted paragraph" : (delta < 0 ? "Previous paragraph" : "Next paragraph")
+            case .paragraph(let delta): return delta == 0 ? "Restarted paragraph" : "Moved \(abs(delta)) \(abs(delta) == 1 ? "paragraph" : "paragraphs") \(delta < 0 ? "back" : "forward")"
+            case .paragraphNumber(let number): return "Paragraph \(number)"
+            case .lastParagraph: return "Last paragraph"
+            case .cueNumber(let number): return "Cue \(number)"
             case .top: return "Back to the beginning"
             default: return "\(command == .cue(-1) ? "Previous" : "Next") cue"
             }

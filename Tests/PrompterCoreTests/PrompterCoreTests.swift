@@ -571,6 +571,57 @@ private func voiceCommandChecks() {
     }
     expectTrue(CommandIntent.interpret("{\"action\":\"next_cue\"}", request: "Skip to the next question") == nil)
 
+    // Real-session regressions: never silently substitute a relative destination or count.
+    let structured: [(String, String, VoiceCommand)] = [
+        ("Go down two paragraphs for me", "{\"action\":\"move_paragraphs\",\"value\":2}", .paragraph(2)),
+        ("Go to the tenth paragraph", "{\"action\":\"go_to_paragraph\",\"value\":10}", .paragraphNumber(10)),
+        ("Go to paragraph 15", "{\"action\":\"go_to_paragraph\",\"value\":15}", .paragraphNumber(15)),
+        ("Go down to the second cue point", "{\"action\":\"go_to_cue\",\"value\":2}", .cueNumber(2)),
+        ("Go to the next Q point", "{\"action\":\"next_cue\"}", .cue(1)),
+        ("Go to the final paragraph", "{\"action\":\"last_paragraph\"}", .lastParagraph),
+        ("Set the font size to thirty two", "{\"action\":\"set_font_size\",\"value\":32}", .fontSize(32)),
+        ("Switch from adaptive pace to follow script", "{\"action\":\"follow_script\"}", .followScript),
+        ("Switch from follow script to adaptive pace", "{\"action\":\"adaptive_pace\"}", .adaptivePace),
+        ("Switch from follow script to adaptive pace for me please", "{\"action\":\"adaptive_pace\"}", .adaptivePace),
+        ("Let's stop for now", "{\"action\":\"pause\"}", .pause)
+    ]
+    for (request, output, expected) in structured { expectEqual(CommandIntent.interpret(output, request: request), expected) }
+    for (request, output) in [
+        ("Go down two paragraphs", "{\"action\":\"next_paragraph\"}"),
+        ("Go to the tenth paragraph", "{\"action\":\"next_paragraph\"}"),
+        ("Go to the last paragraph", "{\"action\":\"next_paragraph\"}"),
+        ("Go to the second cue", "{\"action\":\"next_cue\"}"),
+        ("Go back one paragraph", "{\"action\":\"go_to_paragraph\",\"value\":1}"),
+        ("Go up two paragraphs", "{\"action\":\"move_paragraphs\",\"value\":2}"),
+        ("Go back a bit", "{\"action\":\"resume\"}"),
+        ("Pick it up at the start of this paragraph", "{\"action\":\"previous_paragraph\"}"),
+        ("Go to cue two", "{\"action\":\"go_to_cue\",\"value\":3}"),
+        ("Let's get this started", "{\"action\":\"restart_paragraph\"}"),
+        ("Let's stop for now", "{\"action\":\"stop_listening\"}"),
+        ("Set font size to 32", "{\"action\":\"smaller_text\"}"),
+        ("Increase font size by 40", "{\"action\":\"set_font_size\",\"value\":40}"),
+        ("Switch from follow script to adaptive pace", "{\"action\":\"follow_script\"}")
+    ] { expectTrue(CommandIntent.interpret(output, request: request) == nil) }
+    for output in ["{\"action\":\"go_to_cue\",\"value\":0}", "{\"action\":\"move_paragraphs\",\"value\":11}", "{\"action\":\"set_font_size\",\"value\":31}", "{\"action\":\"go_to_paragraph\",\"value\":true}", "{\"action\":\"pause\",\"value\":1}"] {
+        expectTrue(CommandIntent.decode(output) == nil)
+    }
+    expectEqual(VoiceCommand.parse("Let's stop for now"), .pause)
+    expectEqual(VoiceCommand.parse("Go to the next Q-point"), .cue(1))
+    expectEqual(VoiceCommand.parse("Go to the next Q, point"), .cue(1))
+    expectFalse(CommandIntent.acceptsRequest("Go to paragraph minus two"))
+    // Keep a longer command intact across rolling windows, without firing a partial prefix.
+    var longer = VoiceCommandRouter()
+    let lead = words("Hey Teleprompter switch voice prompting from adaptive pace", from: 0)
+    expectEqual(longer.consume(lead, audioEnd: 2, quiet: false, interpretUnknown: true), .listening)
+    let middle = words("to", from: 5)
+    expectEqual(longer.consume(middle, audioEnd: 6, quiet: false, interpretUnknown: true), .listening)
+    let ending = words("follow script", from: 7)
+    expectEqual(longer.consume(ending, audioEnd: 7.5, quiet: false, interpretUnknown: true), .listening)
+    expectEqual(longer.consume(ending, audioEnd: 8, quiet: true, interpretUnknown: true), .interpret("switch voice prompting from adaptive pace to follow script"))
+    var bounded = VoiceCommandRouter()
+    expectEqual(bounded.consume(lead, audioEnd: 2, quiet: false, interpretUnknown: true), .listening)
+    expectEqual(bounded.consume(words("and more", from: 13), audioEnd: 14.1, quiet: false, interpretUnknown: true), .unrecognized)
+
     var script = Script(title: "Navigation", text: "First paragraph has enough words to wrap across several reading lines. Keep reading this opening.\n\nSecond paragraph is here with another sentence and more words.\n\nThird paragraph finishes the script.")
     script.settings.fontSize = 58
     let layout = ScriptCueLayout(script)
@@ -588,6 +639,14 @@ private func voiceCommandChecks() {
     script.cues = [Cue(title: "Second", progress: 0, characterOffset: second)]
     expectEqual(VoiceNavigation.destination(for: .cue(-1), script: script, progress: layout.progress(at: third)), layout.progress(at: second))
     expectEqual(VoiceNavigation.destination(for: .cue(1), script: script, progress: 0), layout.progress(at: second))
+    script.cues.append(Cue(title: "Third", progress: 0, characterOffset: third))
+    expectEqual(VoiceNavigation.destination(for: .cueNumber(2), script: script, progress: 0), layout.progress(at: third))
+    expectTrue(VoiceNavigation.destination(for: .cueNumber(3), script: script, progress: 0) == nil)
+    expectEqual(VoiceNavigation.destination(for: .paragraph(2), script: script, progress: 0), layout.progress(at: third))
+    expectTrue(VoiceNavigation.destination(for: .paragraph(3), script: script, progress: 0) == nil)
+    expectEqual(VoiceNavigation.destination(for: .paragraphNumber(2), script: script, progress: 0), layout.progress(at: second))
+    expectEqual(VoiceNavigation.destination(for: .lastParagraph, script: script, progress: 0), layout.progress(at: third))
+    expectTrue(VoiceNavigation.destination(for: .paragraphNumber(10), script: script, progress: 0) == nil)
     let empty = Script(title: "Empty", text: "")
     expectEqual(VoiceNavigation.destination(for: .lines(2), script: empty, progress: 0), 0)
     expectEqual(VoiceNavigation.destination(for: .paragraph(1), script: empty, progress: 0), 0)

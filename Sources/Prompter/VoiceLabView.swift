@@ -276,7 +276,7 @@ struct VoiceLabView: View {
             cardHeading("Hands-free commands", subtitle: "Say “Hey Teleprompter,” then give one command and briefly pause.", icon: "waveform.bubble")
             NaturalCommandsSettings(assistant: voice.assistant, setEnabled: voice.setNaturalCommands)
             DisclosureGroup("Command examples") {
-                Text("Start / resume / let’s go\nGo back two lines\nStart this paragraph over\nStart from the top of the document\nMove to the next paragraph\nGo back to the last cue point\nIncrease / decrease the font size\nPause / cancel / stop listening")
+                Text("Start / resume / let’s go\nGo back two lines\nStart this paragraph over\nStart from the top of the document\nMove down two paragraphs\nGo to the tenth paragraph\nGo to cue number two\nIncrease / decrease the font size\nSet font size to 48\nSwitch to Follow script / Adaptive pace\nPause / cancel / stop listening")
                     .font(.system(size: 11)).foregroundStyle(Palette.muted).padding(.top, 8)
             }.font(.system(size: 12))
             Text("Turn on Hands-free commands in the script sidebar to start listening immediately. Pause keeps the microphone available for commands; Esc or “stop listening” turns it off. Only your selected microphone channel is used.")

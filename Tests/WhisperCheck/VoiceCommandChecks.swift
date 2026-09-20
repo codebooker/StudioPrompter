@@ -26,7 +26,13 @@ func runVoiceCommandChecks(service: WhisperService, commandModelPath: String? = 
             ("Hey Teleprompter, hold it for a second.", .pause),
             ("Hey Teleprompter, okay carry on from here.", .resume),
             ("Hey Teleprompter, go back a bit.", nil),
-            ("Hey Teleprompter, go back twenty lines.", nil)
+            ("Hey Teleprompter, go back twenty lines.", nil),
+            ("Hey Teleprompter, go down two paragraphs for me.", .paragraph(2)),
+            ("Hey Teleprompter, go to the tenth paragraph.", .paragraphNumber(10)),
+            ("Hey Teleprompter, go to the second cue point.", .cueNumber(2)),
+            ("Hey Teleprompter, set the font size to thirty two.", .fontSize(32)),
+            ("Hey Teleprompter, switch voice prompting from adaptive pace to follow script.", .followScript),
+            ("Hey Teleprompter, let's stop for now.", .pause)
         ]
     }
     let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

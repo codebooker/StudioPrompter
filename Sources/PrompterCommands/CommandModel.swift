@@ -46,7 +46,7 @@ public actor CommandModel {
         llama_memory_clear(llama_get_memory(context), true)
         guard let sampler = llama_sampler_chain_init(llama_sampler_chain_default_params()) else { throw CommandModelError.inference }
         defer { llama_sampler_free(sampler) }
-        guard let grammar = llama_sampler_init_grammar(vocab, CommandIntent.grammar, "root") else { throw CommandModelError.inference }
+        guard let grammar = llama_sampler_init_grammar(vocab, CommandIntent.grammar(for: request), "root") else { throw CommandModelError.inference }
         llama_sampler_chain_add(sampler, grammar)
         llama_sampler_chain_add(sampler, llama_sampler_init_greedy())
         // Split long prompts to respect n_batch; never hand an oversized batch to C.

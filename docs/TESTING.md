@@ -93,3 +93,13 @@ Tester updates use a separate feed. Promotion verifies the downloaded archive ag
 - Full local update smoke test: a separate app copy marked 0.0.9/build 2 detected the published 0.1.0/build 3 through the public tester feed. **Install Update → Install and Relaunch** downloaded the GitHub archive and replaced the app successfully. The resulting binary matched the release binary, code-signature verification passed, and all four existing Markdown scripts retained identical content hashes. The existing Whisper cache remained in place.
 
 This establishes the update path on the development Mac, using a deliberately older version label, not two independently shipped releases. It does not establish first-launch Gatekeeper approval, microphone permission recovery, or installation on the friend’s Mac. Those are still tester acceptance items.
+
+## Command experiment, second pass (not published)
+
+The command contract now distinguishes relative paragraph movement, absolute paragraph/cue numbers, the last paragraph, exact font size, and prompting-mode changes. The model receives a request-specific grammar: only actions consistent with explicit units, counts, directions, and destinations are offered, along with `unknown`. A separate post-validation step still checks the output. The app rejects nonexistent numbered destinations instead of navigating to a different one. “Stop for now” pauses with command listening available; explicitly stopping listening turns off the microphone.
+
+Whisper's `Q point`, `Q-point`, and `Qpoint` spellings normalize to cue point. Active command collection can extend beyond six seconds, with a twelve-second hard cap. Timestamped prefix retention keeps the start of a command when it leaves Whisper's rolling window; overlapping hypotheses replace earlier words so corrections can settle before execution.
+
+The expanded text regression corpus includes the recorded failure phrases plus unrelated/ambiguous/negated requests. It is used during development and is not an independent estimate of real-world accuracy. Synthetic spoken fixtures additionally cover counted paragraphs, paragraph ten, cue two, exact font size, mode switching, and stopping while keeping listening available. Repeat the original live pass before considering release promotion.
+
+Second-pass development checks: 336 deterministic assertions passed, the expanded local-model text corpus matched 69/69 cases with zero incorrect actions (median approximately 0.38 seconds), and all 20 synthesized Whisper-to-command fixtures passed. Ordinary release checks confirmed the experiment is still excluded; the opt-in experimental app compiled and signed successfully. Live acceptance of this revision is pending.

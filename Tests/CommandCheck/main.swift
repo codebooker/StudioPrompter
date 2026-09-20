@@ -79,13 +79,34 @@ import PrompterCommands
             ("Go back to where I made that mistake", nil),
             ("Change the font", nil),
             ("Speed this up a bit", nil),
-            ("Go to paragraph seven", nil),
+            ("Go to paragraph seven", .paragraphNumber(7)),
             ("Scroll back half a line", nil),
             ("Delete the previous paragraph", nil),
             ("We need to rewrite the ending", nil),
             ("Go back ten lines then pause", nil),
             ("Please do not stop listening", nil),
-            ("Skip ahead thirty lines", nil)
+            ("Skip ahead thirty lines", nil),
+            ("Let's get this started", .resume),
+            ("Go down two paragraphs for me", .paragraph(2)),
+            ("Go to the next Q point", .cue(1)),
+            ("Go down to the second cue point", .cueNumber(2)),
+            ("Go down to the last paragraph on this document", .lastParagraph),
+            ("Go back up to the top for me", .top),
+            ("Switch voice prompting from adaptive pace to follow script", .followScript),
+            ("Change voice prompting to follow script", .followScript),
+            ("Set the font size to 32", .fontSize(32)),
+            ("Go to the bottom", .lastParagraph),
+            ("Go to the 15th paragraph", .paragraphNumber(15)),
+            ("Go to the 10th paragraph", .paragraphNumber(10)),
+            ("Let's stop for now", .pause),
+            ("Can we jump back three paragraphs please", .paragraph(-3)),
+            ("Take me to cue number two", .cueNumber(2)),
+            ("Switch from follow script to adaptive pace", .adaptivePace),
+            ("Set the font size to thirty two", .fontSize(32)),
+            ("Go to paragraph one hundred", nil),
+            ("Go down two paragraphs and then pause", nil),
+            ("Set the font size to 120", nil),
+            ("Go to cue zero", nil)
         ]
         var failed = 0
         var wrongActions = 0
@@ -100,7 +121,7 @@ import PrompterCommands
         }
         print("\(examples.count - failed)/\(examples.count), median \(times.sorted()[times.count / 2]) sec")
         await model.unload()
-        print("Unexpected actions: \(wrongActions). Beta gate: ≥90% exact outcomes and zero unexpected actions on these fixtures.")
+        print("Unexpected actions: \(wrongActions). Regression gate: ≥90% exact outcomes and zero unexpected actions on these fixtures.")
         if wrongActions > 0 || Double(examples.count - failed) / Double(examples.count) < 0.9 { exit(1) }
     }
 }
