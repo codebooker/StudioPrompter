@@ -177,3 +177,8 @@ The experimental build and bundle signature verification passed. Native checks c
 Removed the redundant rehearsal output from Prompter Output and the Prompt menu, including its Command-Shift-P shortcut and unused window/view implementation. The producer preview supports practice, and Webcam Layout provides the compact solo-reading output. Current help and keyboard documentation now describe those paths. Historical release notes retain their original descriptions.
 
 Validation: the experimental app compiled, passed bundle signature verification, and reopened. Native inspection confirmed the rehearsal entry is absent from both the output dropdown and Prompt menu; Webcam Layout remains available. The microphone stayed off. No release was published.
+
+
+### Single output selector
+
+Removed the duplicate sidebar output dropdown, status/Stop row, and instructional copy. Output selection and stopping remain in the top-right Prompter Output menu; mirror and flip retain a dedicated sidebar section. The experimental app built and passed signature verification. Native inspection of the reopened workspace confirmed exactly one output dropdown and both mirror/flip controls.

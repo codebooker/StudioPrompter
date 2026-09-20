@@ -4,7 +4,7 @@
 
 Use an extended desktop in macOS Display settings. Keep the producer workspace on your primary display, then choose **Prompter Output** and select the talent monitor. Both screens share a script position and line wrapping. Talent output is borderless; the main window retains standard macOS window controls.
 
-Mirror and flip affect only talent output. **B** blacks out the talent monitor while leaving the producer preview visible. Stop output from the right panel or the Prompt menu. Disconnecting the selected display closes its output and pauses playback.
+Mirror and flip affect only talent output. **B** blacks out the talent monitor while leaving the producer preview visible. Stop output from the top-right **Prompter Output** dropdown or the Prompt menu. Disconnecting the selected display closes its output and pauses playback.
 
 With one monitor, use the producer preview or choose **Prompter Output → Webcam Layout** to read near your webcam (development build).
 

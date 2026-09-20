@@ -114,7 +114,7 @@ Command wording keeps text layout separate from the reading guide: “line heigh
 
 The new line-height speech fixture exposed an empty Whisper decode caused by its first-token confidence cutoff. While collecting a command after a confirmed wake only, decoding now completes the utterance before applying the existing whole-segment confidence filter. Ordinary script recognition retains the original cutoff; the change does not add model downloads or temperature retries.
 
-Webcam Layout is a mutually exclusive output choice alongside external monitors. `webcamLayoutActive` publishes window selection to both output menus and the preview status. Switching outputs closes the previous window without resetting playback. Native window close clears the selection; returning to producer controls keeps the webcam output active. Internal camera window identifiers and types are retained.
+Webcam Layout is a mutually exclusive output choice alongside external monitors. `webcamLayoutActive` publishes window selection to the toolbar output menu and the preview status. Switching outputs closes the previous window without resetting playback. Native window close clears the selection; returning to producer controls keeps the webcam output active. Internal camera window identifiers and types are retained.
 
 ### Bookmark terminology
 

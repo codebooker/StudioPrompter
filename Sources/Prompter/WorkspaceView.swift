@@ -63,7 +63,7 @@ struct WorkspaceView: View {
             }
             Spacer()
             Button(action: state.importScript) { Label("Import", systemImage: "square.and.arrow.down") }.buttonStyle(QuietButton())
-            OutputMenu(state: state, prominent: true)
+            OutputMenu(state: state)
         }.padding(.horizontal, 24).frame(height: 66)
     }
 
@@ -347,14 +347,7 @@ struct Inspector: View {
                 }.font(.system(size: 11)).toggleStyle(.switch).controlSize(.mini)
                 Divider().overlay(Palette.border)
                 VStack(alignment: .leading, spacing: 14) {
-                    SectionLabel(title: "PROMPTER OUTPUT")
-                    OutputMenu(state: state)
-                    if let name = state.outputName {
-                        HStack(spacing: 5) { Circle().fill(Palette.green).frame(width: 5, height: 5); Text(name).lineLimit(1); Spacer(); Button("Stop") { state.stopOutput() }.buttonStyle(.plain).foregroundStyle(Palette.accent) }.font(.system(size: 10))
-                    } else {
-                        Text("Choose Webcam Layout to read near your camera, or send the script to a monitor.")
-                            .font(.system(size: 10)).foregroundStyle(Palette.muted).lineSpacing(4)
-                    }
+                    SectionLabel(title: "MIRROR & FLIP")
                     Toggle("Mirror horizontally", isOn: state.setting(\.mirrorHorizontal))
                     Toggle("Flip vertically", isOn: state.setting(\.mirrorVertical))
                 }.font(.system(size: 11)).toggleStyle(.switch).controlSize(.mini)
@@ -379,7 +372,6 @@ struct Inspector: View {
 
 struct OutputMenu: View {
     @ObservedObject var state: AppState
-    var prominent = false
     var body: some View {
         Menu {
             Button(action: state.openCameraView) {
@@ -399,12 +391,12 @@ struct OutputMenu: View {
         } label: {
             Label("Prompter Output",
                   systemImage: state.webcamLayoutActive ? "person.crop.rectangle" : "display.2")
-                .font(.system(size: 11, weight: .medium)).frame(maxWidth: prominent ? nil : .infinity)
+                .font(.system(size: 11, weight: .medium))
         }
-        .menuStyle(.borderlessButton).fixedSize(horizontal: prominent, vertical: true)
+        .menuStyle(.borderlessButton).fixedSize(horizontal: true, vertical: true)
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(prominent ? Palette.accent.opacity(0.14) : Palette.panel, in: RoundedRectangle(cornerRadius: 7))
-        .foregroundStyle(prominent ? Palette.accent : Color.white.opacity(0.8))
+        .background(Palette.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 7))
+        .foregroundStyle(Palette.accent)
     }
 }
 
