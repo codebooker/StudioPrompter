@@ -12,6 +12,8 @@
     <key>LSMinimumSystemVersion</key><string>13.3</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
+    <key>NSLocalNetworkUsageDescription</key><string>StudioPrompter connects to your paired iPad to display your script locally.</string>
+    <key>NSBonjourServices</key><array><string>_studioprompt._tcp</string></array>
     <key>NSMicrophoneUsageDescription</key><string>Prompter uses your selected microphone for local Whisper transcription and voice-controlled scrolling. Audio stays on this Mac.</string>
     <key>SUPublicEDKey</key><string>mwZ7BoLOmu0MdEy5FBsnttLXow6/7MR18qxbTc+/hG4=</string>
     <key>SUFeedURL</key><string>https://raw.githubusercontent.com/codebooker/StudioPrompter/main/updates/tester-appcast.xml</string>

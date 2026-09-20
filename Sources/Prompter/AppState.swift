@@ -59,6 +59,8 @@ final class AppState: ObservableObject {
     @Published var errorMessage: String?
     @Published var saveStatus = "Saved on this Mac"
     @Published var screens: [NSScreen] = NSScreen.screens
+    let ipadOutput = IPadOutput()
+    private var ipadPairingWindow: NSWindow?
     @Published var outputScreenID: String?
     @Published private(set) var webcamLayoutActive = false
     @Published var cameraGuidePosition = 0.095
@@ -90,6 +92,12 @@ final class AppState: ObservableObject {
         if library.scripts.isEmpty { library = Library(scripts: [Script(title: "Untitled script", text: "")]) }
         if !library.scripts.contains(where: { $0.id == library.selectedID }) { library.selectedID = library.scripts.first?.id }
         configurePlayback()
+        ipadOutput.onChange = { [weak self] in self?.objectWillChange.send() }
+        ipadOutput.onConnected = { [weak self] in
+            guard let self else { return }
+            self.outputWindow?.close(); self.outputWindow = nil; self.outputScreenID = nil
+            self.closeCameraView()
+        }
         playback.onManualPosition = { [weak self] keepListening in
             guard let self else { return }
             if keepListening || (self.voice.handsFreeCommands && self.voice.isListening) { self.voice.beginRetake() }
@@ -109,6 +117,7 @@ final class AppState: ObservableObject {
                 } else { self.stopOutput(); self.pausePlayback(stopListening: true) }
             }
         }
+        if ipadOutput.hasRememberedDevices { startIPadService() }
     }
 
     var current: Script { library.scripts.first(where: { $0.id == library.selectedID }) ?? library.scripts[0] }
@@ -341,7 +350,7 @@ final class AppState: ObservableObject {
         voiceWindow = window
     }
     func closeVoiceLab() { voiceWindow?.close() }
-    var outputName: String? { webcamLayoutActive ? "Webcam Layout" : screens.first(where: { Self.screenID($0) == outputScreenID })?.localizedName }
+    var outputName: String? { if let name = ipadOutput.connectedName { return name }; return webcamLayoutActive ? "Webcam Layout" : screens.first(where: { Self.screenID($0) == outputScreenID })?.localizedName }
     var secondaryScreens: [NSScreen] { screens.filter { Self.screenID($0) != screens.first.map(Self.screenID) } }
     func startOutput(on screen: NSScreen) {
         stopOutput()
@@ -361,8 +370,26 @@ final class AppState: ObservableObject {
         outputScreenID = Self.screenID(screen)
     }
     func stopOutput() {
+        ipadOutput.stop()
         outputWindow?.close(); outputWindow = nil; outputScreenID = nil
         closeCameraView()
+    }
+    private func startIPadService() {
+        ipadOutput.start { [weak self] in
+            guard let self else { return (Script(title: "", text: ""), 0, false, true, 0, nil) }
+            return (self.current, self.playback.transport.progress, self.playback.transport.isPlaying,
+                    self.playback.isBlackedOut, Int(ceil(self.playback.transport.countdownRemaining)), self.voice.commandNotice)
+        }
+    }
+    func connectIPad() {
+        startIPadService()
+        if let ipadPairingWindow { ipadPairingWindow.makeKeyAndOrderFront(nil); return }
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 506, height: 340),
+                              styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.title = "Connect iPad"; window.identifier = NSUserInterfaceItemIdentifier("ipad-pairing")
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: IPadPairingView(output: ipadOutput, retry: { [weak self] in self?.connectIPad() }))
+        window.center(); window.makeKeyAndOrderFront(nil); ipadPairingWindow = window
     }
     private var cameraScreen: NSScreen? {
         screens.first { screen in
@@ -373,7 +400,7 @@ final class AppState: ObservableObject {
     func openCameraView() {
         guard let screen = cameraScreen else { return }
         if isEditing { toggleEditing() }
-        if outputScreenID != nil { stopOutput() }
+        if outputScreenID != nil || ipadOutput.isHosting { stopOutput() }
         webcamLayoutActive = true
         if let cameraWindow { cameraWindow.makeKeyAndOrderFront(nil); return }
         cameraGuidePosition = current.settings.guidePosition * 0.25

@@ -4,3 +4,7 @@ dist/
 .DS_Store
 
 __pycache__/
+
+# Local Xcode state and signing preferences
+xcuserdata/
+*.xcuserstate

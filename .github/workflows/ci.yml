@@ -39,3 +39,13 @@ jobs:
           name: Prompter-development-${{ runner.arch }}-commands-${{ matrix.commands }}
           path: dist/Prompter-development.zip
           retention-days: 7
+  ipad:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Compile iPad companion without signing
+        run: |
+          xcodebuild -project iPad/StudioPrompterCompanion.xcodeproj \
+            -scheme StudioPrompterCompanion -destination 'generic/platform=iOS' \
+            -derivedDataPath .build/ipad-check CODE_SIGNING_ALLOWED=NO build

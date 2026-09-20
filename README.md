@@ -27,6 +27,10 @@ Record solo with a compact script near your webcam, or keep the controls on your
 | Microphone **and individual input channel** selection | Mirrored or flipped output for prompter glass |
 | Instant blackout and synchronized display controls | A producer who can step in for a retake |
 
+## iPad companion · in development
+
+**StudioPrompter Companion** turns an iPad into a reading display controlled from your Mac, including mirrored output for teleprompter glass. Pair over the local network; scripts, microphone selection, and voice processing stay on the Mac. This native iPad prototype is being tested and is **not included in the 0.1.1 release**. [Setup and development status](docs/IPAD-COMPANION.md).
+
 ## Read near your webcam
 
 Choose **Webcam Layout** from the **Prompter Output** dropdown alongside your monitors. This compact, floating reading window is designed for solo recording. It starts near the webcam on a built-in display, respects camera cutouts, and can be dragged beneath an external webcam. Adjust width and height independently while keeping the same script position and controls.

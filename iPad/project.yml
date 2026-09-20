@@ -1,0 +1,61 @@
+name: StudioPrompterCompanion
+options:
+  deploymentTarget:
+    iOS: '16.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    DEVELOPMENT_TEAM: ''
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: '2'
+    IPHONEOS_DEPLOYMENT_TARGET: '16.0'
+targets:
+  PrompterCore:
+    type: framework
+    platform: iOS
+    sources: [../Sources/PrompterCore]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: co.codebooker.studioprompter.core
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
+  PrompterLink:
+    type: framework
+    platform: iOS
+    sources: [../Sources/PrompterLink]
+    dependencies:
+      - target: PrompterCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: co.codebooker.studioprompter.link
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
+  StudioPrompterCompanion:
+    type: application
+    platform: iOS
+    sources: [StudioPrompterCompanion]
+    dependencies:
+      - target: PrompterCore
+      - target: PrompterLink
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: co.codebooker.studioprompter.companion
+        PRODUCT_NAME: StudioPrompterCompanion
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: '0.1.0'
+        CURRENT_PROJECT_VERSION: '1'
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: StudioPrompterCompanion/Info.plist
+      properties:
+        CFBundleDisplayName: StudioPrompter Companion
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSLocalNetworkUsageDescription: Connect to your Mac to receive the script and live prompting controls on this iPad.
+        NSBonjourServices: [_studioprompt._tcp]
+        ITSAppUsesNonExemptEncryption: NO
+schemes:
+  StudioPrompterCompanion:
+    build:
+      targets:
+        StudioPrompterCompanion: all

@@ -5,6 +5,7 @@ swift build --product PrompterChecks
 CHECKS_BIN="$(swift build --show-bin-path)/PrompterChecks"
 codesign --verify --strict "$CHECKS_BIN"
 "$CHECKS_BIN"
+swift run -c release PrompterLinkChecks
 swift run -c release WhisperCheck --channels
 ./scripts/build.sh
 plutil -lint dist/Prompter.app/Contents/Info.plist scripts/Entitlements.plist

@@ -345,7 +345,7 @@ struct Inspector: View {
                     }
                     Toggle("Focus current line", isOn: state.setting(\.focusMode))
                 }.font(.system(size: 11)).toggleStyle(.switch).controlSize(.mini)
-                if state.outputScreenID != nil {
+                if state.outputScreenID != nil || state.ipadOutput.connectedName != nil {
                     Divider().overlay(Palette.border)
                     VStack(alignment: .leading, spacing: 14) {
                         SectionLabel(title: "MIRROR & FLIP")
@@ -379,6 +379,10 @@ struct OutputMenu: View {
             Button(action: state.openCameraView) {
                 Label("Webcam Layout", systemImage: state.webcamLayoutActive ? "checkmark" : "person.crop.rectangle")
             }
+            Button(action: state.connectIPad) {
+                Label(state.ipadOutput.connectedName.map { "iPad · \($0)" } ?? "Connect iPad…",
+                      systemImage: state.ipadOutput.connectedName == nil ? "ipad.landscape" : "checkmark")
+            }
             ForEach(state.secondaryScreens, id: \.self) { screen in
                 Button { state.startOutput(on: screen) } label: {
                     Label("\(screen.localizedName) (\(Int(screen.frame.width)) × \(Int(screen.frame.height)))",
@@ -386,7 +390,7 @@ struct OutputMenu: View {
                 }
             }
             if state.secondaryScreens.isEmpty { Text("No secondary display connected") }
-            if state.outputName != nil {
+            if state.outputName != nil || state.ipadOutput.isHosting {
                 Divider()
                 Button("Stop output") { state.stopOutput() }
             }
