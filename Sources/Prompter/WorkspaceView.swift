@@ -345,12 +345,14 @@ struct Inspector: View {
                     }
                     Toggle("Focus current line", isOn: state.setting(\.focusMode))
                 }.font(.system(size: 11)).toggleStyle(.switch).controlSize(.mini)
-                Divider().overlay(Palette.border)
-                VStack(alignment: .leading, spacing: 14) {
-                    SectionLabel(title: "MIRROR & FLIP")
-                    Toggle("Mirror horizontally", isOn: state.setting(\.mirrorHorizontal))
-                    Toggle("Flip vertically", isOn: state.setting(\.mirrorVertical))
-                }.font(.system(size: 11)).toggleStyle(.switch).controlSize(.mini)
+                if state.outputScreenID != nil {
+                    Divider().overlay(Palette.border)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SectionLabel(title: "MIRROR & FLIP")
+                        Toggle("Mirror horizontally", isOn: state.setting(\.mirrorHorizontal))
+                        Toggle("Flip vertically", isOn: state.setting(\.mirrorVertical))
+                    }.font(.system(size: 11)).toggleStyle(.switch).controlSize(.mini)
+                }
                 Divider().overlay(Palette.border)
                 HStack {
                     Text("Start countdown").font(.system(size: 11))

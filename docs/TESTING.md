@@ -182,3 +182,8 @@ Validation: the experimental app compiled, passed bundle signature verification,
 ### Single output selector
 
 Removed the duplicate sidebar output dropdown, status/Stop row, and instructional copy. Output selection and stopping remain in the top-right Prompter Output menu; mirror and flip retain a dedicated sidebar section. The experimental app built and passed signature verification. Native inspection of the reopened workspace confirmed exactly one output dropdown and both mirror/flip controls.
+
+
+### External-display-only mirror controls
+
+The Mirror & Flip sidebar section now appears only while `outputScreenID` identifies an active external output. Hiding the section does not change saved mirror/flip values. The experimental build and bundle signature checks passed. Native inspection confirmed the controls are absent both with no output and with Webcam Layout active. External hardware was disconnected, so revealing the section on a physical monitor remains an acceptance check.
