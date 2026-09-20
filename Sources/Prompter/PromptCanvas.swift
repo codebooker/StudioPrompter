@@ -208,13 +208,3 @@ private struct VoiceCommandNotice: View {
         }.allowsHitTesting(false)
     }
 }
-
-struct PresentationView: View {
-    @ObservedObject var state: AppState
-    var body: some View {
-        VStack(spacing: 0) {
-            TalentOutputView(state: state)
-            TransportBar(state: state, playback: state.playback, voice: state.voice, compact: true)
-        }.frame(minWidth: 600, minHeight: 400).background(Palette.background)
-    }
-}

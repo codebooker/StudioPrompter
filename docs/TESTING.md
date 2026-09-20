@@ -170,3 +170,10 @@ All 462 deterministic assertions passed. The new motion regression exercises act
 Renamed Camera view to Webcam Layout throughout the visible controls, menus, window title, accessibility labels, and guide-command feedback. Removed the separate toolbar button. The top-right Prompter Output dropdown lists Webcam Layout alongside external monitors, marks the active choice, and offers Stop output for either destination. Switching destinations closes the previous output without resetting playback; returning to producer controls keeps Webcam Layout open. Native window closure also clears its selected state.
 
 The experimental build and bundle signature verification passed. Native checks confirmed selection from the top-right dropdown, the renamed window and footer, an active checkmark, synchronized workspace/inspector status, returning to producer controls with the output retained, and Stop output clearing the selection. Microphone stayed off. A physical monitor was disconnected, so live switching between monitor and webcam outputs remains a hardware acceptance check. No release was published.
+
+
+### Rehearsal window removal
+
+Removed the redundant rehearsal output from Prompter Output and the Prompt menu, including its Command-Shift-P shortcut and unused window/view implementation. The producer preview supports practice, and Webcam Layout provides the compact solo-reading output. Current help and keyboard documentation now describe those paths. Historical release notes retain their original descriptions.
+
+Validation: the experimental app compiled, passed bundle signature verification, and reopened. Native inspection confirmed the rehearsal entry is absent from both the output dropdown and Prompt menu; Webcam Layout remains available. The microphone stayed off. No release was published.

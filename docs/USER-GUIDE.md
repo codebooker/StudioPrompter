@@ -4,9 +4,9 @@
 
 Use an extended desktop in macOS Display settings. Keep the producer workspace on your primary display, then choose **Prompter Output** and select the talent monitor. Both screens share a script position and line wrapping. Talent output is borderless; the main window retains standard macOS window controls.
 
-Mirror and flip affect only talent output and the rehearsal window. **B** blacks out the talent monitor while leaving the producer preview visible. Stop output from the right panel or the Prompt menu. Disconnecting the selected display closes its output and pauses playback.
+Mirror and flip affect only talent output. **B** blacks out the talent monitor while leaving the producer preview visible. Stop output from the right panel or the Prompt menu. Disconnecting the selected display closes its output and pauses playback.
 
-With one monitor, use **Open Rehearsal Window** to inspect the talent view.
+With one monitor, use the producer preview or choose **Prompter Output → Webcam Layout** to read near your webcam (development build).
 
 ## Reading and retakes
 
@@ -81,8 +81,8 @@ Existing version-1 JSON libraries migrate automatically on save, with the origin
 | ⌘O | Import |
 | ⌘S | Save |
 | ⌘⇧L | Advanced voice settings |
-| ⌘⇧P | Rehearsal window |
-| ⌘⇧. | Stop talent output |
+| ⌘⇧K | Webcam Layout |
+| ⌘⇧. | Stop output |
 | ⌃⌘F | Main-window full screen |
 
 Single-key controls leave text entry alone when an editor or text field has focus. Click the preview to return keyboard control to prompting.

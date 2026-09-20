@@ -72,7 +72,6 @@ final class AppState: ObservableObject {
     private var pendingSave: DispatchWorkItem?
     private var canSave = true
     private var keyMonitor: Any?
-    private var presentationWindows: [NSWindow] = []
     private var outputWindow: NSWindow?
     private var voiceWindow: NSWindow?
     private var screenObserver: NSObjectProtocol?
@@ -449,21 +448,6 @@ final class AppState: ObservableObject {
     func showProducerWorkspace() {
         NSApp.windows.first(where: { $0.identifier?.rawValue == "workspace" })?.makeKeyAndOrderFront(nil)
     }
-    func present(on screen: NSScreen? = nil) {
-        presentationWindows.removeAll { !$0.isVisible }
-        let target = screen ?? NSScreen.main ?? NSScreen.screens[0]
-        let rect = NSRect(x: target.visibleFrame.minX + 80, y: target.visibleFrame.minY + 80, width: min(1100, target.visibleFrame.width - 160), height: min(760, target.visibleFrame.height - 160))
-        let window = NSWindow(contentRect: rect, styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "Prompter — Presentation"
-        window.identifier = NSUserInterfaceItemIdentifier("presentation")
-        window.backgroundColor = .black
-        window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: PresentationView(state: self).preferredColorScheme(.dark))
-        window.collectionBehavior = [.fullScreenPrimary]
-        window.makeKeyAndOrderFront(nil)
-        presentationWindows.append(window)
-        if screen != nil { window.toggleFullScreen(nil) }
-    }
     private func handleKey(_ event: NSEvent) -> NSEvent? {
         guard !event.modifierFlags.contains(.command), !event.modifierFlags.contains(.control), !event.modifierFlags.contains(.option),
               !(NSApp.keyWindow is NSPanel), NSApp.modalWindow == nil else { return event }
@@ -471,7 +455,7 @@ final class AppState: ObservableObject {
         if event.keyCode == 53 { pausePlayback(stopListening: true); return event }
         if let text = NSApp.keyWindow?.firstResponder as? NSTextView, text.isEditable { return event }
         switch event.keyCode {
-        case 49: if !isEditing || NSApp.keyWindow?.identifier?.rawValue == "presentation" { togglePlayback(); return nil }
+        case 49: if !isEditing { togglePlayback(); return nil }
         case 126: update { $0.settings.wordsPerMinute = min(300, $0.settings.wordsPerMinute + 5) }; return nil
         case 125: update { $0.settings.wordsPerMinute = max(30, $0.settings.wordsPerMinute - 5) }; return nil
         case 123: playback.scrub(playback.transport.progress - 0.025); return nil

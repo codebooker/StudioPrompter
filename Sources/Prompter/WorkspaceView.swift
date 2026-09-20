@@ -243,7 +243,6 @@ struct TransportBar: View {
     @ObservedObject var state: AppState
     @ObservedObject var playback: Playback
     @ObservedObject var voice: VoiceController
-    var compact = false
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 12) {
@@ -279,7 +278,7 @@ struct TransportBar: View {
                 }.frame(width: 83, alignment: .trailing)
             }
             VoicePlaybackStatus(voice: voice, playback: playback)
-        }.padding(compact ? 18 : 0).background(Palette.background)
+        }.background(Palette.background)
     }
     private func iconButton(_ icon: String, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Image(systemName: icon).font(.system(size: 17)).frame(width: 24, height: 34) }
@@ -393,9 +392,10 @@ struct OutputMenu: View {
                 }
             }
             if state.secondaryScreens.isEmpty { Text("No secondary display connected") }
-            Divider()
-            Button("Open rehearsal window") { state.present() }
-            if state.outputName != nil { Button("Stop output") { state.stopOutput() } }
+            if state.outputName != nil {
+                Divider()
+                Button("Stop output") { state.stopOutput() }
+            }
         } label: {
             Label("Prompter Output",
                   systemImage: state.webcamLayoutActive ? "person.crop.rectangle" : "display.2")
