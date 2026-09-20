@@ -217,7 +217,7 @@ private func completedLineChecks() {
     storage.addLayoutManager(layout); layout.addTextContainer(container); layout.ensureLayout(for: container)
     let travel = max(1, layout.usedRect(for: container).height - settings.fontSize * 1.2)
     let lineHeight = layout.defaultLineHeight(for: ScriptTypography.font(settings)) + settings.fontSize * (settings.lineSpacing - 1)
-    let lineStarts = words.map { layout.lineFragmentRect(forGlyphAt: layout.glyphIndexForCharacter(at: $0.characterOffset), effectiveRange: nil).minY / travel }
+    let lineStarts = words.map { Double(layout.lineFragmentRect(forGlyphAt: layout.glyphIndexForCharacter(at: $0.characterOffset), effectiveRange: nil).minY / travel) }
     let positions = ReadingPositions.spread(lineStarts: lineStarts, lineStep: lineHeight / travel)
     let ending = words.firstIndex { $0.text == "everything" }!
     let next = ending + 1
