@@ -71,7 +71,7 @@ No workflow automatically publishes releases. A passing CI build alone is not re
 
 Sparkle 2.10.0 is pinned in SwiftPM. `build.sh` embeds its framework and helper executables; Developer ID builds sign nested helpers before the enclosing framework and app. Development builds preserve Sparkle’s vendor signatures. The Sparkle signing key is not needed for ordinary builds or CI. See [UPDATES.md](UPDATES.md) for feed generation and the stable GitHub-release promotion workflow.
 
-## Experimental command build (not shipped)
+## Experimental command build (tester releases)
 
 Normal builds exclude hands-free controls, wake-word handling, model interpretation, and the llama runtime from the app. To resume development testing explicitly:
 
@@ -79,9 +79,9 @@ Normal builds exclude hands-free controls, wake-word handling, model interpretat
 STUDIO_EXPERIMENTAL_COMMANDS=1 ./scripts/run.sh
 ```
 
-The packaging script refuses that flag. Run the next ordinary build without it to remove the embedded experimental runtime. `--voice-diagnostics` is honored only by experimental app builds; it prints rolling Whisper text and command decisions to stdout for an explicitly requested live test, including word timings while collecting commands. Do not use it with private speech or save/share its output inadvertently.
+The packaging script allows that flag only with `TESTER_RELEASE=1`; stable packaging refuses it. Run the next ordinary build without it to remove the embedded experimental runtime. `--voice-diagnostics` is honored only by experimental app builds; it prints rolling Whisper text and command decisions to stdout for an explicitly requested live test, including word timings while collecting commands. Do not use it with private speech or save/share its output inadvertently.
 
-## Natural command interpretation (deferred experiment)
+## Natural command interpretation (experimental)
 
 The fast command parser runs first. Only a settled, previously unconsumed request after **Hey Teleprompter** reaches the optional model. Qwen2.5-1.5B-Instruct Q4_K_M runs through the official llama.cpp b11053 XCFramework, embedded and signed with the app. Neither Ollama nor a separate server is required. `CommandModelStore` pins the publisher revision, byte size, and SHA-256. Downloads use temporary files and atomic installation; cached weights are verified before loading. Cancellation and retry are supported. Setup requires about 2.3 GB free disk space temporarily.
 

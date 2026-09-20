@@ -13,6 +13,7 @@
 		0B182D079F9E897318A6E181 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = B293081E841BF297DC4BDC62 /* Models.swift */; };
 		0EC636F11B941C83EC94FC7C /* CommandIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E779BF1469CF6D07BAFC5A30 /* CommandIntent.swift */; };
 		10B2D8D8292B9B1ECDD0357B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B49BDE0C02570379F789F291 /* Assets.xcassets */; };
+		3A6FE67C2C07B78A6B55EBD2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F31A71DEBF5C59F4D65C0B49 /* PrivacyInfo.xcprivacy */; };
 		677089B460520B667E9CA3FD /* PrompterCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 509FFCBBA3D6D2B9E25D1D15 /* PrompterCore.framework */; };
 		749DA17EFF51A34D703E19DC /* PrompterLink.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 13EE9B472EEC0EB22F09A69E /* PrompterLink.framework */; };
 		8982FD70EECEB295A93BF8C9 /* RemoteCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADAD62FF857CB62891BAD23 /* RemoteCanvas.swift */; };
@@ -82,6 +83,7 @@
 		D5FD22C0A2315BB0BFB6F0FB /* ScriptMarkdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptMarkdown.swift; sourceTree = "<group>"; };
 		E779BF1469CF6D07BAFC5A30 /* CommandIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandIntent.swift; sourceTree = "<group>"; };
 		EADAD62FF857CB62891BAD23 /* RemoteCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteCanvas.swift; sourceTree = "<group>"; };
+		F31A71DEBF5C59F4D65C0B49 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +146,7 @@
 			children = (
 				B49BDE0C02570379F789F291 /* Assets.xcassets */,
 				D3659898EA20DB05875FBAA4 /* Info.plist */,
+				F31A71DEBF5C59F4D65C0B49 /* PrivacyInfo.xcprivacy */,
 				EADAD62FF857CB62891BAD23 /* RemoteCanvas.swift */,
 				7F26E0A47A5096B90F52B63D /* RemoteReceiver.swift */,
 				62B661BB749B10E16245D991 /* StudioPrompterCompanionApp.swift */,
@@ -272,6 +275,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				10B2D8D8292B9B1ECDD0357B /* Assets.xcassets in Resources */,
+				3A6FE67C2C07B78A6B55EBD2 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -359,7 +363,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = StudioPrompterCompanion/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -370,7 +374,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = co.codebooker.studioprompter.companion;
 				PRODUCT_NAME = StudioPrompterCompanion;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = 2;
 			};
 			name = Release;
 		};
@@ -379,7 +385,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = StudioPrompterCompanion/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -390,7 +396,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = co.codebooker.studioprompter.companion;
 				PRODUCT_NAME = StudioPrompterCompanion;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = 2;
 			};
 			name = Debug;
 		};

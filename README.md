@@ -29,7 +29,7 @@ Record solo with a compact script near your webcam, or keep the controls on your
 
 ## iPad companion · in development
 
-**StudioPrompter Companion** turns an iPad into a reading display controlled from your Mac, including mirrored output for teleprompter glass. Pair over the local network; scripts, microphone selection, and voice processing stay on the Mac. This native iPad prototype is being tested and is **not included in the 0.1.1 release**. [Setup and development status](docs/IPAD-COMPANION.md).
+**StudioPrompter Companion** turns an iPad into a reading display controlled from your Mac, including mirrored output for teleprompter glass. Pair over the local network; scripts, microphone selection, and voice processing stay on the Mac. The matching **Mac 0.2.0 beta** and **Companion TestFlight** are being prepared; the published 0.1.1 release does not include iPad output. Pairings survive restarts, and the producer can remove an iPad’s access even while it is offline. [Setup and development status](docs/IPAD-COMPANION.md).
 
 ## Read near your webcam
 
