@@ -24,6 +24,14 @@ if [[ "${STUDIO_EXPERIMENTAL_COMMANDS:-0}" != 1 ]]; then
         echo "Experimental command entry points must not ship in release builds" >&2
         exit 1
     fi
+else
+    test -d dist/Prompter.app/Contents/Frameworks/llama.framework
+    grep -q 'llama' .build/runtime-dependencies.txt
+    nm dist/Prompter.app/Contents/MacOS/Prompter > .build/runtime-symbols.txt
+    grep -q 'performVoiceCommand' .build/runtime-symbols.txt
+    test -f dist/Prompter.app/Contents/Resources/CommandAI-NOTICES.txt
+    test -f dist/Prompter.app/Contents/Resources/Qwen2.5-LICENSE.txt
+    test -f dist/Prompter.app/Contents/Resources/llama.cpp-LICENSE.txt
 fi
 test -x dist/Prompter.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate
 test -x dist/Prompter.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater

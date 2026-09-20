@@ -35,10 +35,10 @@ The Actions workflow builds on a [GitHub-hosted macOS runner](https://docs.githu
 Commit all changes first. The packaging script requires a clean checkout and records the source commit in `BUILD-INFO.txt`.
 
 ```sh
-RELEASE_VERSION=0.1.0 ./scripts/package-release.sh
+RELEASE_VERSION=0.1.1 ./scripts/package-release.sh
 ```
 
-Output: `dist/releases/0.1.0/`, containing a versioned ZIP, SHA-256 checksum, and build information. The version's numeric part must match `scripts/Info.plist`. Without signing credentials, this is explicitly an **ad-hoc development package**. For explicitly approved early tester distribution, follow the separate tester process in [UPDATES.md](UPDATES.md). General distribution still requires signing and live acceptance.
+Output: `dist/releases/0.1.1/`, containing a versioned ZIP, SHA-256 checksum, and build information. The version's numeric part must match `scripts/Info.plist`. Without signing credentials, this is explicitly an **ad-hoc development package**. For explicitly approved early tester distribution, follow the separate tester process in [UPDATES.md](UPDATES.md). General distribution still requires signing and live acceptance.
 
 The ZIP contains the application license and third-party notices. The matching Git tag and GitHub source archive provide the source for the distributed app.
 
@@ -51,7 +51,7 @@ Once configured locally, supply the identity name and keychain profile:
 ```sh
 SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)' \
 NOTARY_PROFILE='StudioPrompter-notary' \
-RELEASE_VERSION=0.1.0 \
+RELEASE_VERSION=0.1.1 \
 ./scripts/package-release.sh
 ```
 
@@ -119,3 +119,5 @@ Webcam Layout is a mutually exclusive output choice alongside external monitors.
 ### Bookmark terminology
 
 The UI calls saved script positions bookmarks. Existing `Cue`, `cues`, `studioprompter-cue` Markdown comments, and command action identifiers remain stable for file and action compatibility. The command prompt uses bookmark terminology; both bookmark and cue point remain accepted, with “book mark” normalized in command requests. No model weights or download changes are needed.
+
+Tester release 0.1.1 explicitly includes commands using `STUDIO_EXPERIMENTAL_COMMANDS=1 TESTER_RELEASE=1`; see UPDATES.md. The stable packaging path continues to reject experimental commands.

@@ -4,9 +4,13 @@ import PrompterCommands
 
 @main struct CommandCheck {
     static func main() async throws {
-        if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--cache-check" {
+        if CommandLine.arguments.count == 3, ["--cache-check", "--download-check"].contains(CommandLine.arguments[1]) {
             let folder = URL(fileURLWithPath: CommandLine.arguments[2])
             let store = CommandModelStore(directory: folder)
+            if CommandLine.arguments[1] == "--download-check" {
+                _ = try await store.prepare(allowDownload: true) { _ in }
+                print("PASS: command model downloaded and SHA-256 verified")
+            }
             let file = try await store.prepare(allowDownload: false) { _ in }
             let reopened = CommandModel()
             try await reopened.load(path: file.path)
@@ -31,7 +35,7 @@ import PrompterCommands
             return
         }
         guard CommandLine.arguments.count == 2 else {
-            print("Usage: CommandCheck <model.gguf> | --cache-check <model-directory>"); exit(2)
+            print("Usage: CommandCheck <model.gguf> | --cache-check <model-directory> | --download-check <fresh-model-directory>"); exit(2)
         }
         let model = CommandModel()
         let start = Date()

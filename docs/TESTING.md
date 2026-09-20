@@ -1,6 +1,6 @@
 # Beta validation and release gates
 
-Tester release: **0.1.0**, Apple silicon, macOS deployment target 13.3.
+Tester release candidate: **0.1.1**, Apple silicon, macOS deployment target 13.3.
 
 A green automated build is necessary, but does not establish comfortable live prompting or clean-machine installation. The owner has chosen to distribute an early, non-notarized tester build. The unfinished items below remain requirements before declaring the app ready for general production use; they are not claimed as completed by this tester release.
 
@@ -8,13 +8,13 @@ A green automated build is necessary, but does not establish comfortable live pr
 
 | Area | Repeatable check | Current evidence |
 | --- | --- | --- |
-| Transport and persistence | `swift run PrompterChecks` | 289 assertions pass: countdown, frame independence, pause/end, library round-trip, legacy font migration, typeface persistence, corrupt-file preservation, Markdown migration/round-trip, emphasis, cue anchors, and rich-text round-trip |
+| Transport and persistence | `swift run PrompterChecks` | 462 assertions pass: countdown, frame independence, pause/end, library round-trip, legacy font migration, typeface persistence, corrupt-file preservation, Markdown migration/round-trip, emphasis, cue anchors, and rich-text round-trip |
 | Speech matching and motion | Same runner | Skipped/filler words, unrelated speech rejection, recognition corrections, quiet-speech recovery logic, cadence smoothing, bounded motion, layout and focus geometry |
 | Retake control | Same runner | Active playback preserved, countdown cancelled, old/far location rejected, scrolling-settle gate, fresh nearby match releases hold, explicit pause preserved |
 | Input isolation | `swift run -c release WhisperCheck --channels` | Synthetic 20-channel planar/interleaved input: selected host channel reaches mono recognition, other channels remain silent, invalid channel rejected |
 | First model setup | `./scripts/check-speech.sh` | Fresh Base English download, local preparation, cache detection, reopen with model download disabled, synthetic transcription |
 | Real Whisper streaming | Same script | Quiet synthetic speech at −50 dB RMS, rolling eight-second windows; passage must reach its final eight words |
-| Bundle | `./scripts/check.sh` | Release compilation, plist lint, code-signature integrity, system libraries and embedded Sparkle only |
+| Bundle | `./scripts/check.sh` | Release compilation, plist lint, code-signature integrity, system libraries, embedded Sparkle, and the explicitly enabled tester command runtime |
 | GitHub build | Actions: Build and checks | Runs core/layout/channel/bundle checks on a hosted macOS runner; review the run linked from the README |
 
 The speech fixture is generated locally; no microphone recording is committed. Synthetic speech is not a substitute for live testing. Cached reopen with downloads disabled is not a network-disconnection test.
@@ -187,3 +187,10 @@ Removed the duplicate sidebar output dropdown, status/Stop row, and instructiona
 ### External-display-only mirror controls
 
 The Mirror & Flip sidebar section now appears only while `outputScreenID` identifies an active external output. Hiding the section does not change saved mirror/flip values. The experimental build and bundle signature checks passed. Native inspection confirmed the controls are absent both with no output and with Webcam Layout active. External hardware was disconnected, so revealing the section on a physical monitor remains an acceptance check.
+
+
+## 0.1.1 tester release scope
+
+The owner approved including experimental Hey Teleprompter commands and optional local command AI in this tester release. This supersedes the 0.1.0 exclusion described in the historical sections above. Ordinary builds still exclude commands; packaging requires both the experimental flag and tester mode to include them. Hosted CI now checks both build variants. A Swift CGFloat-to-Double array conversion in the new layout regression was made explicit for the hosted toolchain.
+
+This release also includes Webcam Layout, unified output selection, bookmarks, completed-line handoff, stationary resize controls, and stable guide positioning. The presenter accepted the previously stalled passage and bottom-edge motion after the fixes. The owner reports that 0.1.0 installed and worked on the friend's Mac; that does not establish a clean-machine installation of 0.1.1 or its new command model.

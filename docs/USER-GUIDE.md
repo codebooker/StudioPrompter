@@ -6,7 +6,7 @@ Use an extended desktop in macOS Display settings. Keep the producer workspace o
 
 Mirror and flip affect only talent output. Their sidebar controls appear when an external display is selected; your saved settings are retained when output stops or you switch to Webcam Layout. **B** blacks out the talent monitor while leaving the producer preview visible. Stop output from the top-right **Prompter Output** dropdown or the Prompt menu. Disconnecting the selected display closes its output and pauses playback.
 
-With one monitor, use the producer preview or choose **Prompter Output → Webcam Layout** to read near your webcam (development build).
+With one monitor, use the producer preview or choose **Prompter Output → Webcam Layout** to read near your webcam.
 
 ## Reading and retakes
 
@@ -62,7 +62,13 @@ Existing version-1 JSON libraries migrate automatically on save, with the origin
 
 ## Voice commands
 
-“Hey Teleprompter” and natural-language commands are not included in the tester release. Follow script and Adaptive pace work normally using Play and Pause.
+Tester release 0.1.1 includes experimental hands-free commands. Turn on **Voice prompting**, choose your microphone/channel, and enable **Hands-free commands**. It begins listening even while the script is paused. Say “Hey Teleprompter,” give one command, and briefly pause. Punctuation in the transcript is handled automatically.
+
+Try “Hey Teleprompter, start,” “go back two lines,” “start this paragraph over,” “next bookmark,” or “make the font bigger.” “Line height” means line spacing; “reading guide height” changes the focus area. Pause keeps listening so you can resume by voice. Press **Esc** to stop listening.
+
+For flexible phrasing, open **Advanced voice settings**, enable **Natural commands · Beta**, and choose **Download command AI**. The approximately 1.1 GB model is stored locally under `~/Library/Application Support/Prompter/CommandModel`. After setup it works offline. The model interprets a bounded set of app actions; it does not edit your script or act as a general assistant. Clear commands can use the built-in parser without this additional model.
+
+Recognition and interpretation remain experimental. Check the visible response, especially with background speech, ambiguous requests, or an unfamiliar microphone. Follow script and Adaptive pace also work with hands-free commands turned off.
 
 ## Keyboard shortcuts
 
@@ -92,7 +98,7 @@ Single-key controls leave text entry alone when an editor or text field has focu
 Pause prompting and stop the microphone, then choose **StudioPrompter → Check for Updates…** from the macOS menu bar. When a newer tester release is available, review its notes and choose Download, then Install & Relaunch. Your saved library and downloaded models stay on this Mac. Checks are manual; unpublished drafts are not offered. This build receives published tester releases from a separate feed. Older builds without this menu need one manual installation of an updater-enabled build.
 
 
-## Webcam Layout (development build)
+## Webcam Layout
 
 Choose **Prompter Output → Webcam Layout** from the top-right dropdown, alongside your connected monitors, or **Prompt → Open Webcam Layout** (⌘⇧K). Switching between a monitor and Webcam Layout closes the previous output without changing script progress. **Stop output** closes the active output. A checkmark identifies the active output in the dropdown. A compact reading window floats above other apps. It initially uses the built-in display when available; otherwise it uses the producer workspace’s display. Notched screens place the panel below the camera cutout. Other screens use a top-centered position.
 
@@ -100,4 +106,4 @@ Drag the grip beside “Webcam Layout” left, right, or down to align with your
 
 Scroll or drag the script manually. Play/Pause, Reset, Space, arrows, and Esc share the main window’s controls; Esc stops the microphone. The sliders button returns to producer controls while keeping Webcam Layout open. Configure your microphone, voice mode, and experimental hands-free commands there before opening Webcam Layout. The webcam layout stays unmirrored. Its reading guide starts near the top; drag the orange arrow down through the available reading area to suit your eyeline. Webcam Layout keeps its own guide position for the session, independent of the main window. The limit adjusts to the window, text size, and configured guide height so the guide stays above the controls and remains steady as lines scroll through it. Your saved script font and canonical line wrapping are unchanged. It does not require camera permission.
 
-Webcam Layout is not in the published 0.1.0 tester release yet.
+Webcam Layout and experimental hands-free commands are included in tester release 0.1.1.

@@ -11,6 +11,11 @@ concurrency:
   cancel-in-progress: true
 jobs:
   macos:
+    strategy:
+      matrix:
+        commands: ["0", "1"]
+    env:
+      STUDIO_EXPERIMENTAL_COMMANDS: ${{ matrix.commands }}
     runs-on: macos-15
     timeout-minutes: 30
     steps:
@@ -31,6 +36,6 @@ jobs:
         run: ditto -c -k --sequesterRsrc --keepParent dist/Prompter.app dist/Prompter-development.zip
       - uses: actions/upload-artifact@v7.0.1
         with:
-          name: Prompter-development-${{ runner.arch }}
+          name: Prompter-development-${{ runner.arch }}-commands-${{ matrix.commands }}
           path: dist/Prompter-development.zip
           retention-days: 7

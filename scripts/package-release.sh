@@ -1,8 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-[[ "${STUDIO_EXPERIMENTAL_COMMANDS:-0}" != 1 ]] || { echo "Experimental commands cannot be packaged for release." >&2; exit 1; }
-VERSION="${RELEASE_VERSION:-0.1.0}"
+if [[ "${STUDIO_EXPERIMENTAL_COMMANDS:-0}" == 1 && "${TESTER_RELEASE:-0}" != 1 ]]; then
+    echo "Experimental commands require an explicitly selected tester release." >&2; exit 1
+fi
+VERSION="${RELEASE_VERSION:-0.1.1}"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]] || { echo "Invalid release version" >&2; exit 1; }
 PLIST_VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' scripts/Info.plist)"
 [[ "${VERSION%%-*}" == "$PLIST_VERSION" ]] || { echo "Release version must match Info.plist" >&2; exit 1; }
@@ -47,6 +49,7 @@ codesign --verify --deep --strict "$APP"
     echo "Source: https://github.com/codebooker/StudioPrompter"
     echo "Commit: $(git rev-parse HEAD)"
     echo "Architecture: $ARCH"
+    echo "Experimental hands-free commands: ${STUDIO_EXPERIMENTAL_COMMANDS:-0}"
     echo "Minimum macOS: $(/usr/libexec/PlistBuddy -c 'Print LSMinimumSystemVersion' "$APP/Contents/Info.plist")"
     echo "Signing: $SIGNING"
     echo "Built UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"

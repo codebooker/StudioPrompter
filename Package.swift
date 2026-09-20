@@ -2,7 +2,7 @@
 import PackageDescription
 import Foundation
 
-// Experimental commands are never enabled by ordinary or release builds.
+// Experimental commands require an explicit opt-in; packaging permits them only for tester releases.
 let experimentalCommands = ProcessInfo.processInfo.environment["STUDIO_EXPERIMENTAL_COMMANDS"] == "1"
 
 let package = Package(

@@ -9,11 +9,11 @@ The first release is an early tester build for Apple silicon, distributed as a G
 This build uses `updates/tester-appcast.xml`. Subsequent tester releases use that same feed and the same Ed25519 key, so testers can update from within the app. An archive is verified against the app’s pinned public key before extraction. Non-notarized tester releases never enter the separate stable feed.
 
 1. Increment `CFBundleVersion` for every distributed build. Set `CFBundleShortVersionString` to the numeric release version. Never reuse or replace an already published version.
-2. Keep `SUFeedURL` pointed at the tester feed and commit the source. Ordinary builds must exclude experimental commands.
+2. Keep `SUFeedURL` pointed at the tester feed and commit the source. Ordinary builds exclude experimental commands. Starting with 0.1.1, explicitly approved tester packages may include them by setting `STUDIO_EXPERIMENTAL_COMMANDS=1`; stable packaging still rejects that flag.
 3. Package and sign the update archive with the existing local Sparkle key:
 
    ```sh
-   RELEASE_VERSION=0.1.1 TESTER_RELEASE=1 UPDATE_FEED=1 \
+   STUDIO_EXPERIMENTAL_COMMANDS=1 RELEASE_VERSION=0.1.1 TESTER_RELEASE=1 UPDATE_FEED=1 \
    RELEASE_NOTES_FILE=docs/RELEASE-NOTES-0.1.1.md \
    ./scripts/package-release.sh
    ```

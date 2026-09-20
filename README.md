@@ -59,11 +59,11 @@ Using an audio interface? Select the interviewer's isolated channel so the guest
 
 ## Get StudioPrompter
 
-**[Download StudioPrompter 0.1.0 — tester release](https://github.com/codebooker/StudioPrompter/releases/tag/0.1.0)**
+**[Download StudioPrompter 0.1.1 — tester release](https://github.com/codebooker/StudioPrompter/releases/tag/0.1.1)**
 
 For **Apple silicon Macs (M1 or newer), macOS 13.3+**. Unzip the download, move `Prompter.app` to Applications, and open it. It appears as **StudioPrompter**. This early build is not notarized: if macOS blocks the first launch, use **System Settings → Privacy & Security → Open Anyway** for StudioPrompter. See [Apple’s instructions](https://support.apple.com/en-us/102445).
 
-Follow script, Adaptive pace, the Markdown editor, bookmarks, and dual-display output are included. **“Hey Teleprompter” commands and the command AI are excluded** while we improve and test them. This is a tester release, not a production-readiness claim; [remaining validation](docs/TESTING.md) is documented.
+Follow script, Adaptive pace, the Markdown editor, bookmarks, dual-display output, and **Webcam Layout** are included. **“Hey Teleprompter” commands and optional local command AI are available as experimental features** in this tester release. This is a tester release, not a production-readiness claim; [remaining validation](docs/TESTING.md) is documented.
 
 Future tester releases arrive through **StudioPrompter → Check for Updates…**. Signed update archives are verified before installation; scripts and downloaded models stay on your Mac.
 
@@ -77,9 +77,9 @@ cd StudioPrompter
 
 This creates and opens `dist/Prompter.app` with a local ad-hoc signature. It is a development build, not a notarized distribution. The app appears as **StudioPrompter** in macOS.
 
-## Coming next: Webcam Layout
+## Read near your webcam
 
-Choose **Webcam Layout** from the **Prompter Output** dropdown alongside your monitors. The development build includes this compact, floating reading window for solo recording. It starts near the webcam on a built-in display, respects camera cutouts, and can be dragged beneath an external webcam. Adjust width and height independently while keeping the same script position and controls. Webcam Layout is not included in the 0.1.0 tester download yet.
+Choose **Webcam Layout** from the **Prompter Output** dropdown alongside your monitors. This compact, floating reading window is designed for solo recording. It starts near the webcam on a built-in display, respects camera cutouts, and can be dragged beneath an external webcam. Adjust width and height independently while keeping the same script position and controls.
 
 ## Built for the Mac
 
