@@ -1,6 +1,6 @@
 # Beta validation and release gates
 
-Tester release candidate: **0.1.1**, Apple silicon, macOS deployment target 13.3.
+Tester release: **0.1.1**, Apple silicon, macOS deployment target 13.3.
 
 A green automated build is necessary, but does not establish comfortable live prompting or clean-machine installation. The owner has chosen to distribute an early, non-notarized tester build. The unfinished items below remain requirements before declaring the app ready for general production use; they are not claimed as completed by this tester release.
 
@@ -194,3 +194,16 @@ The Mirror & Flip sidebar section now appears only while `outputScreenID` identi
 The owner approved including experimental Hey Teleprompter commands and optional local command AI in this tester release. This supersedes the 0.1.0 exclusion described in the historical sections above. Ordinary builds still exclude commands; packaging requires both the experimental flag and tester mode to include them. Hosted CI now checks both build variants. A Swift CGFloat-to-Double array conversion in the new layout regression was made explicit for the hosted toolchain.
 
 This release also includes Webcam Layout, unified output selection, bookmarks, completed-line handoff, stationary resize controls, and stable guide positioning. The presenter accepted the previously stalled passage and bottom-edge motion after the fixes. The owner reports that 0.1.0 installed and worked on the friend's Mac; that does not establish a clean-machine installation of 0.1.1 or its new command model.
+
+
+### 0.1.1 published tester release evidence · 2026-09-19
+
+- Release source: `9ef9ff3c44ccaf7f41d9e2c6a1a0dee19b39a319`, build 4. Both ordinary and experimental-command variants passed [hosted CI](https://github.com/codebooker/StudioPrompter/actions/runs/35483931998). The published package explicitly includes the command runtime and its licenses.
+- Local packaging passed 462 core/layout assertions, selected-channel isolation/resampling, bundle/plist/signature checks, five feed-validation tests, and cryptographic acceptance/tamper/truncation/wrong-key rejection.
+- All 130 command-model text fixtures matched, with zero unexpected actions (median approximately 0.53 seconds for classification). All 43 synthetic Whisper-to-command fixtures passed. These are regression fixtures, not real-world accuracy estimates.
+- Fresh command-model download passed size and SHA-256 verification, cached loading with downloads disabled, and an actual interpreted command. Missing, incomplete, and correct-size corrupt caches were rejected. Fresh Base English download, preparation, synthetic transcription, and cached reopening with model downloads disabled also passed.
+- The release UI exposed Hands-free commands and Natural commands · Beta with the microphone off. Its four scripts and two Test Script bookmarks were visible.
+- Downloaded the uploaded ZIP and verified its checksum and Ed25519 signature. An unauthenticated public download matched the packaged ZIP byte for byte. [Tester-feed promotion succeeded](https://github.com/codebooker/StudioPrompter/actions/runs/35484090904).
+- Full update from an unmodified copy of the published 0.1.0 archive: Check for Updates displayed 0.1.1, Install Update downloaded it, and Install and Relaunch completed. The installed app reported 0.1.1, matched the release executable, and passed code-signature verification. All four Markdown script content hashes remained unchanged; all 46 existing model-cache files remained present with the same sizes.
+
+This verifies the real 0.1.0-to-0.1.1 update on the development Mac. New-recipient first-launch approval, physical mixer/external-display behavior on this exact candidate, minimum-OS hardware, and 8 GB command-model performance still need broader tester feedback.
