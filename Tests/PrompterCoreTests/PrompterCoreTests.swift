@@ -170,6 +170,7 @@ private func expectThrows<T>(_ expression: @autoclosure () throws -> T, file: St
         recognitionRecoveryChecks()
         retakeChecks()
         layoutChecks()
+        completedLineChecks()
         voiceCommandChecks()
         print("\(assertions) assertions across playback, persistence, speech alignment, and cadence checks; \(failures) failures")
         if failures > 0 { exit(1) }
@@ -201,6 +202,46 @@ private func layoutChecks() {
     expectTrue(band.contains(bottom))
     expectFalse(band.intersects(outside))
     expectEqual(FocusGeometry.band(nominal: nominal, textLines: []), nominal)
+}
+
+private func completedLineChecks() {
+    var settings = PromptSettings()
+    settings.fontSize = 58; settings.lineSpacing = 1.3; settings.margin = 110
+    let source = "Every day, we face many choices. Some choices are big. But most are small. These little choices add up over time. They shape how we feel and how we see the world. Sometimes, it’s the tiny things that change everything.\n\nThink about your morning routine. How you start your day can set the tone. Simple actions like drinking water, stretching, or taking a deep breath matter."
+    let words = ScriptMatcher.words(in: source)
+    let storage = NSTextStorage(attributedString: ScriptTypography.text(source, settings: settings))
+    let layout = NSLayoutManager()
+    let container = NSTextContainer(size: NSSize(width: 1000 - settings.margin * 2, height: CGFloat.greatestFiniteMagnitude))
+    container.lineFragmentPadding = 0
+    storage.addLayoutManager(layout); layout.addTextContainer(container); layout.ensureLayout(for: container)
+    let travel = max(1, layout.usedRect(for: container).height - settings.fontSize * 1.2)
+    let lineHeight = layout.defaultLineHeight(for: ScriptTypography.font(settings)) + settings.fontSize * (settings.lineSpacing - 1)
+    let lineStarts = words.map { layout.lineFragmentRect(forGlyphAt: layout.glyphIndexForCharacter(at: $0.characterOffset), effectiveRange: nil).minY / travel }
+    let positions = ReadingPositions.spread(lineStarts: lineStarts, lineStep: lineHeight / travel)
+    let ending = words.firstIndex { $0.text == "everything" }!
+    let next = ending + 1
+    let match = ScriptMatcher.match("the tiny things that change everything", script: words, near: ending - 5)
+    expectEqual(match?.wordIndex, ending)
+    expectEqual(words[next].text, "think")
+    // Once the final word is recognized, the next unread line must enter the
+    // reading band without requiring the presenter to read dimmed text first.
+    for (height, guide) in [(500.0, 0.38), (174.0 / 0.58, 0.095), (114.0 / 0.36, 0.095)] {
+        var transport = Transport()
+        transport.seek(to: positions[max(0, ending - 1)])
+        transport.play(countdown: 0, hasContent: true)
+        for _ in 0..<60 { transport.follow(seconds: 1.0 / 60, target: positions[ending], lineStep: lineHeight / travel) }
+        let guideY = height * guide
+        let origin = guideY - settings.fontSize * 0.2 - transport.progress * travel
+        let glyph = layout.glyphIndexForCharacter(at: words[next].characterOffset)
+        let nextLine = layout.lineFragmentUsedRect(forGlyphAt: glyph, effectiveRange: nil).offsetBy(dx: settings.margin, dy: origin)
+        let nominal = CGRect(x: 0, y: guideY - 8, width: 1000, height: lineHeight + 12)
+        let band = FocusGeometry.band(nominal: nominal, textLines: [nextLine])
+        expectTrue(band.contains(nextLine))
+        expectTrue(nextLine.minY >= 0 && nextLine.maxY <= height)
+        let stopped = transport.progress
+        for _ in 0..<120 { transport.follow(seconds: 1.0 / 60, target: nil, lineStep: lineHeight / travel) }
+        expectEqual(transport.progress, stopped)
+    }
 }
 
 private func retakeChecks() {
@@ -310,11 +351,17 @@ private func followChecks() {
     expectEqual(a, b, accuracy: 0.00001)
     let spread = ReadingPositions.spread(lineStarts: [0, 0, 0, 0, 0.1, 0.1, 0.1, 0.1, 0.2], lineStep: 0.1)
     expectEqual(spread[1], 0, accuracy: 0.00001)
-    expectEqual(spread[3], 0.025, accuracy: 0.00001)
-    expectEqual(spread[4] - spread[3], spread[3] - spread[2], accuracy: 0.00001)
+    expectEqual(spread[3], 0.05, accuracy: 0.00001)
+    expectEqual(spread[4], spread[3], accuracy: 0.00001)
     expectTrue(zip(spread, spread.dropFirst()).allSatisfy { $0 <= $1 })
     expectEqual(spread[6], 0.1, accuracy: 0.00001)
     expectEqual(ReadingPositions.spread(lineStarts: [], lineStep: 0.1), [])
+    let shortLines = ReadingPositions.spread(lineStarts: [0, 0, 0.1, 0.23, 0.23, 0.23, 0.33], lineStep: 0.1)
+    expectEqual(shortLines[0], 0)
+    expectEqual(shortLines[1], 0.05, accuracy: 0.00001)
+    expectEqual(shortLines[2], 0.18, accuracy: 0.00001)
+    expectEqual(shortLines[3], shortLines[2], accuracy: 0.00001)
+    expectTrue(zip(shortLines, shortLines.dropFirst()).allSatisfy { $0 <= $1 })
     // A newly recognized line must not cause an immediate speed jump.
     var smooth = FollowMotion()
     let firstStep = smooth.advance(from: 0, to: 0.01, seconds: 1.0 / 60, lineStep: 0.01)

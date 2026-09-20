@@ -200,6 +200,14 @@ public enum ReadingPositions {
                 // Without this offset the entire line moves above the guide too early.
                 result[index] = max(0, lineStarts[first] + (end - lineStarts[first]) * Double(index - first) / Double(next - first) - lineStep / 2)
             }
+            // Recognition confirms that this word has been spoken. At a line's
+            // final word, reveal the next unread line instead of parking on the
+            // completed one. This is essential for one-word lines before a
+            // paragraph break, where the ordinary spread otherwise never moves.
+            // Keep all earlier word targets unchanged to avoid rushing the reader.
+            if next < lineStarts.count {
+                result[next - 1] = max(0, end - lineStep / 2)
+            }
             first = next
         }
         return result
