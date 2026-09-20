@@ -60,6 +60,7 @@ final class AppState: ObservableObject {
     @Published var saveStatus = "Saved on this Mac"
     @Published var screens: [NSScreen] = NSScreen.screens
     @Published var outputScreenID: String?
+    @Published private(set) var webcamLayoutActive = false
     @Published var cameraGuidePosition = 0.095
     @Published var cameraViewSize = CGSize(width: 580, height: 240)
     private var cameraWindow: CameraPromptWindow?
@@ -145,7 +146,7 @@ final class AppState: ObservableObject {
             return voice.mode.rawValue
         case .guidePosition(let direction) where cameraWindow?.isVisible == true:
             cameraGuidePosition = min(1, max(0, cameraGuidePosition + Double(direction.signum()) * 0.03))
-            return "Camera reading guide moved \(direction < 0 ? "up" : "down")"
+            return "Webcam reading guide moved \(direction < 0 ? "up" : "down")"
         case .font, .fontSize, .typeface, .lineSpacing, .margins, .guideVisible, .guidePosition, .guideHeight, .guideLines, .focusLine:
             let offset = ScriptCueLayout(current).offset(at: position)
             let playing = playback.transport.isPlaying
@@ -341,7 +342,7 @@ final class AppState: ObservableObject {
         voiceWindow = window
     }
     func closeVoiceLab() { voiceWindow?.close() }
-    var outputName: String? { screens.first(where: { Self.screenID($0) == outputScreenID })?.localizedName }
+    var outputName: String? { webcamLayoutActive ? "Webcam Layout" : screens.first(where: { Self.screenID($0) == outputScreenID })?.localizedName }
     var secondaryScreens: [NSScreen] { screens.filter { Self.screenID($0) != screens.first.map(Self.screenID) } }
     func startOutput(on screen: NSScreen) {
         stopOutput()
@@ -360,7 +361,10 @@ final class AppState: ObservableObject {
         outputWindow = window
         outputScreenID = Self.screenID(screen)
     }
-    func stopOutput() { outputWindow?.close(); outputWindow = nil; outputScreenID = nil }
+    func stopOutput() {
+        outputWindow?.close(); outputWindow = nil; outputScreenID = nil
+        closeCameraView()
+    }
     private var cameraScreen: NSScreen? {
         screens.first { screen in
             guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else { return false }
@@ -368,13 +372,15 @@ final class AppState: ObservableObject {
         } ?? NSApp.windows.first(where: { $0.identifier?.rawValue == "workspace" })?.screen ?? NSScreen.main
     }
     func openCameraView() {
-        if let cameraWindow { cameraWindow.makeKeyAndOrderFront(nil); return }
         guard let screen = cameraScreen else { return }
         if isEditing { toggleEditing() }
+        if outputScreenID != nil { stopOutput() }
+        webcamLayoutActive = true
+        if let cameraWindow { cameraWindow.makeKeyAndOrderFront(nil); return }
         cameraGuidePosition = current.settings.guidePosition * 0.25
         let rect = CameraViewGeometry.frame(screen: screen.frame, visible: screen.visibleFrame, safeTop: screen.safeAreaInsets.top)
         let window = CameraPromptWindow(contentRect: rect, styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
-        window.title = "StudioPrompter — Camera view"
+        window.title = "StudioPrompter — Webcam Layout"
         window.identifier = NSUserInterfaceItemIdentifier("camera-view")
         window.isReleasedWhenClosed = false
         window.backgroundColor = .clear; window.isOpaque = false; window.hasShadow = true
@@ -385,6 +391,10 @@ final class AppState: ObservableObject {
         window.contentView = NSHostingView(rootView: CameraPromptView(state: self, playback: playback, voice: voice).preferredColorScheme(.dark))
         window.delegate = window
         window.onResize = { [weak self] size in self?.cameraViewSize = size }
+        window.onClose = { [weak self] in
+            self?.cameraSizePanel?.close()
+            self?.webcamLayoutActive = false
+        }
         cameraWindow = window; cameraViewSize = rect.size
         window.setFrame(rect, display: true)
         window.makeKeyAndOrderFront(nil)
@@ -397,7 +407,7 @@ final class AppState: ObservableObject {
         }
         let panel = cameraSizePanel ?? NSPanel(contentRect: NSRect(x: 0, y: 0, width: 316, height: 212),
                                               styleMask: [.titled, .closable, .utilityWindow], backing: .buffered, defer: false)
-        panel.title = "Camera view size"
+        panel.title = "Webcam Layout size"
         panel.identifier = NSUserInterfaceItemIdentifier("camera-size")
         panel.isReleasedWhenClosed = false
         panel.level = .floating
@@ -432,9 +442,11 @@ final class AppState: ObservableObject {
         let top = min(window.frame.maxY, screen.frame.maxY - screen.safeAreaInsets.top, available.maxY)
         window.setFrame(CGRect(x: x, y: max(available.minY, top - size.height), width: size.width, height: size.height), display: true)
     }
-    func closeCameraView() { cameraSizePanel?.close(); cameraWindow?.close() }
+    func closeCameraView() {
+        cameraSizePanel?.close(); cameraWindow?.close()
+        webcamLayoutActive = false
+    }
     func showProducerWorkspace() {
-        closeCameraView()
         NSApp.windows.first(where: { $0.identifier?.rawValue == "workspace" })?.makeKeyAndOrderFront(nil)
     }
     func present(on screen: NSScreen? = nil) {

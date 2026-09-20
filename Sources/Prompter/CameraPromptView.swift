@@ -5,6 +5,8 @@ import PrompterCore
 /// A normal key-capable window keeps Space/Esc/manual scrolling available in the compact view.
 final class CameraPromptWindow: NSWindow, NSWindowDelegate {
     var onResize: ((CGSize) -> Void)?
+    var onClose: (() -> Void)?
+    func windowWillClose(_ notification: Notification) { onClose?() }
     func windowDidResize(_ notification: Notification) { onResize?(frame.size) }
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
@@ -41,11 +43,11 @@ struct CameraPromptView: View {
             VStack(spacing: 7) {
                 HStack(spacing: 10) {
                     CameraWindowDragHandle().frame(width: 20, height: 22)
-                        .help("Drag to move Camera view. Drag the window edges to resize.")
-                    Text("Camera view").font(.system(size: 11, weight: .semibold))
+                        .help("Drag to move Webcam Layout. Drag the window edges to resize.")
+                    Text("Webcam Layout").font(.system(size: 11, weight: .semibold))
                     Spacer(minLength: 4)
                     Button(action: state.openCameraSizeControls) { Image(systemName: "arrow.up.left.and.arrow.down.right") }
-                        .help("Adjust width and height").accessibilityLabel("Camera view size")
+                        .help("Adjust width and height").accessibilityLabel("Webcam Layout size")
                     Button(action: state.centerCameraView) { Image(systemName: "viewfinder") }
                         .help("Center below the camera").accessibilityLabel("Center below camera")
                     Button(action: playback.reset) { Image(systemName: "backward.end") }
@@ -58,7 +60,7 @@ struct CameraPromptView: View {
                     Button(action: state.showProducerWorkspace) { Image(systemName: "slider.horizontal.3") }
                         .help("Back to producer controls").accessibilityLabel("Producer controls")
                     Button(action: state.closeCameraView) { Image(systemName: "xmark") }
-                        .help("Close Camera view").accessibilityLabel("Close Camera view")
+                        .help("Close Webcam Layout").accessibilityLabel("Close Webcam Layout")
                 }.buttonStyle(.plain)
                 HStack(spacing: 6) {
                     Image(systemName: voice.isListening ? "mic.fill" : "mic.slash")
@@ -89,10 +91,10 @@ struct CameraSizeControls: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Width · \(Int(state.cameraViewSize.width))")
             Slider(value: Binding(get: { state.cameraViewSize.width }, set: { state.resizeCameraView(width: $0) }), in: 360...1000, step: 10)
-                .accessibilityLabel("Camera view width")
+                .accessibilityLabel("Webcam Layout width")
             Text("Height · \(Int(state.cameraViewSize.height))")
             Slider(value: Binding(get: { state.cameraViewSize.height }, set: { state.resizeCameraView(height: $0) }), in: 180...600, step: 10)
-                .accessibilityLabel("Camera view height")
+                .accessibilityLabel("Webcam Layout height")
             HStack {
                 Text("Drag the camera view’s handle to align with your webcam.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -110,7 +112,7 @@ private struct CameraWindowDragHandle: NSViewRepresentable {
         override init(frame: NSRect) {
             super.init(frame: frame)
             setAccessibilityElement(true)
-            setAccessibilityLabel("Move Camera view")
+            setAccessibilityLabel("Move Webcam Layout")
             setAccessibilityRole(.image)
         }
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }

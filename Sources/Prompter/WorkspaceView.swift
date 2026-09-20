@@ -62,8 +62,6 @@ struct WorkspaceView: View {
                     .fixedSize()
             }
             Spacer()
-            Button(action: state.openCameraView) { Label("Camera view", systemImage: "person.crop.rectangle") }.buttonStyle(QuietButton())
-                .help("Read close to your webcam · drag and resize to fit")
             Button(action: state.importScript) { Label("Import", systemImage: "square.and.arrow.down") }.buttonStyle(QuietButton())
             OutputMenu(state: state, prominent: true)
         }.padding(.horizontal, 24).frame(height: 66)
@@ -229,8 +227,8 @@ struct PreviewPanel: View {
                 }
             }.clipped()
             HStack {
-                Image(systemName: state.outputScreenID == nil ? "display" : "display.2")
-                Text(state.outputName.map { "Live on \($0)" } ?? "Talent display not connected")
+                Image(systemName: state.webcamLayoutActive ? "person.crop.rectangle" : "display.2")
+                Text(state.webcamLayoutActive ? "Webcam Layout active" : (state.outputName.map { "Live on \($0)" } ?? "Choose an output to start prompting"))
                 Spacer()
                 Text("Operator view stays unmirrored")
             }.font(.system(size: 9)).foregroundStyle(Palette.muted).padding(.horizontal, 16).frame(height: 33)
@@ -350,12 +348,12 @@ struct Inspector: View {
                 }.font(.system(size: 11)).toggleStyle(.switch).controlSize(.mini)
                 Divider().overlay(Palette.border)
                 VStack(alignment: .leading, spacing: 14) {
-                    SectionLabel(title: "TALENT DISPLAY")
+                    SectionLabel(title: "PROMPTER OUTPUT")
                     OutputMenu(state: state)
                     if let name = state.outputName {
                         HStack(spacing: 5) { Circle().fill(Palette.green).frame(width: 5, height: 5); Text(name).lineLimit(1); Spacer(); Button("Stop") { state.stopOutput() }.buttonStyle(.plain).foregroundStyle(Palette.accent) }.font(.system(size: 10))
                     } else {
-                        Text(state.secondaryScreens.isEmpty ? "Connect an extended display for your talent, or open a rehearsal window." : "Send the script to a display. Your controls stay here.")
+                        Text("Choose Webcam Layout to read near your camera, or send the script to a monitor.")
                             .font(.system(size: 10)).foregroundStyle(Palette.muted).lineSpacing(4)
                     }
                     Toggle("Mirror horizontally", isOn: state.setting(\.mirrorHorizontal))
@@ -385,16 +383,22 @@ struct OutputMenu: View {
     var prominent = false
     var body: some View {
         Menu {
-            if state.secondaryScreens.isEmpty { Text("No secondary display detected") }
-            ForEach(state.secondaryScreens, id: \.self) { screen in
-                Button("Send to \(screen.localizedName) (\(Int(screen.frame.width)) × \(Int(screen.frame.height)))") { state.startOutput(on: screen) }
+            Button(action: state.openCameraView) {
+                Label("Webcam Layout", systemImage: state.webcamLayoutActive ? "checkmark" : "person.crop.rectangle")
             }
+            ForEach(state.secondaryScreens, id: \.self) { screen in
+                Button { state.startOutput(on: screen) } label: {
+                    Label("\(screen.localizedName) (\(Int(screen.frame.width)) × \(Int(screen.frame.height)))",
+                          systemImage: state.outputScreenID == AppState.screenID(screen) ? "checkmark" : "display")
+                }
+            }
+            if state.secondaryScreens.isEmpty { Text("No secondary display connected") }
             Divider()
-            Button("Open Camera view") { state.openCameraView() }
             Button("Open rehearsal window") { state.present() }
-            if state.outputScreenID != nil { Button("Stop talent output") { state.stopOutput() } }
+            if state.outputName != nil { Button("Stop output") { state.stopOutput() } }
         } label: {
-            Label(state.outputScreenID == nil ? (prominent ? "Send to display" : "Choose display") : "Output live", systemImage: "display.2")
+            Label("Prompter Output",
+                  systemImage: state.webcamLayoutActive ? "person.crop.rectangle" : "display.2")
                 .font(.system(size: 11, weight: .medium)).frame(maxWidth: prominent ? nil : .infinity)
         }
         .menuStyle(.borderlessButton).fixedSize(horizontal: prominent, vertical: true)

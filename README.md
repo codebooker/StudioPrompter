@@ -77,9 +77,9 @@ cd StudioPrompter
 
 This creates and opens `dist/Prompter.app` with a local ad-hoc signature. It is a development build, not a notarized distribution. The app appears as **StudioPrompter** in macOS.
 
-## Coming next: Camera view
+## Coming next: Webcam Layout
 
-The development build includes a compact, floating reading window for solo recording. It starts near the webcam on a built-in display, respects camera cutouts, and can be dragged beneath an external webcam. Adjust width and height independently while keeping the same script position and controls. Camera view is not included in the 0.1.0 tester download yet.
+Choose **Webcam Layout** from the **Prompter Output** dropdown alongside your monitors. The development build includes this compact, floating reading window for solo recording. It starts near the webcam on a built-in display, respects camera cutouts, and can be dragged beneath an external webcam. Adjust width and height independently while keeping the same script position and controls. Webcam Layout is not included in the 0.1.0 tester download yet.
 
 ## Built for the Mac
 

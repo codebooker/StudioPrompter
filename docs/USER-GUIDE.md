@@ -2,7 +2,7 @@
 
 ## Two-screen setup
 
-Use an extended desktop in macOS Display settings. Keep the producer workspace on your primary display, then choose **Send to display** and select the talent monitor. Both screens share a script position and line wrapping. Talent output is borderless; the main window retains standard macOS window controls.
+Use an extended desktop in macOS Display settings. Keep the producer workspace on your primary display, then choose **Prompter Output** and select the talent monitor. Both screens share a script position and line wrapping. Talent output is borderless; the main window retains standard macOS window controls.
 
 Mirror and flip affect only talent output and the rehearsal window. **B** blacks out the talent monitor while leaving the producer preview visible. Stop output from the right panel or the Prompt menu. Disconnecting the selected display closes its output and pauses playback.
 
@@ -92,12 +92,12 @@ Single-key controls leave text entry alone when an editor or text field has focu
 Pause prompting and stop the microphone, then choose **StudioPrompter → Check for Updates…** from the macOS menu bar. When a newer tester release is available, review its notes and choose Download, then Install & Relaunch. Your saved library and downloaded models stay on this Mac. Checks are manual; unpublished drafts are not offered. This build receives published tester releases from a separate feed. Older builds without this menu need one manual installation of an updater-enabled build.
 
 
-## Camera view (development build)
+## Webcam Layout (development build)
 
-Choose **Camera view** in the main toolbar, or **Prompt → Open Camera View** (⌘⇧K). A compact reading window floats above other apps. It initially uses the built-in display when available; otherwise it uses the producer workspace’s display. Notched screens place the panel below the camera cutout. Other screens use a top-centered position.
+Choose **Prompter Output → Webcam Layout** from the top-right dropdown, alongside your connected monitors, or **Prompt → Open Webcam Layout** (⌘⇧K). Switching between a monitor and Webcam Layout closes the previous output without changing script progress. **Stop output** closes the active output. A checkmark identifies the active output in the dropdown. A compact reading window floats above other apps. It initially uses the built-in display when available; otherwise it uses the producer workspace’s display. Notched screens place the panel below the camera cutout. Other screens use a top-centered position.
 
-Drag the grip beside “Camera view” left, right, or down to align with your webcam. Use the resize button for independent **Width** and **Height** sliders in a stationary panel, or resize the window edges. The size panel stays in place while the camera window changes; choose **Done** when finished. The center button returns it to the top center of its current screen. Size and position are retained when you close and reopen the view during the same app session.
+Drag the grip beside “Webcam Layout” left, right, or down to align with your webcam. Use the resize button for independent **Width** and **Height** sliders in a stationary panel, or resize the window edges. The size panel stays in place while the camera window changes; choose **Done** when finished. The center button returns it to the top center of its current screen. Size and position are retained when you close and reopen the view during the same app session.
 
-Scroll or drag the script manually. Play/Pause, Reset, Space, arrows, and Esc share the main window’s controls; Esc stops the microphone. The sliders button returns to producer controls. Configure your microphone, voice mode, and experimental hands-free commands there before opening Camera view. The camera view stays unmirrored. Its reading guide starts near the top; drag the orange arrow down through the available reading area to suit your eyeline. Camera view keeps its own guide position for the session, independent of the main window. The limit adjusts to the window, text size, and configured guide height so the guide stays above the controls and remains steady as lines scroll through it. Your saved script font and canonical line wrapping are unchanged. It does not require camera permission.
+Scroll or drag the script manually. Play/Pause, Reset, Space, arrows, and Esc share the main window’s controls; Esc stops the microphone. The sliders button returns to producer controls while keeping Webcam Layout open. Configure your microphone, voice mode, and experimental hands-free commands there before opening Webcam Layout. The webcam layout stays unmirrored. Its reading guide starts near the top; drag the orange arrow down through the available reading area to suit your eyeline. Webcam Layout keeps its own guide position for the session, independent of the main window. The limit adjusts to the window, text size, and configured guide height so the guide stays above the controls and remains steady as lines scroll through it. Your saved script font and canonical line wrapping are unchanged. It does not require camera permission.
 
-Camera view is not in the published 0.1.0 tester release yet.
+Webcam Layout is not in the published 0.1.0 tester release yet.

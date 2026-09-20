@@ -106,13 +106,15 @@ Experimental app shutdown uses AppKit’s deferred termination reply: stop micro
 Command wording keeps text layout separate from the reading guide: “line height” aliases line spacing (including “up the line height”), while “reading guide height” adjusts the highlighted area. Guide height supports one-line increases/decreases and explicit 1–3-line sizes; changing it preserves guide position and the reading anchor.
 
 
-## Camera view
+## Webcam Layout
 
-`CameraPromptView` shares playback, script geometry, manual-retake handling, and voice status with the workspace. A floating, key-capable window supports local keyboard controls and dragging. Its initial guide position is near the webcam, then Camera view keeps its own position for the session. Dragging is bounded by the canvas height and configured guide height, rather than a fixed top-of-screen percentage. These bounds do not depend on script progress: expansion around whole text lines is clipped at the viewport edge without moving the guide or text origin. Rendering and pointer hit testing share the same resolved position. Voice commands that move the guide address Camera view while it is visible. The script's font, text layout, and progress mapping are unchanged.
+`CameraPromptView` shares playback, script geometry, manual-retake handling, and voice status with the workspace. A floating, key-capable window supports local keyboard controls and dragging. Its initial guide position is near the webcam, then Webcam Layout keeps its own position for the session. Dragging is bounded by the canvas height and configured guide height, rather than a fixed top-of-screen percentage. These bounds do not depend on script progress: expansion around whole text lines is clipped at the viewport edge without moving the guide or text origin. Rendering and pointer hit testing share the same resolved position. Voice commands that move the guide address Webcam Layout while it is visible. The script's font, text layout, and progress mapping are unchanged.
 
 `CGDisplayIsBuiltin` selects a built-in display when available; no model-name lookup is required. `NSScreen.safeAreaInsets.top` and `visibleFrame` keep initial placement below a notch/menu bar. The notch layout has a smaller initial footprint and gap than the plain-screen layout. Desktops fall back to the workspace display. Width/height are independently adjustable, and manual placement remains available on every device. Reopening during the session retains the window frame; re-centering uses the window's current display. Display changes reposition an open panel within a safe display frame.
 
 The new line-height speech fixture exposed an empty Whisper decode caused by its first-token confidence cutoff. While collecting a command after a confirmed wake only, decoding now completes the utterance before applying the existing whole-segment confidence filter. Ordinary script recognition retains the original cutoff; the change does not add model downloads or temperature retries.
+
+Webcam Layout is a mutually exclusive output choice alongside external monitors. `webcamLayoutActive` publishes window selection to both output menus and the preview status. Switching outputs closes the previous window without resetting playback. Native window close clears the selection; returning to producer controls keeps the webcam output active. Internal camera window identifiers and types are retained.
 
 ### Bookmark terminology
 
