@@ -59,6 +59,21 @@ struct PrompterApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var state: AppState?
     func applicationDidFinishLaunching(_ notification: Notification) { NSApp.setActivationPolicy(.regular) }
+    #if EXPERIMENTAL_COMMANDS
+    private var terminating = false
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !terminating else { return .terminateLater }
+        guard let state else { return .terminateNow }
+        terminating = true
+        state.voice.stop(); state.save(); state.stopOutput()
+        Task { @MainActor in
+            // llama.cpp's global Metal destructor requires every model/context to be freed first.
+            await state.voice.assistant.shutdown()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+    #endif
     func applicationWillTerminate(_ notification: Notification) { state?.voice.stop(); state?.save(); state?.stopOutput() }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }

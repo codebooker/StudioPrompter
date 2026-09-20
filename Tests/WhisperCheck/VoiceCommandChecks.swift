@@ -32,20 +32,40 @@ func runVoiceCommandChecks(service: WhisperService, commandModelPath: String? = 
             ("Hey Teleprompter, go to the second cue point.", .cueNumber(2)),
             ("Hey Teleprompter, set the font size to thirty two.", .fontSize(32)),
             ("Hey Teleprompter, switch voice prompting from adaptive pace to follow script.", .followScript),
-            ("Hey Teleprompter, let's stop for now.", .pause)
+            ("Hey Teleprompter, let's stop for now.", .pause),
+            ("Hey Teleprompter, go ahead and pause.", .pause),
+            ("Hey Teleprompter, switch from adaptive pace to following.", .followScript),
+            ("Hey Teleprompter, change the font to Georgia.", .typeface(.georgia)),
+            ("Hey Teleprompter, increase line spacing a little bit.", .lineSpacing(1)),
+            ("Hey Teleprompter, make the side margins smaller.", .margins(-1)),
+            ("Hey Teleprompter, turn off the reading guide.", .guideVisible(false)),
+            ("Hey Teleprompter, move the reading guide up a little.", .guidePosition(-1)),
+            ("Hey Teleprompter, turn off focus current line.", .focusLine(false)),
+            ("Hey Teleprompter, go back up | two paragraphs.", .paragraph(-2)),
+            ("Hey Teleprompter, switch from adaptive pace to | follow script.", .followScript)
         ]
     }
     let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: folder) }
-    for (index, fixture) in fixtures.enumerated() {
-        let file = folder.appendingPathComponent("\(index).aiff")
-        let speech = Process()
-        speech.executableURL = URL(fileURLWithPath: "/usr/bin/say")
-        speech.arguments = ["-v", "Samantha", "-r", "155", "-o", file.path, fixture.0]
-        try speech.run(); speech.waitUntilExit()
-        guard speech.terminationStatus == 0 else { throw NSError(domain: "VoiceCommandChecks", code: 1) }
-        let raw = try AudioProcessor.loadAudioAsFloatArray(fromPath: file.path)
+    let filter = ProcessInfo.processInfo.environment["STUDIO_COMMAND_FIXTURE_FILTER"]
+    for (index, fixture) in fixtures.enumerated() where filter == nil || fixture.0.contains(filter!) {
+        var raw: [Float] = []
+        var pauses: [Range<Int>] = []
+        for (part, phrase) in fixture.0.split(separator: "|").enumerated() {
+            if part > 0 {
+                let start = raw.count
+                raw += [Float](repeating: 0, count: 24000)
+                pauses.append(start..<raw.count)
+            }
+            let file = folder.appendingPathComponent("\(index)-\(part).aiff")
+            let speech = Process()
+            speech.executableURL = URL(fileURLWithPath: "/usr/bin/say")
+            speech.arguments = ["-v", "Samantha", "-r", "155", "-o", file.path, String(phrase)]
+            try speech.run(); speech.waitUntilExit()
+            guard speech.terminationStatus == 0 else { throw NSError(domain: "VoiceCommandChecks", code: 1) }
+            raw += try AudioProcessor.loadAudioAsFloatArray(fromPath: file.path)
+        }
         let samples = raw + [Float](repeating: 0, count: 32000)
         var router = VoiceCommandRouter()
         var actions: [VoiceCommand] = []
@@ -55,7 +75,8 @@ func runVoiceCommandChecks(service: WhisperService, commandModelPath: String? = 
             let result = try await service.transcribe(Array(samples[lower..<frame]))
             lastText = result.text
             let words = result.words.map { CommandWord($0.text, start: Double(lower) / 16000 + $0.start, end: Double(lower) / 16000 + $0.end) }
-            let event = router.consume(words, audioEnd: Double(frame) / 16000, quiet: frame >= raw.count + 10400, interpretUnknown: commandModelPath != nil)
+            let event = router.consume(words, audioEnd: Double(frame) / 16000, quiet: frame >= raw.count + 10400 || pauses.contains(where: { frame >= $0.lowerBound + 10400 && frame < $0.upperBound }), interpretUnknown: commandModelPath != nil)
+            if filter != nil { print("FRAME \(Double(frame) / 16000) \(event) \(words.map { "\($0.text):\($0.start)-\($0.end)" })") }
             if case .execute(let command) = event { actions.append(command) }
             if case .interpret(let request) = event {
                 let output = try await model.classify(request)

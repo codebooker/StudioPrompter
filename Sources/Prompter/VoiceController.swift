@@ -326,10 +326,11 @@ final class VoiceController: ObservableObject {
         if let meter { RunLoop.main.add(meter, forMode: .common) }
     }
     private func consume(_ speech: HeardSpeech, snapshot: AudioSnapshot) {
-        if liveTraceEnabled && speech.text != lastTracedSpeech {
+        if liveTraceEnabled && (speech.text != lastTracedSpeech || awaitingCommand) {
             lastTracedSpeech = speech.text
             trace("whisper", ["text": speech.text, "audioStart": snapshot.start, "audioEnd": snapshot.end,
-                "inferenceSeconds": inferenceSeconds])
+                "inferenceSeconds": inferenceSeconds,
+                "words": speech.words.map { ["text": $0.text, "start": snapshot.start + $0.start, "end": snapshot.start + $0.end] as [String: Any] }])
         }
         guard commandTask == nil else { return }
         #if EXPERIMENTAL_COMMANDS

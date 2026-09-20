@@ -622,6 +622,71 @@ private func voiceCommandChecks() {
     expectEqual(bounded.consume(lead, audioEnd: 2, quiet: false, interpretUnknown: true), .listening)
     expectEqual(bounded.consume(words("and more", from: 13), audioEnd: 14.1, quiet: false, interpretUnknown: true), .unrecognized)
 
+    // Live regressions: polite conjunctions remain one action; real compound requests do not.
+    expectEqual(VoiceCommand.parse("Could you go ahead and pause"), .pause)
+    expectEqual(VoiceCommand.parse("Go ahead and resume"), .resume)
+    expectFalse(CommandIntent.acceptsRequest("Go ahead and pause and change the font"))
+    expectFalse(CommandIntent.acceptsRequest("Can this change the font to Georgia"))
+    expectEqual(CommandIntent.interpret("{\"action\":\"move_paragraphs\",\"value\":2}", request: "Go down to paragraphs"), .paragraph(2))
+    expectEqual(CommandIntent.interpret("{\"action\":\"go_to_cue\",\"value\":1}", request: "Go to the first key point"), .cueNumber(1))
+    expectEqual(CommandIntent.interpret("{\"action\":\"follow_script\"}", request: "Switch from adaptive pace to the other mode"), .followScript)
+    expectEqual(CommandIntent.interpret("{\"action\":\"follow_script\"}", request: "Switch to following"), .followScript)
+    expectEqual(CommandIntent.interpret("{\"action\":\"toggle_voice_mode\"}", request: "Switch to the other mode"), .toggleVoiceMode)
+    expectTrue(CommandIntent.interpret("{\"action\":\"adaptive_pace\"}", request: "Switch from adaptive pace to the other mode") == nil)
+    expectTrue(CommandIntent.interpret("{\"action\":\"toggle_voice_mode\"}", request: "Switch from adaptive pace to the other mode") == nil)
+    expectFalse(VoiceCommand.isIncomplete("Okay carry on from here"))
+    expectTrue(VoiceCommand.isIncomplete("Switch from adaptive pace"))
+    expectTrue(VoiceCommand.isIncomplete("Go back up two"))
+    expectFalse(VoiceCommand.isIncomplete("Move the reading guide up"))
+    var partial = VoiceCommandRouter()
+    let prefix = words("Hey Teleprompter go back up")
+    expectEqual(partial.consume(prefix, audioEnd: 2, quiet: true, interpretUnknown: true), .listening)
+    expectEqual(partial.consume(prefix, audioEnd: 3, quiet: true, interpretUnknown: true), .listening)
+    let completed = words("Hey Teleprompter go back up two paragraphs")
+    expectEqual(partial.consume(completed, audioEnd: 3.5, quiet: true, interpretUnknown: true), .listening)
+    expectEqual(partial.consume(completed, audioEnd: 4.1, quiet: true, interpretUnknown: true), .interpret("go back up two paragraphs"))
+    var drift = VoiceCommandRouter()
+    let badTiming = [CommandWord("Hey", start: 0, end: 0.2), CommandWord("Teleprompter", start: 0.2, end: 1.8)]
+    expectEqual(drift.consume(badTiming, audioEnd: 2, quiet: true), .listening)
+    let fixedTiming = words("Hey Teleprompter pause")
+    expectEqual(drift.consume(fixedTiming, audioEnd: 2.4, quiet: true), .listening)
+    expectEqual(drift.consume(fixedTiming, audioEnd: 2.8, quiet: true), .execute(.pause))
+    expectEqual(drift.consume(fixedTiming, audioEnd: 3.2, quiet: true), .reading)
+    var padding = VoiceCommandRouter()
+    let padded = words("Hey Teleprompter go back two lines") + [CommandWord("[BLANK_AUDIO]", start: 32, end: 33)]
+    expectEqual(padding.consume(padded, audioEnd: 2, quiet: true), .listening)
+    expectEqual(padding.consume(padded, audioEnd: 2.6, quiet: true), .execute(.lines(-2)))
+    expectEqual(padding.consume(padded, audioEnd: 3, quiet: true), .reading)
+    var retry = VoiceCommandRouter()
+    expectEqual(retry.consume(prefix, audioEnd: 2, quiet: true), .listening)
+    let twice = prefix + words("Hey Teleprompter resume", from: 3)
+    expectEqual(retry.consume(twice, audioEnd: 4, quiet: true), .listening)
+    expectEqual(retry.consume(twice, audioEnd: 4.5, quiet: true), .execute(.resume))
+    expectEqual(retry.consume(twice, audioEnd: 5, quiet: true), .reading)
+    var settings = PromptSettings()
+    expectEqual(VoiceCommand.typeface(.georgia).applyAppearance(to: &settings), "Typeface · Georgia")
+    expectEqual(settings.typeface, .georgia)
+    settings.lineSpacing = 2
+    _ = VoiceCommand.lineSpacing(1).applyAppearance(to: &settings)
+    expectEqual(settings.lineSpacing, 2)
+    settings.margin = 55
+    _ = VoiceCommand.margins(-1).applyAppearance(to: &settings)
+    expectEqual(settings.margin, 55)
+    settings.guidePosition = 0.15
+    _ = VoiceCommand.guidePosition(-1).applyAppearance(to: &settings)
+    expectEqual(settings.guidePosition, 0.15)
+    _ = VoiceCommand.guideVisible(false).applyAppearance(to: &settings)
+    _ = VoiceCommand.focusLine(false).applyAppearance(to: &settings)
+    expectFalse(settings.showGuide)
+    expectFalse(settings.focusMode)
+    for (request, output) in [
+        ("Move the reading guide up", "{\"action\":\"move_guide_down\"}"),
+        ("Turn off focus current line", "{\"action\":\"focus_line_on\"}"),
+        ("Make the margins smaller", "{\"action\":\"wider_margins\"}"),
+        ("Change the font to Georgia", "{\"action\":\"font_verdana\"}"),
+        ("Increase line spacing by two", "{\"action\":\"increase_line_spacing\"}")
+    ] { expectTrue(CommandIntent.interpret(output, request: request) == nil) }
+
     var script = Script(title: "Navigation", text: "First paragraph has enough words to wrap across several reading lines. Keep reading this opening.\n\nSecond paragraph is here with another sentence and more words.\n\nThird paragraph finishes the script.")
     script.settings.fontSize = 58
     let layout = ScriptCueLayout(script)

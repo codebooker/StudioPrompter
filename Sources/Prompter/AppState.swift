@@ -134,21 +134,18 @@ final class AppState: ObservableObject {
         case .cancel: return "Command cancelled"
         case .stopListening:
             voice.stop(); return "Microphone off · use Play to listen again"
-        case .followScript, .adaptivePace:
-            voice.mode = command == .followScript ? .follow : .pace
+        case .followScript, .adaptivePace, .toggleVoiceMode:
+            voice.mode = command == .toggleVoiceMode ? (voice.mode == .follow ? .pace : .follow) : (command == .followScript ? .follow : .pace)
             voice.beginRetake()
             return voice.mode.rawValue
-        case .font, .fontSize:
+        case .font, .fontSize, .typeface, .lineSpacing, .margins, .guideVisible, .guidePosition, .focusLine:
             let offset = ScriptCueLayout(current).offset(at: position)
             let playing = playback.transport.isPlaying
-            let size: Double
-            if case .fontSize(let value) = command { size = Double(value) }
-            else if case .font(let delta) = command { size = current.settings.fontSize + Double(delta) }
-            else { return "Text size unchanged" }
-            update { $0.settings.fontSize = min(90, max(32, size)) }
+            var notice = "Appearance updated"
+            update { notice = command.applyAppearance(to: &$0.settings) ?? notice }
             playback.transport.reposition(to: ScriptCueLayout(current).progress(at: offset), preservingPlayback: playing)
             voice.beginRetake()
-            return "Text size \(Int(current.settings.fontSize))"
+            return notice
         default:
             guard let destination = VoiceNavigation.destination(for: command, script: current, progress: position) else { return "That paragraph or cue isn’t in this script" }
             playback.transport.reposition(to: min(destination, 0.999999), preservingPlayback: false)

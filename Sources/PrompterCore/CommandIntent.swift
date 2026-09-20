@@ -2,7 +2,7 @@ import Foundation
 
 /// A bounded action contract shared by model inference and request validation.
 public enum CommandIntent {
-    public static let actions = ["restart_script", "restart_paragraph", "previous_paragraph", "next_paragraph", "last_paragraph", "previous_cue", "next_cue", "larger_text", "smaller_text", "follow_script", "adaptive_pace", "pause", "resume", "cancel", "stop_listening", "unknown"]
+    public static let actions = ["restart_script", "restart_paragraph", "previous_paragraph", "next_paragraph", "last_paragraph", "previous_cue", "next_cue", "larger_text", "smaller_text", "follow_script", "adaptive_pace", "pause", "resume", "cancel", "stop_listening", "unknown", "toggle_voice_mode", "font_system", "font_avenir_next", "font_verdana", "font_georgia", "increase_line_spacing", "decrease_line_spacing", "wider_margins", "narrower_margins", "show_reading_guide", "hide_reading_guide", "move_guide_up", "move_guide_down", "focus_line_on", "focus_line_off"]
         + (1...10).map { "back_\($0)_lines" } + (1...10).map { "forward_\($0)_lines" }
     private struct Output: Decodable { let action: String; let value: Int? }
     public static func decode(_ output: String) -> VoiceCommand? {
@@ -32,6 +32,21 @@ public enum CommandIntent {
         case "smaller_text": return .font(-4)
         case "follow_script": return .followScript
         case "adaptive_pace": return .adaptivePace
+        case "toggle_voice_mode": return .toggleVoiceMode
+        case "font_system": return .typeface(.system)
+        case "font_avenir_next": return .typeface(.avenirNext)
+        case "font_verdana": return .typeface(.verdana)
+        case "font_georgia": return .typeface(.georgia)
+        case "increase_line_spacing": return .lineSpacing(1)
+        case "decrease_line_spacing": return .lineSpacing(-1)
+        case "wider_margins": return .margins(1)
+        case "narrower_margins": return .margins(-1)
+        case "show_reading_guide": return .guideVisible(true)
+        case "hide_reading_guide": return .guideVisible(false)
+        case "move_guide_up": return .guidePosition(-1)
+        case "move_guide_down": return .guidePosition(1)
+        case "focus_line_on": return .focusLine(true)
+        case "focus_line_off": return .focusLine(false)
         case "pause": return .pause
         case "resume": return .resume
         case "cancel": return .cancel
@@ -43,7 +58,10 @@ public enum CommandIntent {
         }
     }
     public static func acceptsRequest(_ request: String) -> Bool {
-        let words = Set(VoiceCommand.tokens(request))
+        let tokens = VoiceCommand.requestTokens(request)
+        let phrase = tokens.joined(separator: " ")
+        if ["can this ", "could this ", "does this ", "can the app ", "does the app ", "is it possible "].contains(where: { phrase.hasPrefix($0) }) { return false }
+        let words = Set(tokens)
         let rejected: Set<String> = ["and", "then", "also", "not", "don", "dont", "never", "rules", "instructions", "json", "pretend", "ignore", "half", "quarter", "speed", "faster", "slower", "delete", "rewrite", "minus", "negative"]
         return !request.isEmpty && request.count <= 300 && words.isDisjoint(with: rejected)
     }
@@ -71,13 +89,20 @@ public enum CommandIntent {
     }
     public static func interpret(_ output: String, request: String) -> VoiceCommand? {
         guard acceptsRequest(request), let command = decode(output) else { return nil }
-        let words = VoiceCommand.tokens(request), set = Set(words)
+        let words = VoiceCommand.requestTokens(request), set = Set(words)
         var phrase = words.joined(separator: " ")
         while let suffix = [" please", " for me", " now"].first(where: { phrase.hasSuffix($0) }) { phrase.removeLast(suffix.count) }
+        // Resolve destination aliases without treating the source mode as the target.
+        if phrase.hasSuffix("to following") || phrase.hasSuffix("to following mode") {
+            phrase = phrase.replacingOccurrences(of: "to following mode", with: "to follow script").replacingOccurrences(of: "to following", with: "to follow script")
+        }
+        let otherMode = phrase.hasSuffix("the other mode") || phrase.hasSuffix("other mode")
+        if otherMode && phrase.contains("from adaptive pace") { phrase = "switch to follow script" }
+        else if otherMode && phrase.contains("from follow script") { phrase = "switch to adaptive pace" }
         let numbers = quantities(words)
         let paragraph = !set.isDisjoint(with: ["paragraph", "paragraphs"])
         let cue = !set.isDisjoint(with: ["cue", "cues", "bookmark", "bookmarks", "marker", "markers"])
-        let text = !set.isDisjoint(with: ["font", "text", "words", "lettering", "letters", "read", "size"])
+        let text = !set.isDisjoint(with: ["font", "typeface", "text", "words", "lettering", "letters", "read", "size"])
         let backwards = !set.isDisjoint(with: ["back", "backward", "backwards", "rewind", "previous", "preceding", "before", "up"])
         let forwards = !set.isDisjoint(with: ["forward", "forwards", "ahead", "down", "next", "following", "subsequent", "advance", "skip"])
         let absoluteLast = phrase.contains("last paragraph") || phrase.contains("final paragraph") || set.contains("bottom")
@@ -93,9 +118,38 @@ public enum CommandIntent {
             let explicit = numbers.isEmpty ? 1 : numbers.count == 1 ? numbers[0] : -1
             return abs(count) == explicit && (count < 0 ? backwards && !forwards : forwards && !backwards)
         }
+        let guide = set.contains("guide")
+        let focus = set.contains("focus")
+        let spacing = set.contains("spacing")
+        let margins = set.contains("margins") || set.contains("margin")
+        let appearance = guide || focus || spacing || margins
+        let increase = !set.isDisjoint(with: ["increase", "bigger", "larger", "wider", "more", "expand"])
+        let decrease = !set.isDisjoint(with: ["decrease", "smaller", "narrower", "less", "reduce", "shrink", "tighten"])
+        func visibility(_ value: Bool) -> Bool {
+            let on = !set.isDisjoint(with: ["on", "show", "enable"])
+            let off = !set.isDisjoint(with: ["off", "hide", "disable"])
+            return value ? on && !off : off && !on
+        }
         switch command {
+        case .typeface(let font):
+            guard text, !appearance, numbers.isEmpty else { return nil }
+            let names = ScriptTypeface.allCases.filter { phrase.contains($0.name.lowercased()) }
+            guard names == [font] else { return nil }
+        case .lineSpacing(let delta):
+            guard spacing, !guide, !focus, !margins, numbers.isEmpty,
+                  delta > 0 ? increase && !decrease : decrease && !increase else { return nil }
+        case .margins(let delta):
+            guard margins, !guide, !focus, !spacing, numbers.isEmpty,
+                  delta > 0 ? increase && !decrease : decrease && !increase else { return nil }
+        case .guideVisible(let value): guard guide, !focus, !spacing, !margins, numbers.isEmpty, visibility(value) else { return nil }
+        case .focusLine(let value): guard focus, !guide, !spacing, !margins, numbers.isEmpty, visibility(value) else { return nil }
+        case .guidePosition(let direction):
+            guard guide, !focus, !spacing, !margins, numbers.isEmpty,
+                  direction < 0 ? set.contains("up") && !set.contains("down") : set.contains("down") && !set.contains("up") else { return nil }
+        case .toggleVoiceMode:
+            guard otherMode, !phrase.contains("from"), phrase.contains("other mode"), numbers.isEmpty else { return nil }
         case .lines(let count):
-            guard !set.isDisjoint(with: ["line", "lines"]), relative(count) else { return nil }
+            guard !appearance, !set.isDisjoint(with: ["line", "lines"]), relative(count) else { return nil }
         case .paragraph(let count):
             guard paragraph else { return nil }
             if count == 0 { guard numbers.isEmpty, !absoluteLast, !set.contains("next"), !set.contains("previous") else { return nil } }
@@ -106,9 +160,9 @@ public enum CommandIntent {
             guard cue, numbers.isEmpty, !ordinal,
                   direction < 0 ? (backwards || set.contains("last")) && !forwards : forwards && !backwards else { return nil }
         case .cueNumber(let n): guard cue, numbers == [n], numberedDestination(["cue", "bookmark", "marker"]) else { return nil }
-        case .fontSize(let n): guard text, numbers == [n], !set.contains("by") else { return nil }
+        case .fontSize(let n): guard !appearance, text, numbers == [n], !set.contains("by") else { return nil }
         case .font:
-            guard text, numbers.isEmpty,
+            guard !appearance, text, numbers.isEmpty,
                   !set.isDisjoint(with: ["increase", "decrease", "bigger", "smaller", "larger", "big", "small", "tiny", "enlarge", "shrink", "reduce", "bump", "easier", "readable"]) else { return nil }
         case .followScript: guard phrase.hasSuffix("follow script") || phrase.hasSuffix("follow script mode") else { return nil }
         case .adaptivePace: guard phrase.hasSuffix("adaptive pace") || phrase.hasSuffix("adaptive pace mode") else { return nil }
@@ -121,7 +175,7 @@ public enum CommandIntent {
                   set.isDisjoint(with: ["top", "beginning", "whole", "entire", "over", "stop", "pause", "back", "up", "down", "ahead", "forward", "rewind"]),
                   !set.isDisjoint(with: ["start", "started", "go", "going", "resume", "continue", "carry", "rolling", "play"]) else { return nil }
         case .pause:
-            guard !paragraph, !cue, !text, set.isDisjoint(with: ["mic", "microphone", "listening"]),
+            guard !paragraph, !cue, !text, !appearance, set.isDisjoint(with: ["mic", "microphone", "listening"]),
                   !set.isDisjoint(with: ["stop", "pause", "hold", "hang", "wait", "break"]) else { return nil }
         case .cancel:
             guard !set.isDisjoint(with: ["cancel", "forget", "scratch", "abandon", "nevermind", "mind"]) else { return nil }
@@ -138,6 +192,14 @@ public enum CommandIntent {
     previous_cue / next_cue: previous / following bookmark or cue point. Q point means cue point.
     larger_text / smaller_text: increase / decrease lettering size, no exact number.
     follow_script / adaptive_pace: switch to the named prompting mode. Use the destination, not the old mode.
+    toggle_voice_mode: switch to the other prompting mode when no source mode is specified.
+    font_system / font_avenir_next / font_verdana / font_georgia: change typeface to a named font.
+    increase_line_spacing / decrease_line_spacing: increase / reduce space between lines by one step.
+    wider_margins / narrower_margins: increase / reduce side margins by one step.
+    show_reading_guide / hide_reading_guide: turn reading guide on / off.
+    move_guide_up / move_guide_down: move reading guide up / down a little.
+    focus_line_on / focus_line_off: turn focus current line on / off.
+    "Following" means Follow script. Switching from adaptive pace to the other mode means follow_script (and vice versa).
     pause: stop scrolling, hold it, hang on, stop for now. Keeps listening.
     resume: start, let's go, let's get this started, continue from here.
     stop_listening: explicitly stop listening or turn off mic. NOT just stop prompting.
@@ -154,7 +216,7 @@ public enum CommandIntent {
     /// It still decides whether the phrasing requests an action or should be declined.
     private static func allowedOutputs(for request: String) -> [String] {
         var outputs = actions.map { "{\"action\":\"\($0)\"}" }
-        for number in Set(quantities(VoiceCommand.tokens(request))) {
+        for number in Set(quantities(VoiceCommand.requestTokens(request))) {
             for action in ["move_paragraphs", "go_to_paragraph", "go_to_cue", "set_font_size"] {
                 for value in action == "move_paragraphs" ? [number, -number] : [number] {
                     outputs.append("{\"action\":\"\(action)\",\"value\":\(value)}")
@@ -167,7 +229,7 @@ public enum CommandIntent {
         "root ::= " + allowedOutputs(for: request).map { "\"" + $0.replacingOccurrences(of: "\"", with: "\\\"") + "\"" }.joined(separator: " | ")
     }
     public static func prompt(for request: String) -> String {
-        let text = VoiceCommand.tokens(request).joined(separator: " ").replacingOccurrences(of: "<|", with: "").replacingOccurrences(of: "|>", with: "")
+        let text = VoiceCommand.requestTokens(request).joined(separator: " ").replacingOccurrences(of: "<|", with: "").replacingOccurrences(of: "|>", with: "")
         let examples = [
             ("The words are too big please shrink them", "{\"action\":\"smaller_text\"}"),
             ("The letters are tiny please enlarge them", "{\"action\":\"larger_text\"}"),
@@ -177,6 +239,7 @@ public enum CommandIntent {
             ("Go to the tenth paragraph", "{\"action\":\"go_to_paragraph\",\"value\":10}"),
             ("Go down to the second cue point", "{\"action\":\"go_to_cue\",\"value\":2}"),
             ("Set the font size to thirty two", "{\"action\":\"set_font_size\",\"value\":32}"),
+            ("Pick it up at the start of this paragraph", "{\"action\":\"restart_paragraph\"}"),
             ("Let's get this started", "{\"action\":\"resume\"}"),
             ("Let's stop for now", "{\"action\":\"pause\"}"),
             ("I spoke about this paragraph earlier", "{\"action\":\"unknown\"}")

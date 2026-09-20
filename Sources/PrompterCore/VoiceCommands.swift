@@ -1,10 +1,35 @@
 import Foundation
 
 public enum VoiceCommand: Equatable, Sendable {
-    case lines(Int), paragraph(Int), paragraphNumber(Int), lastParagraph, top, cue(Int), cueNumber(Int), font(Int), fontSize(Int), followScript, adaptivePace, pause, resume, cancel, stopListening
+    case lines(Int), paragraph(Int), paragraphNumber(Int), lastParagraph, top, cue(Int), cueNumber(Int), font(Int), fontSize(Int), followScript, adaptivePace, toggleVoiceMode, typeface(ScriptTypeface), lineSpacing(Int), margins(Int), guideVisible(Bool), guidePosition(Int), focusLine(Bool), pause, resume, cancel, stopListening
+
+    /// Applies bounded appearance changes. The app preserves the current reading anchor.
+    public func applyAppearance(to settings: inout PromptSettings) -> String? {
+        switch self {
+        case .font(let delta): settings.fontSize = min(90, max(32, settings.fontSize + Double(delta)))
+        case .fontSize(let size): settings.fontSize = min(90, max(32, Double(size)))
+        case .typeface(let font): settings.typeface = font
+        case .lineSpacing(let direction): settings.lineSpacing = min(2, max(1.1, settings.lineSpacing + Double(direction.signum()) * 0.1))
+        case .margins(let direction): settings.margin = min(220, max(55, settings.margin + Double(direction.signum()) * 10))
+        case .guideVisible(let visible): settings.showGuide = visible
+        case .guidePosition(let direction): settings.guidePosition = min(0.65, max(0.15, settings.guidePosition + Double(direction.signum()) * 0.03))
+        case .focusLine(let enabled): settings.focusMode = enabled
+        default: return nil
+        }
+        switch self {
+        case .font, .fontSize: return "Text size \(Int(settings.fontSize))"
+        case .typeface: return "Typeface · \(settings.typeface.name)"
+        case .lineSpacing: return String(format: "Line spacing · %.1f×", settings.lineSpacing)
+        case .margins: return "Side margins · \(Int(settings.margin / 10))%"
+        case .guideVisible: return "Reading guide \(settings.showGuide ? "on" : "off")"
+        case .guidePosition: return "Guide position · \(Int((settings.guidePosition * 100).rounded()))%"
+        case .focusLine: return "Focus current line \(settings.focusMode ? "on" : "off")"
+        default: return nil
+        }
+    }
 
     public static func parse(_ text: String) -> VoiceCommand? {
-        var phrase = tokens(text).joined(separator: " ")
+        var phrase = requestTokens(text).joined(separator: " ")
         let prefixes = ["can we ", "can you ", "could you ", "would you ", "please ", "lets ", "let us "]
         while let prefix = prefixes.first(where: { phrase.hasPrefix($0) }) { phrase.removeFirst(prefix.count) }
         if phrase.hasSuffix(" please") { phrase.removeLast(7) }
@@ -35,12 +60,35 @@ public enum VoiceCommand: Equatable, Sendable {
         let count = names[quantity] ?? Int(quantity) ?? 1
         return .lines(["forward", "down"].contains(direction) ? count : -count)
     }
+    /// Normalize speech artifacts only in their command context, never in script text.
+    public static func requestTokens(_ text: String) -> [String] {
+        var phrase = tokens(text).joined(separator: " ")
+        let prefixes = ["can we ", "can you ", "could we ", "could you ", "would you ", "please ", "okay ", "lets ", "let us ", "go ahead and "]
+        while let prefix = prefixes.first(where: { phrase.hasPrefix($0) }) { phrase.removeFirst(prefix.count) }
+        var words = phrase.split(separator: " ").map(String.init)
+        for i in words.indices where i > 0 && i + 1 < words.count {
+            if words[i] == "to", ["up", "down", "back", "forward"].contains(words[i - 1]), ["lines", "paragraphs"].contains(words[i + 1]) { words[i] = "two" }
+        }
+        return words
+    }
+    /// Do not submit an obviously unfinished instruction during a mid-sentence pause.
+    public static func isIncomplete(_ text: String) -> Bool {
+        let words = requestTokens(text)
+        guard let last = words.last, parse(text) == nil else { return false }
+        if words.contains("guide"), ["up", "down"].contains(last) { return false }
+        if ["to", "from", "the", "a", "an", "by", "up", "down", "back", "forward", "with", "and", "of"].contains(last) { return true }
+        if words.contains("from"), !words.contains("to"), !Set(words).isDisjoint(with: ["switch", "change"]) { return true }
+        let countEnding = Int(last) != nil || ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"].contains(last)
+        if countEnding && !Set(words).isDisjoint(with: ["back", "up", "down", "forward"]) &&
+            Set(words).isDisjoint(with: ["line", "lines", "paragraph", "paragraphs", "cue", "cues", "font", "size"]) { return true }
+        return false
+    }
     public static func tokens(_ text: String) -> [String] {
         let raw = text.lowercased().replacingOccurrences(of: "’", with: "'").replacingOccurrences(of: "let's", with: "lets")
             .components(separatedBy: CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }
         return raw.indices.flatMap { index -> [String] in
             if raw[index] == "qpoint" { return ["cue", "point"] }
-            if raw[index] == "q", index + 1 < raw.count, ["point", "points"].contains(raw[index + 1]) { return ["cue"] }
+            if ["q", "key"].contains(raw[index]), index + 1 < raw.count, ["point", "points"].contains(raw[index + 1]) { return ["cue"] }
             return [raw[index]]
         }
     }
@@ -68,31 +116,48 @@ public struct VoiceCommandRouter {
     public init(after time: Double = 0) { consumedThrough = time }
 
     public mutating func consume(_ words: [CommandWord], audioEnd: Double, quiet: Bool, interpretUnknown: Bool = false) -> Event {
-        let tokens = words.flatMap { word in VoiceCommand.tokens(word.text).map { CommandWord($0, start: word.start, end: word.end) } }
+        // Whisper occasionally timestamps padding/hallucinated words beyond the audio window.
+        // Such words must not postpone completion or extend a command's deadline.
+        let valid = words.filter { $0.start.isFinite && $0.end.isFinite && $0.start >= 0 && $0.end >= $0.start && $0.end <= audioEnd + 0.1 }
+        let tokens = valid.flatMap { word in VoiceCommand.tokens(word.text).map { CommandWord($0, start: word.start, end: word.end) } }
+        // Use the latest fresh wake phrase, including a repeated wake during a retry.
+        // Slice by token order when it is visible: Whisper can revise word timestamps.
+        let wakeIndex = tokens.count < 2 ? nil : (0..<(tokens.count - 1)).last(where: {
+            tokens[$0].start >= consumedThrough && tokens[$0].text == "hey" &&
+            tokens[$0 + 1].text == "teleprompter" && tokens[$0 + 1].end - tokens[$0].start < 2
+        })
         if !isListening {
-            let fresh = tokens.filter { $0.start >= consumedThrough }
-            if fresh.count >= 2, let index = (0..<(fresh.count - 1)).first(where: {
-                fresh[$0].text == "hey" && fresh[$0 + 1].text == "teleprompter" && fresh[$0 + 1].end - fresh[$0].start < 2
-            }) {
-                isListening = true
-                wakeEnd = fresh[index + 1].end
-                deadline = audioEnd + 6
-                hardDeadline = audioEnd + 12
-                commandWords = []
+            guard let index = wakeIndex else { return .reading }
+            isListening = true
+            wakeEnd = tokens[index + 1].end
+            deadline = audioEnd + 6
+            hardDeadline = audioEnd + 12
+            commandWords = []; candidate = ""; candidateSince = audioEnd
+        }
+        let tail: [CommandWord]
+        if let index = wakeIndex {
+            let revisedEnd = tokens[index + 1].end
+            if tokens[index].start > wakeEnd + 0.5 {
+                // A newly spoken wake replaces an unfinished request, within the same hard limit.
+                deadline = min(hardDeadline, audioEnd + 6)
                 candidate = ""; candidateSince = audioEnd
-            } else { return .reading }
+            }
+            wakeEnd = revisedEnd
+            tail = Array(tokens.dropFirst(index + 2))
+            commandWords = tail
+        } else {
+            tail = tokens.filter { $0.start >= wakeEnd - 0.05 && $0.end > wakeEnd + 0.05 }
+            // Retain a longer instruction's prefix after it leaves the rolling window.
+            if let first = tail.first {
+                commandWords = commandWords.filter { $0.end < first.start - 0.05 } + tail
+            }
         }
-        // A wake phrase can arrive alone; later windows complete its instruction.
-        let tail = tokens.filter { $0.start >= wakeEnd - 0.05 && $0.end > wakeEnd + 0.05 }
-        // Retain the beginning when a longer request leaves Whisper's rolling window.
-        // Replace overlapping hypotheses so corrected words/counts remain authoritative.
-        if let first = tail.first {
-            commandWords = commandWords.filter { $0.end < first.start - 0.05 } + tail
-            if let last = tail.last { deadline = min(hardDeadline, max(deadline, last.end + 2)) }
-        }
+        if let last = tail.last { deadline = min(hardDeadline, max(deadline, last.end + 2)) }
         let phrase = commandWords.map(\.text).joined(separator: " ")
         if phrase != candidate { candidate = phrase; candidateSince = audioEnd }
-        let settled = audioEnd < hardDeadline && !tail.isEmpty && !phrase.isEmpty && quiet && audioEnd - (commandWords.last?.end ?? audioEnd) >= 0.45 && audioEnd - candidateSince >= 0.25
+        let complete = !VoiceCommand.isIncomplete(phrase)
+        let settleTime = VoiceCommand.parse(phrase) == nil ? 0.4 : 0.25
+        let settled = complete && audioEnd < hardDeadline && !tail.isEmpty && !phrase.isEmpty && quiet && audioEnd - (commandWords.last?.end ?? audioEnd) >= 0.45 && audioEnd - candidateSince >= settleTime
         if settled || audioEnd >= deadline {
             let command = settled ? VoiceCommand.parse(phrase) : nil
             isListening = false

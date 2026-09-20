@@ -33,6 +33,18 @@ final class CommandAssistant: ObservableObject {
         preparing = false
         if !ready { Task { await model.unload() } }
     }
+    @MainActor
+    func shutdown() async {
+        enabled = false
+        generation = UUID()
+        let pending = preparation
+        preparation = nil
+        pending?.cancel()
+        // Wait for a model load already in flight before freeing its Metal resources.
+        await pending?.value
+        await model.unload()
+        ready = false; preparing = false
+    }
     func prepare(download: Bool = true) {
         guard !preparing else { return }
         let run = UUID(); generation = run

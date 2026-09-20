@@ -1,6 +1,6 @@
 import Foundation
 
-public enum ScriptTypeface: String, Codable, CaseIterable, Identifiable {
+public enum ScriptTypeface: String, Codable, CaseIterable, Identifiable, Sendable {
     case system, avenirNext, verdana, georgia
     public var id: String { rawValue }
     public var name: String {

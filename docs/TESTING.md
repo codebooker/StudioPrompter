@@ -102,4 +102,19 @@ Whisper's `Q point`, `Q-point`, and `Qpoint` spellings normalize to cue point. A
 
 The expanded text regression corpus includes the recorded failure phrases plus unrelated/ambiguous/negated requests. It is used during development and is not an independent estimate of real-world accuracy. Synthetic spoken fixtures additionally cover counted paragraphs, paragraph ten, cue two, exact font size, mode switching, and stopping while keeping listening available. Repeat the original live pass before considering release promotion.
 
-Second-pass development checks: 336 deterministic assertions passed, the expanded local-model text corpus matched 69/69 cases with zero incorrect actions (median approximately 0.38 seconds), and all 20 synthesized Whisper-to-command fixtures passed. Ordinary release checks confirmed the experiment is still excluded; the opt-in experimental app compiled and signed successfully. Live acceptance of this revision is pending.
+Second-pass development checks: 336 deterministic assertions passed, the expanded local-model text corpus matched 69/69 cases with zero incorrect actions (median approximately 0.38 seconds), and all 20 synthesized Whisper-to-command fixtures passed. Ordinary release checks confirmed the experiment is still excluded; the opt-in experimental app compiled and signed successfully. The live pass below followed those development checks.
+
+
+## Command experiment, third pass (not published)
+
+The second live pass on 2026-09-19 successfully executed counted/numbered paragraph navigation, first/second cue selection, exact font sizes, full-name mode switching, and pause/resume. No incorrect executed action was observed during that pass, but several requests were declined or timed out. Short pauses caused incomplete instructions to be submitted; repeated wake phrases sometimes remained in the request; mode aliases and polite “go ahead and” were too strict. Appearance requests were unsupported. This is observational testing, not a measured false-activation rate.
+
+A synthetic pause fixture also exposed Whisper words timestamped more than 25 seconds beyond the available audio, including `[BLANK_AUDIO]` padding. Command routing now ignores non-finite, inverted, negative, or future word times rather than allowing them to extend the command deadline.
+
+The third revision adds timing/retry regressions, contextual Whisper aliases, polite-prefix handling, prompting-mode aliases, and bounded appearance actions. Appearance changes preserve the reading anchor and current play/pause state. Actual compound/negated commands still decline. Synthetic speech includes 1.5-second pauses after “go back up” and “switch from adaptive pace to.”
+
+Quitting the second-pass app with the local command model loaded produced a llama.cpp Metal resource assertion. The third revision defers application termination until cancelled preparation and model unloading finish. Native checks passed on the development Mac: quitting with “Command AI ready · offline” visible exited with status 0; quitting immediately after “Preparing command model…” appeared also exited with status 0. The app reopened successfully after both checks.
+
+Third-pass automated results: 378 deterministic assertions passed; the local-model corpus matched 97/97 cases with zero incorrect actions (median approximately 0.48 seconds, excluding Whisper and end-of-command settling); all 30 synthetic speech fixtures passed, including both mid-command pauses. These remain development regression fixtures. Another live presenter pass is required to accept timing and natural phrasing.
+
+Ordinary release checks passed after these changes, including exclusion of command activation and the llama runtime. The experimental bundle built, signed, and reopened successfully. The microphone remained off during model shutdown checks.
