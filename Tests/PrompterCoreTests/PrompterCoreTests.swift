@@ -171,6 +171,7 @@ private func expectThrows<T>(_ expression: @autoclosure () throws -> T, file: St
         retakeChecks()
         layoutChecks()
         completedLineChecks()
+        bottomGuideMotionChecks()
         voiceCommandChecks()
         print("\(assertions) assertions across playback, persistence, speech alignment, and cadence checks; \(failures) failures")
         if failures > 0 { exit(1) }
@@ -241,6 +242,43 @@ private func completedLineChecks() {
         let stopped = transport.progress
         for _ in 0..<120 { transport.follow(seconds: 1.0 / 60, target: nil, lineStep: lineHeight / travel) }
         expectEqual(transport.progress, stopped)
+    }
+}
+
+private func bottomGuideMotionChecks() {
+    var settings = PromptSettings()
+    settings.fontSize = 58; settings.lineSpacing = 1.3; settings.margin = 110
+    let source = "The guide should stay still while these words scroll smoothly into view. A line transition must not move the camera reading position.\n\nThe next paragraph continues at the same steady pace."
+    let storage = NSTextStorage(attributedString: ScriptTypography.text(source, settings: settings))
+    let layout = NSLayoutManager()
+    let container = NSTextContainer(size: NSSize(width: 780, height: CGFloat.greatestFiniteMagnitude))
+    container.lineFragmentPadding = 0
+    storage.addLayoutManager(layout); layout.addTextContainer(container); layout.ensureLayout(for: container)
+    let lineHeight = layout.defaultLineHeight(for: ScriptTypography.font(settings)) + settings.fontSize * (settings.lineSpacing - 1)
+    var lines: [CGRect] = []
+    layout.enumerateLineFragments(forGlyphRange: NSRange(location: 0, length: layout.numberOfGlyphs)) { _, used, _, _, _ in lines.append(used) }
+    for height in [200.0, 300.0, 550.0] {
+        for count in [1.0, 2.0] {
+            let guideY = CameraViewGeometry.guideRange(viewportHeight: height, lineHeight: lineHeight, guideLines: count).upperBound * height
+            let nominal = CGRect(x: 0, y: guideY - 8, width: 1000, height: lineHeight * count + 12)
+            var previousOrigin: Double?
+            var previousBand: CGRect?
+            var changedLines = false
+            var steady = true
+            for frame in 0..<360 {
+                let shift = Double(frame) * 0.8
+                let currentGuideY = CameraViewGeometry.guideRange(viewportHeight: height, lineHeight: lineHeight, guideLines: count).upperBound * height
+                let origin = currentGuideY - settings.fontSize * 0.2 - shift
+                let movingLines = lines.map { $0.offsetBy(dx: settings.margin, dy: origin) }
+                let band = FocusGeometry.band(nominal: nominal, textLines: movingLines)
+                if let previousBand, abs(band.maxY - previousBand.maxY) > lineHeight / 2 { changedLines = true }
+                if let previousOrigin, abs(origin - previousOrigin + 0.8) > 0.000001 { steady = false }
+                if abs(currentGuideY - guideY) > 0.000001 { steady = false }
+                previousOrigin = origin; previousBand = band
+            }
+            expectTrue(changedLines) // The fixture really crosses focus-band line boundaries.
+            expectTrue(steady)       // Text still advances by exactly the requested amount.
+        }
     }
 }
 
@@ -783,18 +821,18 @@ private func voiceCommandChecks() {
     let laptopVisible = CGRect(x: 0, y: 64, width: 1470, height: 859)
     // Camera guide movement uses the available reading area, not the old 16% cap.
     let compactBand = CGRect(x: 0, y: -8, width: 1000, height: 92)
-    let cameraGuideRange = CameraViewGeometry.guideRange(viewportHeight: 300, band: compactBand)
+    let cameraGuideRange = CameraViewGeometry.guideRange(viewportHeight: 300, lineHeight: 80, guideLines: 1)
     expectTrue(cameraGuideRange.upperBound > 0.7)
     expectEqual(cameraGuideRange.upperBound * 300 + compactBand.maxY, 300, accuracy: 0.00001)
     expectEqual(cameraGuideRange.lowerBound * 300 + compactBand.minY, 0, accuracy: 0.00001)
-    let expandedBand = CGRect(x: 0, y: -35, width: 1000, height: 180)
-    let expandedRange = CameraViewGeometry.guideRange(viewportHeight: 300, band: expandedBand)
+    let expandedBand = CGRect(x: 0, y: -8, width: 1000, height: 172)
+    let expandedRange = CameraViewGeometry.guideRange(viewportHeight: 300, lineHeight: 80, guideLines: 2)
     expectEqual(expandedRange.upperBound * 300 + expandedBand.maxY, 300, accuracy: 0.00001)
     expectTrue(expandedRange.upperBound > 0.1625)
-    expectTrue(CameraViewGeometry.guideRange(viewportHeight: 600, band: expandedBand).upperBound > expandedRange.upperBound)
-    let oversizedRange = CameraViewGeometry.guideRange(viewportHeight: 100, band: expandedBand)
+    expectTrue(CameraViewGeometry.guideRange(viewportHeight: 600, lineHeight: 80, guideLines: 2).upperBound > expandedRange.upperBound)
+    let oversizedRange = CameraViewGeometry.guideRange(viewportHeight: 100, lineHeight: 80, guideLines: 2)
     expectEqual(oversizedRange.lowerBound, oversizedRange.upperBound)
-    expectEqual(CameraViewGeometry.guideRange(viewportHeight: 0, band: expandedBand), 0...0)
+    expectEqual(CameraViewGeometry.guideRange(viewportHeight: 0, lineHeight: 80, guideLines: 2), 0...0)
     let cameraFrame = CameraViewGeometry.frame(screen: laptopScreen, visible: laptopVisible, safeTop: 32)
     expectTrue(laptopVisible.contains(cameraFrame))
     expectTrue(cameraFrame.maxY < laptopScreen.maxY - 32)

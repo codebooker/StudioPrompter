@@ -74,21 +74,12 @@ final class ScriptCanvas: NSView {
     private var effectiveGuideRange: ClosedRange<Double> {
         guard keepsGuideInBounds, bounds.width > 0, bounds.height > 0 else { return guidePositionRange }
         let scale = bounds.width / 1000
-        let guideHeight = lineHeight * settings.guideLines + 12
-        // Measure at guideY = 0. Translation then lets us fit the whole focus
-        // band, including its expansion to complete text lines, above the footer.
-        let originY = -settings.fontSize * 0.2 - progress * max(0, textHeight - settings.fontSize * 1.2)
-        let scan = NSRect(x: 0, y: -originY - lineHeight, width: 1000, height: guideHeight + lineHeight * 2)
-        var lines: [CGRect] = []
-        layout.enumerateLineFragments(forGlyphRange: layout.glyphRange(forBoundingRect: scan, in: container)) { _, used, _, range, _ in
-            let characters = self.layout.characterRange(forGlyphRange: range, actualGlyphRange: nil)
-            if !(self.storage.string as NSString).substring(with: characters).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                lines.append(used.offsetBy(dx: self.settings.margin, dy: originY))
-            }
-        }
-        let band = FocusGeometry.band(nominal: CGRect(x: 0, y: -8, width: 1000, height: guideHeight), textLines: lines)
-        return CameraViewGeometry.guideRange(viewportHeight: bounds.height / scale, band: band)
+        // Bounds depend only on the viewport and configured guide height.
+        // Expanding to whole moving lines must never reposition the text origin.
+        return CameraViewGeometry.guideRange(viewportHeight: bounds.height / scale,
+                                             lineHeight: lineHeight, guideLines: settings.guideLines)
     }
+
     private var effectiveGuidePosition: Double {
         let range = effectiveGuideRange
         return min(range.upperBound, max(range.lowerBound, settings.guidePosition))
@@ -97,7 +88,7 @@ final class ScriptCanvas: NSView {
     override func draw(_ dirtyRect: NSRect) {
         NSColor(calibratedRed: 0.055, green: 0.06, blue: 0.069, alpha: 1).setFill()
         bounds.fill()
-        guard let context = NSGraphicsContext.current?.cgContext, bounds.width > 0 else { return }
+        guard let context = NSGraphicsContext.current?.cgContext, bounds.width > 0, bounds.height > 0 else { return }
         let scale = bounds.width / 1000
         let logicalHeight = bounds.height / scale
         let guideY = logicalHeight * (keepsGuideInBounds ? effectiveGuidePosition : settings.guidePosition)
@@ -112,7 +103,12 @@ final class ScriptCanvas: NSView {
             guard !(self.storage.string as NSString).substring(with: characters).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
             textLines.append(used.offsetBy(dx: origin.x, dy: origin.y))
         }
-        let focusBand = FocusGeometry.band(nominal: CGRect(x: 0, y: guideY - 8, width: 1000, height: guideHeight), textLines: textLines)
+        var focusBand = FocusGeometry.band(nominal: CGRect(x: 0, y: guideY - 8, width: 1000, height: guideHeight), textLines: textLines)
+        if keepsGuideInBounds {
+            // Incoming/outgoing lines naturally cross the viewport edge. Clip
+            // only the highlight; keep the guide and text translation stable.
+            focusBand = focusBand.intersection(CGRect(x: 0, y: 0, width: 1000, height: logicalHeight))
+        }
         context.saveGState()
         context.scaleBy(x: scale, y: scale)
         if mirrored {
