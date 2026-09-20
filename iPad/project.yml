@@ -9,6 +9,8 @@ settings:
     CODE_SIGN_STYLE: Automatic
     TARGETED_DEVICE_FAMILY: '2'
     IPHONEOS_DEPLOYMENT_TARGET: '16.0'
+    MARKETING_VERSION: '0.1.0'
+    CURRENT_PROJECT_VERSION: '3'
 targets:
   PrompterCore:
     type: framework
@@ -17,6 +19,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: co.codebooker.studioprompter.core
+        CURRENT_PROJECT_VERSION: $(inherited)
         GENERATE_INFOPLIST_FILE: YES
         SKIP_INSTALL: YES
   PrompterLink:
@@ -28,6 +31,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: co.codebooker.studioprompter.link
+        CURRENT_PROJECT_VERSION: $(inherited)
         GENERATE_INFOPLIST_FILE: YES
         SKIP_INSTALL: YES
   StudioPrompterCompanion:
@@ -43,8 +47,6 @@ targets:
         PRODUCT_NAME: StudioPrompterCompanion
         TARGETED_DEVICE_FAMILY: '2'
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: '0.1.0'
-        CURRENT_PROJECT_VERSION: '2'
         GENERATE_INFOPLIST_FILE: NO
         SUPPORTS_MACCATALYST: NO
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO

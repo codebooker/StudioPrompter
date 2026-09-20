@@ -11,12 +11,12 @@ The iPad app is **StudioPrompter Companion**, a reading display for **StudioProm
 - SKU: `studioprompter-companion-ipad`
 - Apple app ID: `6814059982`
 - [App Store Connect](https://appstoreconnect.apple.com/apps/6814059982/testflight)
-- Version: 0.1.0, build 2
+- Version: 0.1.0, build 3
 - Category suggestion: Photo & Video
 - Support: https://github.com/codebooker/StudioPrompter/issues
 - Privacy policy draft: [PRIVACY.md](PRIVACY.md)
 
-The app record was created under the John Tawes account. The Release archive and App Store Connect distribution export have succeeded for 0.1.0 (2). Account agreements must be reviewed and accepted by the account holder.
+The app record was created under the John Tawes account. Build 2 passed local export but Apple rejected its embedded frameworks because their marketing versions were missing. Build 3 shares version settings across the app and both frameworks; the export script checks all three bundles. Account agreements must be reviewed and accepted by the account holder.
 
 The beta description, marketing/privacy URLs, feedback email, and review contact have been saved in App Store Connect. Personal review contact details remain there and are not committed to this repository.
 

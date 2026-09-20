@@ -217,3 +217,10 @@ This verifies the real 0.1.0-to-0.1.1 update on the development Mac. New-recipie
 - The Mac candidate is ad-hoc signed, not Developer ID signed/notarized. No Developer ID identity was present during preparation.
 - Companion Release archive and App Store Connect distribution export succeeded. Export inspection confirmed version 0.1.0, build 2, iPad-only device family, and included privacy manifest. This artifact has not yet been uploaded or installed through TestFlight.
 - App Store Connect authentication/app record, beta review contact, upload processing, internal TestFlight installation, full updater exercise, and longer-session smoothness remain before broader distribution. See TESTFLIGHT.md for the prepared submission material.
+
+### Companion App Store Connect preparation · 2026-09-20
+
+- Created the StudioPrompter Companion app record (`6814059982`) and saved beta description, privacy/marketing links, feedback email, and review contact details. Personal contact details are kept in App Store Connect.
+- Apple rejected build 2 during upload validation because both embedded frameworks lacked `CFBundleShortVersionString`. Local export alone did not catch that omission.
+- Build 3 shares marketing/build version settings across the app and frameworks. The archive script now verifies both embedded framework versions in the exported IPA. Release archive/export and the expanded metadata checks passed.
+- Upload acceptance, TestFlight processing and installation, and external beta review remain separate gates; local export success does not establish them.

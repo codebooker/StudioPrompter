@@ -30,6 +30,10 @@ with zipfile.ZipFile(pathlib.Path(sys.argv[1])/'StudioPrompterCompanion.ipa') as
     assert info['UIDeviceFamily']==[2], 'Companion must be iPad-only'
     assert info['CFBundleIdentifier']=='co.codebooker.studioprompter.companion'
     assert root+'PrivacyInfo.xcprivacy' in archive.namelist(), 'Missing privacy manifest'
+    for framework in ('PrompterCore', 'PrompterLink'):
+        metadata=plistlib.loads(archive.read(root+f'Frameworks/{framework}.framework/Info.plist'))
+        assert metadata.get('CFBundleShortVersionString')==version, f'{framework} missing or incorrect marketing version'
+        assert metadata.get('CFBundleVersion')==build, f'{framework} missing or incorrect build version'
 print(f'Verified Companion {version} ({build}), iPad-only, with privacy manifest.')
 PYVERIFY
 echo "Exported Companion for App Store Connect to $EXPORT (not uploaded)."
