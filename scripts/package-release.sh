@@ -73,5 +73,7 @@ inspect_feed(pathlib.Path(sys.argv[1]).read_bytes(), tag=sys.argv[2], previous=p
 PYVERIFY
     swift scripts/verify-update.swift scripts/Info.plist "$OUT/$FEED_NAME" "$ZIP"
 fi
-(cd "$OUT" && shasum -a 256 "$(basename "$ZIP")" > SHA256SUMS.txt)
+DMG="$OUT/StudioPrompter-$VERSION-macos-$ARCH.dmg"
+./scripts/package-dmg.sh "$APP" "$DMG"
+(cd "$OUT" && shasum -a 256 "$(basename "$ZIP")" "$(basename "$DMG")" > SHA256SUMS.txt)
 echo "Packaged $ZIP ($SIGNING)"

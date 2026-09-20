@@ -1,0 +1,39 @@
+name: Publish website
+on:
+  push:
+    branches: [main]
+    paths:
+      ["website/**", "scripts/site-release.py", ".github/workflows/pages.yml"]
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+      - name: Resolve latest published Mac DMG
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api 'repos/codebooker/StudioPrompter/releases?per_page=100' | python3 scripts/site-release.py
+      - name: Check browser JavaScript
+        run: node --check website/app.js
+      - uses: actions/configure-pages@v6.0.0
+      - uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: website
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5.0.1

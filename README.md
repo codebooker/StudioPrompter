@@ -11,7 +11,7 @@
 
 <p align="center"><strong>A native Mac teleprompter built for the person on camera—and the producer behind it.</strong></p>
 <p align="center">At your webcam or across the studio. A script that follows your voice.</p>
-<p align="center"><a href="https://github.com/codebooker/StudioPrompter/releases">Releases</a> · <a href="docs/USER-GUIDE.md">User guide</a> · <a href="docs/TESTING.md">Testing & release status</a> · <a href="https://github.com/codebooker/StudioPrompter/issues">Feedback</a></p>
+<p align="center"><a href="https://studioprompter.app">Try the browser studio</a> · <a href="https://github.com/codebooker/StudioPrompter/releases">Releases</a> · <a href="docs/USER-GUIDE.md">User guide</a> · <a href="docs/TESTING.md">Testing & release status</a> · <a href="https://github.com/codebooker/StudioPrompter/issues">Feedback</a></p>
 
 ---
 
@@ -80,9 +80,9 @@ Using an audio interface? Select the interviewer's isolated channel so the guest
 
 ## Get StudioPrompter
 
-**[Download StudioPrompter 0.2.0 — tester release](https://github.com/codebooker/StudioPrompter/releases/tag/0.2.0)**
+**[Download StudioPrompter 0.2.0 for Mac (.dmg)](https://github.com/codebooker/StudioPrompter/releases/download/0.2.0/StudioPrompter-0.2.0-macos-arm64.dmg)** · [Release notes and ZIP](https://github.com/codebooker/StudioPrompter/releases/tag/0.2.0)
 
-For **Apple silicon Macs (M1 or newer), macOS 13.3+**. Unzip the download, move `Prompter.app` to Applications, and open it. It appears as **StudioPrompter**. This early build is not notarized: if macOS blocks the first launch, use **System Settings → Privacy & Security → Open Anyway** for StudioPrompter. See [Apple’s instructions](https://support.apple.com/en-us/102445).
+For **Apple silicon Macs (M1 or newer), macOS 13.3+**. Open the DMG, drag `StudioPrompter.app` into Applications, and open it. A ZIP is also available on the release page. This early build is not notarized: if macOS blocks the first launch, use **System Settings → Privacy & Security → Open Anyway** for StudioPrompter. See [Apple’s instructions](https://support.apple.com/en-us/102445).
 
 Follow script, Adaptive pace, the Markdown editor, bookmarks, dual-display output, **Webcam Layout**, and **iPad output** are included. **“Hey Teleprompter” commands and optional local command AI are available as experimental features** in this tester release. This is a tester release, not a production-readiness claim; [remaining validation](docs/TESTING.md) is documented.
 
