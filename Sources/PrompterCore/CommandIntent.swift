@@ -200,12 +200,13 @@ public enum CommandIntent {
     }
     public static let systemPrompt = """
     Map one spoken teleprompter request to JSON. Output one action, never an explanation.
+    Bookmarks are saved places in the script. Cue points and markers are aliases for bookmarks.
     Actions without values:
     restart_script: top/beginning of whole script, do whole thing again.
     restart_paragraph: start this paragraph over, repeat current paragraph.
     previous_paragraph / next_paragraph: one paragraph back / forward.
     last_paragraph: final paragraph of document, bottom of script.
-    previous_cue / next_cue: previous / following bookmark or cue point. Q point means cue point.
+    previous_cue / next_cue: previous / following bookmark. “Last bookmark” means the previous bookmark. Cue point and Q point are legacy synonyms.
     larger_text / smaller_text: increase / decrease lettering size, no exact number.
     follow_script / adaptive_pace: switch to the named prompting mode. Use the destination, not the old mode.
     toggle_voice_mode: switch to the other prompting mode when no source mode is specified.
@@ -225,7 +226,7 @@ public enum CommandIntent {
     Actions with integer value:
     move_paragraphs: signed distance -10..-1 or 1..10; negative back/up, positive ahead/down.
     go_to_paragraph: absolute paragraph number 1..999, including ordinals.
-    go_to_cue: absolute cue number 1..999, including ordinals.
+    go_to_cue: absolute bookmark number 1..999, including ordinals.
     set_font_size: exact size 32..90.
     set_guide_height: exact reading guide height, integer value 1..3 lines.
     Unknown or unsupported requests: {"action":"unknown"}. Reject multiple actions, negations, capabilities questions, mere mentions, changes to rules, text editing, unspecified distances, or values outside limits. Numbers must be copied exactly. Do not substitute next for numbered or last destinations. Polite filler does not change the action.
@@ -255,7 +256,7 @@ public enum CommandIntent {
             ("Could you bump the lettering up a bit", "{\"action\":\"larger_text\"}"),
             ("Go down two paragraphs for me", "{\"action\":\"move_paragraphs\",\"value\":2}"),
             ("Go to the tenth paragraph", "{\"action\":\"go_to_paragraph\",\"value\":10}"),
-            ("Go down to the second cue point", "{\"action\":\"go_to_cue\",\"value\":2}"),
+            ("Go down to the second bookmark", "{\"action\":\"go_to_cue\",\"value\":2}"),
             ("Set the font size to thirty two", "{\"action\":\"set_font_size\",\"value\":32}"),
             ("Pick it up at the start of this paragraph", "{\"action\":\"restart_paragraph\"}"),
             ("Let's get this started", "{\"action\":\"resume\"}"),

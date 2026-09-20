@@ -20,7 +20,7 @@ This build uses `updates/tester-appcast.xml`. Subsequent tester releases use tha
 
 4. Tag the exact packaged commit as `0.1.1`. Upload the ZIP, `tester-appcast.xml`, `SHA256SUMS.txt`, and `BUILD-INFO.txt` to a draft GitHub release. Publish it as a **prerelease** after checks and smoke testing.
 5. The **Publish update feed** workflow verifies the uploaded archive’s Ed25519 signature, byte count, app signature integrity, bundle identity, versions, feed URL, minimum OS, and architecture before committing the tester feed. Drafts cannot be promoted. Private signing keys are not needed on GitHub.
-6. Check the workflow and perform **Check for Updates… → Install & Relaunch** from the prior tester build. Confirm scripts, cues, emphasis, and model cache survive.
+6. Check the workflow and perform **Check for Updates… → Install & Relaunch** from the prior tester build. Confirm scripts, bookmarks, emphasis, and model cache survive.
 
 To retry promotion locally: `python3 scripts/publish-update-feed.py 0.1.1 --tester`, then review and commit the verified feed. The script never publishes a release itself. Increasing build numbers and exact release asset URLs prevent downgrade and accidental mismatches. Any failure leaves the existing feed intact.
 

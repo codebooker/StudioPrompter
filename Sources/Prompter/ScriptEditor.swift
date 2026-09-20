@@ -147,10 +147,10 @@ final class ScriptEditorSession: NSObject, ObservableObject, NSTextViewDelegate 
         let tail = (view.string as NSString).substring(from: min(offset, (view.string as NSString).length))
         let title = tail.split(whereSeparator: { $0.isWhitespace }).prefix(5).joined(separator: " ")
         registerUndo()
-        let cue = Cue(title: title.isEmpty ? "New cue" : title, progress: 0, characterOffset: offset)
+        let cue = Cue(title: title.isEmpty ? "New bookmark" : title, progress: 0, characterOffset: offset)
         state.update { $0.cues.append(cue) }
         revealCue(cue)
-        view.undoManager?.setActionName("Add cue")
+        view.undoManager?.setActionName("Add bookmark")
     }
     func renameCue(_ id: UUID, title: String) {
         guard let state, state.current.cues.first(where: { $0.id == id })?.title != title else { return }
@@ -158,7 +158,7 @@ final class ScriptEditorSession: NSObject, ObservableObject, NSTextViewDelegate 
         state.update { script in
             if let index = script.cues.firstIndex(where: { $0.id == id }) { script.cues[index].title = title }
         }
-        textView?.undoManager?.setActionName("Rename cue")
+        textView?.undoManager?.setActionName("Rename bookmark")
     }
     func moveCue(_ id: UUID) {
         guard let state, let view = textView else { return }
@@ -166,14 +166,14 @@ final class ScriptEditorSession: NSObject, ObservableObject, NSTextViewDelegate 
         state.update { script in
             if let index = script.cues.firstIndex(where: { $0.id == id }) { script.cues[index].characterOffset = view.selectedRange().location }
         }
-        view.undoManager?.setActionName("Move cue")
+        view.undoManager?.setActionName("Move bookmark")
         if let cue = state.current.cues.first(where: { $0.id == id }) { revealCue(cue) }
     }
     func removeCue(_ id: UUID) {
         guard let state else { return }
         registerUndo()
         state.update { $0.cues.removeAll { $0.id == id } }
-        textView?.undoManager?.setActionName("Remove cue")
+        textView?.undoManager?.setActionName("Remove bookmark")
     }
     func revealCue(_ cue: Cue) {
         guard let view = textView else { return }
@@ -381,8 +381,8 @@ struct ScriptEditorView: View {
                 Button { session.format("clear") } label: { Image(systemName: "textformat").frame(width: 30, height: 30) }
                     .buttonStyle(.plain).help("Clear emphasis").accessibilityLabel("Clear emphasis")
                 Rectangle().fill(Palette.border).frame(width: 1, height: 20).padding(.horizontal, 5)
-                Button { session.addCue() } label: { Label("Add cue", systemImage: "bookmark.badge.plus").font(.system(size: 11, weight: .medium)) }
-                    .buttonStyle(QuietButton()).help("Add a cue at the text cursor (⌘⌥B)")
+                Button { session.addCue() } label: { Label("Add bookmark", systemImage: "bookmark.badge.plus").font(.system(size: 11, weight: .medium)) }
+                    .buttonStyle(QuietButton()).help("Add a bookmark at the text cursor (⌘⌥B)")
                 Spacer(minLength: 0)
                 Text(session.selectionLength > 0 ? "Emphasize your selection" : "Select words to emphasize")
                     .font(.system(size: 10)).foregroundStyle(Palette.muted).lineLimit(1)
@@ -391,7 +391,7 @@ struct ScriptEditorView: View {
             NativeScriptEditor(state: state, session: session, cues: state.current.cues, focusedCueID: session.focusedCueID).frame(minHeight: 140)
             Divider().overlay(Palette.border)
             cueEditor
-            Text("Numbered markers show cue locations. The orange flag marks the exact position. Click a number to find it.")
+            Text("Numbered markers show bookmark locations. The orange flag marks the exact position. Click a number to find it.")
                 .font(.system(size: 10)).foregroundStyle(Palette.muted)
         }.padding(18).background(Palette.panel, in: RoundedRectangle(cornerRadius: 12))
             .onAppear { state.activeEditor = session; state.anchorCues() }
@@ -406,9 +406,9 @@ struct ScriptEditorView: View {
     }
     private var cueEditor: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionLabel(title: "CUE POINTS", trailing: "\(state.current.cues.count)")
+            SectionLabel(title: "BOOKMARKS", trailing: "\(state.current.cues.count)")
             if state.current.cues.isEmpty {
-                Text("Place your cursor at a passage, then choose Add cue.")
+                Text("Place your cursor at a passage, then choose Add bookmark.")
                     .font(.system(size: 11)).foregroundStyle(Palette.muted).padding(.vertical, 5)
             } else {
                 ScrollView {
@@ -422,15 +422,15 @@ struct ScriptEditorView: View {
                                         .foregroundStyle(session.focusedCueID == cue.id ? Color.black : Palette.accent)
                                         .background(Palette.accent.opacity(session.focusedCueID == cue.id ? 1 : 0.14), in: RoundedRectangle(cornerRadius: 5))
                                 }
-                                    .buttonStyle(.plain).help("Find this cue in the script").accessibilityLabel("Find cue \(cue.title)")
-                                TextField("Cue name", text: Binding(get: { state.current.cues.first(where: { $0.id == cue.id })?.title ?? "" }, set: { session.renameCue(cue.id, title: $0) }))
-                                    .textFieldStyle(.plain).font(.system(size: 11)).accessibilityLabel("Cue name")
+                                    .buttonStyle(.plain).help("Find this bookmark in the script").accessibilityLabel("Find bookmark \(cue.title)")
+                                TextField("Bookmark name", text: Binding(get: { state.current.cues.first(where: { $0.id == cue.id })?.title ?? "" }, set: { session.renameCue(cue.id, title: $0) }))
+                                    .textFieldStyle(.plain).font(.system(size: 11)).accessibilityLabel("Bookmark name")
                                 Button("Move here") { session.moveCue(cue.id) }.buttonStyle(.plain).foregroundStyle(Palette.muted)
-                                    .help("Move this cue to the script cursor")
+                                    .help("Move this bookmark to the script cursor")
                                 Button("Find") { session.revealCue(cue) }.buttonStyle(.plain).foregroundStyle(Palette.accent)
-                                    .help("Show the exact cue position in the editor").accessibilityLabel("Show cue \(cue.title)")
+                                    .help("Show the exact bookmark position in the editor").accessibilityLabel("Show bookmark \(cue.title)")
                                 Button { session.removeCue(cue.id) } label: { Image(systemName: "trash") }
-                                    .buttonStyle(.plain).foregroundStyle(Palette.muted).help("Remove cue").accessibilityLabel("Remove cue \(cue.title)")
+                                    .buttonStyle(.plain).foregroundStyle(Palette.muted).help("Remove bookmark").accessibilityLabel("Remove bookmark \(cue.title)")
                             }.font(.system(size: 10)).padding(8).background(.black.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
                         }
                     }

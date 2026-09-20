@@ -537,6 +537,13 @@ private func editorChecks() throws {
 
 
 private func voiceCommandChecks() {
+    expectEqual(VoiceCommand.parse("Go back to the last bookmark"), .cue(-1))
+    expectEqual(VoiceCommand.parse("Go to the next bookmark"), .cue(1))
+    expectEqual(VoiceCommand.parse("Can you go to the previous book mark?"), .cue(-1))
+    expectEqual(VoiceCommand.parse("Go to the next cue point"), .cue(1))
+    expectFalse(VoiceCommand.isIncomplete("Move down to bookmark two"))
+    expectEqual(CommandIntent.interpret("{\"action\":\"go_to_cue\",\"value\":2}", request: "Take me to bookmark number two"), .cueNumber(2))
+
     let accepted: [(String, VoiceCommand)] = [
         ("Can we go back up two lines?", .lines(-2)), ("Please scroll down 3 lines", .lines(3)), ("rewind two lines", .lines(-2)), ("go back to lines", .lines(-2)),
         ("Let's start this paragraph over", .paragraph(0)), ("Move to the next paragraph", .paragraph(1)),

@@ -98,7 +98,7 @@ struct WorkspaceView: View {
             if state.isEditing {
                 keyHint("⌘B", "Bold")
                 keyHint("⌘U", "Underline")
-                keyHint("⌘⌥B", "Add cue")
+                keyHint("⌘⌥B", "Add bookmark")
                 keyHint("⌘E", "Done editing")
             } else {
                 keyHint("SPACE", "Play / pause")
@@ -158,9 +158,9 @@ struct LibrarySidebar: View {
             }
             Divider().overlay(Palette.border).padding(.horizontal, 18)
             HStack {
-                SectionLabel(title: "CUE POINTS")
+                SectionLabel(title: "BOOKMARKS")
                 Spacer()
-                Button(action: state.addCue) { Image(systemName: "plus") }.buttonStyle(.plain).help("Bookmark the current position").accessibilityLabel("Add cue point")
+                Button(action: state.addCue) { Image(systemName: "plus") }.buttonStyle(.plain).help("Bookmark the current position").accessibilityLabel("Add bookmark")
             }.padding(.horizontal, 20).padding(.top, 22).padding(.bottom, 12)
             CueList(state: state, playback: state.playback).frame(height: 166)
             HStack(spacing: 8) {
@@ -186,10 +186,10 @@ struct CueList: View {
                             Text(timestamp(cue.progress * state.current.duration)).font(.system(size: 9, design: .monospaced)).foregroundStyle(Palette.muted)
                         }.padding(.horizontal, 10).padding(.vertical, 9).contentShape(Rectangle())
                     }.buttonStyle(.plain).help("Jump to \(cue.title)").contextMenu {
-                        Button("Remove cue", role: .destructive) { state.update { $0.cues.removeAll { $0.id == cue.id } } }
+                        Button("Remove bookmark", role: .destructive) { state.update { $0.cues.removeAll { $0.id == cue.id } } }
                     }
                 }
-                if state.current.cues.isEmpty { Text("Add a cue to jump back to a\nkey moment in your script.").font(.system(size: 11)).foregroundStyle(Palette.muted).lineSpacing(4).padding(12) }
+                if state.current.cues.isEmpty { Text("Add a bookmark to jump back to a\nkey moment in your script.").font(.system(size: 11)).foregroundStyle(Palette.muted).lineSpacing(4).padding(12) }
             }.padding(.horizontal, 10)
         }
     }
@@ -261,7 +261,7 @@ struct TransportBar: View {
                 }.frame(width: 83, alignment: .leading)
                 Spacer(minLength: 0)
                 iconButton("backward.end", help: "Reset to beginning (R)", action: playback.reset)
-                iconButton("backward.frame", help: "Previous cue") { state.jumpCue(forward: false) }
+                iconButton("backward.frame", help: "Previous bookmark") { state.jumpCue(forward: false) }
                 Button {
                     if state.isEditing { state.toggleEditing() }
                     NSApp.keyWindow?.makeFirstResponder(nil)
@@ -272,7 +272,7 @@ struct TransportBar: View {
                         .frame(width: 68, height: 48).background(Palette.accent, in: RoundedRectangle(cornerRadius: 13))
                 }.buttonStyle(.plain).help("Play / pause (Space)").accessibilityLabel(voice.isStarting ? "Cancel voice startup" : (playback.transport.isPlaying ? "Pause" : "Play"))
                     .disabled(state.current.wordCount == 0)
-                iconButton("forward.frame", help: "Next cue") { state.jumpCue(forward: true) }
+                iconButton("forward.frame", help: "Next bookmark") { state.jumpCue(forward: true) }
                 iconButton(playback.isBlackedOut ? "eye.slash.fill" : "eye", help: "Toggle talent blackout (B)") { playback.isBlackedOut.toggle() }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 4) {

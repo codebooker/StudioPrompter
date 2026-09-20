@@ -21,6 +21,10 @@ func runVoiceCommandChecks(service: WhisperService, commandModelPath: String? = 
     ]
     if commandModelPath != nil {
         fixtures += [
+            ("Hey Teleprompter, go back to the last bookmark.", .cue(-1)),
+            ("Hey Teleprompter, go to the next bookmark.", .cue(1)),
+            ("Hey Teleprompter, take me to bookmark number two.", .cueNumber(2)),
+            ("Hey Teleprompter, go to the first bookmark.", .cueNumber(1)),
             ("Hey Teleprompter, take me back a couple of lines.", .lines(-2)),
             ("Hey Teleprompter, the words are too big, shrink them a little.", .font(-4)),
             ("Hey Teleprompter, hold it for a second.", .pause),

@@ -151,7 +151,7 @@ final class AppState: ObservableObject {
             voice.beginRetake()
             return notice
         default:
-            guard let destination = VoiceNavigation.destination(for: command, script: current, progress: position) else { return "That paragraph or cue isn’t in this script" }
+            guard let destination = VoiceNavigation.destination(for: command, script: current, progress: position) else { return "That paragraph or bookmark isn’t in this script" }
             playback.transport.reposition(to: min(destination, 0.999999), preservingPlayback: false)
             playback.transport.play(countdown: 0, hasContent: current.wordCount > 0)
             voice.beginRetake()
@@ -160,9 +160,9 @@ final class AppState: ObservableObject {
             case .paragraph(let delta): return delta == 0 ? "Restarted paragraph" : "Moved \(abs(delta)) \(abs(delta) == 1 ? "paragraph" : "paragraphs") \(delta < 0 ? "back" : "forward")"
             case .paragraphNumber(let number): return "Paragraph \(number)"
             case .lastParagraph: return "Last paragraph"
-            case .cueNumber(let number): return "Cue \(number)"
+            case .cueNumber(let number): return "Bookmark \(number)"
             case .top: return "Back to the beginning"
-            default: return "\(command == .cue(-1) ? "Previous" : "Next") cue"
+            default: return "\(command == .cue(-1) ? "Previous" : "Next") bookmark"
             }
         }
     }
@@ -268,7 +268,7 @@ final class AppState: ObservableObject {
         let progress = playback.transport.progress
         let words = current.text.split(whereSeparator: { $0.isWhitespace })
         let index = min(max(0, Int(Double(words.count) * progress)), max(0, words.count - 1))
-        let title = words.isEmpty ? "New cue" : words.dropFirst(index).prefix(5).joined(separator: " ")
+        let title = words.isEmpty ? "New bookmark" : words.dropFirst(index).prefix(5).joined(separator: " ")
         let offset = ScriptCueLayout(current).offset(at: progress)
         update { $0.cues.append(Cue(title: title, progress: progress, characterOffset: offset)); $0.cues.sort { $0.progress < $1.progress } }
     }

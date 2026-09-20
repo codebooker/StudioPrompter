@@ -33,6 +33,8 @@ public enum VoiceCommand: Equatable, Sendable {
 
     public static func parse(_ text: String) -> VoiceCommand? {
         var phrase = requestTokens(text).joined(separator: " ")
+        // Bookmark is the public name; keep cue commands as compatible aliases.
+        phrase = phrase.replacingOccurrences(of: #"\bbookmark\b"#, with: "cue", options: .regularExpression)
         let prefixes = ["can we ", "can you ", "could you ", "would you ", "please ", "lets ", "let us "]
         while let prefix = prefixes.first(where: { phrase.hasPrefix($0) }) { phrase.removeFirst(prefix.count) }
         if phrase.hasSuffix(" please") { phrase.removeLast(7) }
@@ -66,6 +68,7 @@ public enum VoiceCommand: Equatable, Sendable {
     /// Normalize speech artifacts only in their command context, never in script text.
     public static func requestTokens(_ text: String) -> [String] {
         var phrase = tokens(text).joined(separator: " ")
+            .replacingOccurrences(of: #"\bbook (marks?)\b"#, with: "book$1", options: .regularExpression)
         let prefixes = ["can we ", "can you ", "could we ", "could you ", "would you ", "please ", "okay ", "lets ", "let us ", "go ahead and "]
         while let prefix = prefixes.first(where: { phrase.hasPrefix($0) }) { phrase.removeFirst(prefix.count) }
         var words = phrase.split(separator: " ").map(String.init)
@@ -83,7 +86,7 @@ public enum VoiceCommand: Equatable, Sendable {
         if words.contains("from"), !words.contains("to"), !Set(words).isDisjoint(with: ["switch", "change"]) { return true }
         let countEnding = Int(last) != nil || ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"].contains(last)
         if countEnding && !Set(words).isDisjoint(with: ["back", "up", "down", "forward"]) &&
-            Set(words).isDisjoint(with: ["line", "lines", "paragraph", "paragraphs", "cue", "cues", "font", "size"]) { return true }
+            Set(words).isDisjoint(with: ["line", "lines", "paragraph", "paragraphs", "cue", "cues", "bookmark", "bookmarks", "font", "size"]) { return true }
         return false
     }
     public static func tokens(_ text: String) -> [String] {

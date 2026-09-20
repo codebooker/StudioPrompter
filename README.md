@@ -21,7 +21,7 @@ Keep the controls on your Mac. Send a clean, full-screen script to the talent mo
 
 | For the producer | For the presenter |
 | :--- | :--- |
-| A searchable Markdown script library, emphasis, and named cue points | A clean, borderless display with generous type |
+| A searchable Markdown script library, emphasis, and named bookmarks | A clean, borderless display with generous type |
 | Live preview and manual wheel, drag, and keyboard control | Adjustable reading guide and focus highlighting |
 | One Play button for the microphone and prompting | Voice following that tolerates skipped words |
 | Microphone **and individual input channel** selection | Mirrored or flipped output for prompter glass |
@@ -39,7 +39,7 @@ Voice features are in beta. Recognition and responsiveness depend on your Mac, m
 
 ## Start in four steps
 
-1. **Open a script.** Write directly in the app or import TXT, Markdown, RTF, RTFD, DOC, or DOCX. Emphasize key passages with bold and underline, and place named cues directly in the editor.
+1. **Open a script.** Write directly in the app or import TXT, Markdown, RTF, RTFD, DOC, or DOCX. Emphasize key passages with bold and underline, and place named bookmarks directly in the editor.
 2. **Send it to your display.** Connect an extended display and choose **Send to display**. The producer workspace stays on your Mac.
 3. **Choose your pace.** Use fixed speed, or turn on **Voice prompting**, choose a mode and microphone channel, and click **Download model** once.
 4. **Press Play.** Voice mode starts listening and prompting together. Space pauses both.
@@ -63,7 +63,7 @@ Using an audio interface? Select the interviewer's isolated channel so the guest
 
 For **Apple silicon Macs (M1 or newer), macOS 13.3+**. Unzip the download, move `Prompter.app` to Applications, and open it. It appears as **StudioPrompter**. This early build is not notarized: if macOS blocks the first launch, use **System Settings → Privacy & Security → Open Anyway** for StudioPrompter. See [Apple’s instructions](https://support.apple.com/en-us/102445).
 
-Follow script, Adaptive pace, the Markdown editor, cue points, and dual-display output are included. **“Hey Teleprompter” commands and the command AI are excluded** while we improve and test them. This is a tester release, not a production-readiness claim; [remaining validation](docs/TESTING.md) is documented.
+Follow script, Adaptive pace, the Markdown editor, bookmarks, and dual-display output are included. **“Hey Teleprompter” commands and the command AI are excluded** while we improve and test them. This is a tester release, not a production-readiness claim; [remaining validation](docs/TESTING.md) is documented.
 
 Future tester releases arrive through **StudioPrompter → Check for Updates…**. Signed update archives are verified before installation; scripts and downloaded models stay on your Mac.
 

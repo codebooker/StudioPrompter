@@ -38,6 +38,16 @@ import PrompterCommands
         try await model.load(path: CommandLine.arguments[1])
         print("Loaded in \(Date().timeIntervalSince(start)) sec")
         let examples: [(String, VoiceCommand?)] = [
+            ("Go back to the last bookmark", .cue(-1)),
+            ("Take me to bookmark number two", .cueNumber(2)),
+            ("Go to the first bookmark", .cueNumber(1)),
+            ("Move down to bookmark three", .cueNumber(3)),
+            ("Go to the next book mark", .cue(1)),
+            ("Return to the previous book mark", .cue(-1)),
+            ("Take me to the second book mark", .cueNumber(2)),
+            ("Go to bookmark zero", nil),
+            ("Don't go to the next bookmark", nil),
+            ("Delete this bookmark", nil),
             ("I messed that paragraph up can we take it from the beginning of this paragraph", .paragraph(0)),
             ("Could you bump the lettering up a bit", .font(4)),
             ("Take me back a couple of lines", .lines(-2)),

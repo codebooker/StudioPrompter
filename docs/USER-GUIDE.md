@@ -36,17 +36,19 @@ Play starts the selected microphone and prompting together. Pause stops both. Ad
 
 The recent transcript can revise itself as Whisper recognizes more context. It is diagnostic text, not a recording or final transcript export.
 
-## Scripts, cues, and storage
+## Scripts, bookmarks, and storage
 
-Scripts autosave as Markdown files. Import TXT, MD/Markdown, RTF, RTFD, DOC, or DOCX. Markdown imports understand `**bold**` (or `<strong>`), `<u>underline</u>`, and StudioPrompter cue comments; other Markdown constructs remain literal script text. Word and rich-text imports retain bold and underline while using your prompter’s typography. Images and other document styling are omitted. PDF import is not currently supported.
+Bookmarks were called **cue points** in 0.1.0. Existing saved positions carry over automatically. Experimental voice commands accept both names, including “go to the next bookmark” and “go to bookmark number two.”
 
-Choose **Edit script**, select a passage, and use **B** or **U** (⌘B / ⌘U) to add emphasis. Both can be applied together. **Clear emphasis** removes them. Formatting appears in the producer preview and talent display, and voice following uses the same layout. Typing, formatting, and cue changes support undo/redo within the current editing session. Switching scripts or leaving the editor starts a new undo history.
+Scripts autosave as Markdown files. Import TXT, MD/Markdown, RTF, RTFD, DOC, or DOCX. Markdown imports understand `**bold**` (or `<strong>`), `<u>underline</u>`, and StudioPrompter bookmark comments; other Markdown constructs remain literal script text. Word and rich-text imports retain bold and underline while using your prompter’s typography. Images and other document styling are omitted. PDF import is not currently supported.
 
-Export from **File → Export Script**: Markdown preserves emphasis and cue comments, RTF preserves emphasis, and TXT contains only spoken text. Markdown uses `<u>` because standard Markdown has no underline syntax, and `<strong>` for bold selections spanning line breaks or boundary spaces. Cue comments are hidden from the editor and prompter; they are never spoken text.
+Choose **Edit script**, select a passage, and use **B** or **U** (⌘B / ⌘U) to add emphasis. Both can be applied together. **Clear emphasis** removes them. Formatting appears in the producer preview and talent display, and voice following uses the same layout. Typing, formatting, and bookmark changes support undo/redo within the current editing session. Switching scripts or leaving the editor starts a new undo history.
 
-In the editor, place the text cursor at a passage and choose **Add cue** (⌘⌥B). Orange numbered markers beside the text match the cue list; a small flag marks each exact anchor, including cues placed between words or on blank lines. Click a cue number or **Find** to reveal and highlight its location. If several cues share a visual line, the gutter badge shows the first number plus a count; clicking it cycles through those cues. Rename cues in the list, use **Move here** to move one to the current text cursor, or use the trash button to remove it. These editor markers do not appear on the talent display or become script text. Cues follow their passage when text is inserted before it. Deleting a cue’s passage leaves the cue at the start of the replacement. Undo restores the previous passage and cue together.
+Export from **File → Export Script**: Markdown preserves emphasis and bookmark comments, RTF preserves emphasis, and TXT contains only spoken text. Markdown uses `<u>` because standard Markdown has no underline syntax, and `<strong>` for bold selections spanning line breaks or boundary spaces. Bookmark comments are hidden from the editor and prompter; they are never spoken text.
 
-Outside the editor, Add cue bookmarks the current reading position. Click a cue in the sidebar to jump to it. Older percentage-based cues gain text anchors when their script is opened in the editor. Time remaining is an estimate; elapsed time excludes pauses and countdowns.
+In the editor, place the text cursor at a passage and choose **Add bookmark** (⌘⌥B). Orange numbered markers beside the text match the bookmark list; a small flag marks each exact anchor, including bookmarks placed between words or on blank lines. Click a bookmark number or **Find** to reveal and highlight its location. If several bookmarks share a visual line, the gutter badge shows the first number plus a count; clicking it cycles through those bookmarks. Rename bookmarks in the list, use **Move here** to move one to the current text cursor, or use the trash button to remove it. These editor markers do not appear on the talent display or become script text. Bookmarks follow their passage when text is inserted before it. Deleting a bookmark’s passage leaves the bookmark at the start of the replacement. Undo restores the previous passage and bookmark together.
+
+Outside the editor, Add bookmark saves the current reading position. Click a bookmark in the sidebar to jump to it. Older percentage-based bookmarks gain text anchors when their script is opened in the editor. Time remaining is an estimate; elapsed time excludes pauses and countdowns.
 
 - Library index and display settings: `~/Library/Application Support/Prompter/library.json`
 - Markdown scripts: `~/Library/Application Support/Prompter/Scripts/<generation>/<script-id>.md`
@@ -72,8 +74,8 @@ Existing version-1 JSON libraries migrate automatically on save, with the origin
 | R / ⌘R | Reset |
 | B / ⌘⇧B | Talent blackout |
 | ⌘B / ⌘U | Bold / underline in the script editor |
-| ⌘⌥B | Add cue |
-| ⌘← / ⌘→ | Previous / next cue |
+| ⌘⌥B | Add bookmark |
+| ⌘← / ⌘→ | Previous / next bookmark |
 | ⌘E | Edit script |
 | ⌘N | New script |
 | ⌘O | Import |

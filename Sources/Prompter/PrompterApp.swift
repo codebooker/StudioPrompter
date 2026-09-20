@@ -36,9 +36,9 @@ struct PrompterApp: App {
                 Button("Reset", action: state.playback.reset).keyboardShortcut("r", modifiers: .command)
                 Button("Edit Script", action: state.toggleEditing).keyboardShortcut("e")
                 Divider()
-                Button("Add Cue Point", action: state.addCue).keyboardShortcut("b", modifiers: [.command, .option])
-                Button("Previous Cue") { state.jumpCue(forward: false) }.keyboardShortcut(.leftArrow, modifiers: .command)
-                Button("Next Cue") { state.jumpCue(forward: true) }.keyboardShortcut(.rightArrow, modifiers: .command)
+                Button("Add Bookmark", action: state.addCue).keyboardShortcut("b", modifiers: [.command, .option])
+                Button("Previous Bookmark") { state.jumpCue(forward: false) }.keyboardShortcut(.leftArrow, modifiers: .command)
+                Button("Next Bookmark") { state.jumpCue(forward: true) }.keyboardShortcut(.rightArrow, modifiers: .command)
                 Divider()
                 Button("Toggle Talent Blackout") { state.playback.isBlackedOut.toggle() }.keyboardShortcut("b", modifiers: [.command, .shift])
                 Button("Open Camera View", action: state.openCameraView).keyboardShortcut("k", modifiers: [.command, .shift])
@@ -49,7 +49,7 @@ struct PrompterApp: App {
                 Button("Prompter Help") {
                     let alert = NSAlert()
                     alert.messageText = "Your producer workspace"
-                    alert.informativeText = "Connect a second monitor using an extended desktop, then choose Send to display. The talent sees only the script; you control everything here.\n\nScroll with your mouse or trackpad, drag the preview, or use the position slider to prompt manually. Manual scrolling pauses fixed-speed autoplay. With voice prompting active, the mic stays on and following resumes when you read from the new position.\n\nSpace: Play / pause\n↑ / ↓: Change pace\n← / →: Scroll backward / forward\nR: Reset    B: Black out talent display\n⌘⌥B: Add a cue at the current position\n⌘B / ⌘U: Bold / underline selected script text\n⌘E: Edit script\n⌘⇧.: Stop talent output\n\nMirror settings apply only to the talent display and rehearsal window. Your library saves automatically on this Mac."
+                    alert.informativeText = "Connect a second monitor using an extended desktop, then choose Send to display. The talent sees only the script; you control everything here.\n\nScroll with your mouse or trackpad, drag the preview, or use the position slider to prompt manually. Manual scrolling pauses fixed-speed autoplay. With voice prompting active, the mic stays on and following resumes when you read from the new position.\n\nSpace: Play / pause\n↑ / ↓: Change pace\n← / →: Scroll backward / forward\nR: Reset    B: Black out talent display\n⌘⌥B: Add a bookmark at the current position\n⌘B / ⌘U: Bold / underline selected script text\n⌘E: Edit script\n⌘⇧.: Stop talent output\n\nMirror settings apply only to the talent display and rehearsal window. Your library saves automatically on this Mac."
                     alert.runModal()
                 }
             }

@@ -113,3 +113,7 @@ Command wording keeps text layout separate from the reading guide: “line heigh
 `CGDisplayIsBuiltin` selects a built-in display when available; no model-name lookup is required. `NSScreen.safeAreaInsets.top` and `visibleFrame` keep initial placement below a notch/menu bar. The notch layout has a smaller initial footprint and gap than the plain-screen layout. Desktops fall back to the workspace display. Width/height are independently adjustable, and manual placement remains available on every device. Reopening during the session retains the window frame; re-centering uses the window's current display. Display changes reposition an open panel within a safe display frame.
 
 The new line-height speech fixture exposed an empty Whisper decode caused by its first-token confidence cutoff. While collecting a command after a confirmed wake only, decoding now completes the utterance before applying the existing whole-segment confidence filter. Ordinary script recognition retains the original cutoff; the change does not add model downloads or temperature retries.
+
+### Bookmark terminology
+
+The UI calls saved script positions bookmarks. Existing `Cue`, `cues`, `studioprompter-cue` Markdown comments, and command action identifiers remain stable for file and action compatibility. The command prompt uses bookmark terminology; both bookmark and cue point remain accepted, with “book mark” normalized in command requests. No model weights or download changes are needed.
