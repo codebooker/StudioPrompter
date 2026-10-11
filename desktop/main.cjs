@@ -32,6 +32,7 @@ function windowOptions(extra = {}) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      backgroundThrottling: false,
     },
     ...extra,
   };
