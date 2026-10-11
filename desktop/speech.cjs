@@ -36,7 +36,7 @@ class Speech {
       await fs.writeFile(file,audio,{mode:0o600});
       const exe=path.join(this.runtime,process.platform==='win32'?'whisper-cli.exe':'whisper-cli');
       await new Promise((resolve,reject)=> {
-        const child=spawn(exe,['-m',this.model(name),'-f',file,'-l','en','-nt','-otxt','-of',out,'-t','4'],{windowsHide:true,stdio:'ignore'});
+        const child=spawn(exe,['-m',this.model(name),'-f',file,'-l','en','-nt','-bs','1','-bo','1','-otxt','-of',out,'-t','4'],{windowsHide:true,stdio:'ignore'});
         this.child=child;const timeout=setTimeout(()=>{child.kill();reject(Error('Speech processing took too long'));},20000);
         child.once('error',e=>{clearTimeout(timeout);reject(e);});child.once('exit',code=>{clearTimeout(timeout);code===0?resolve():reject(Error('Speech engine failed'));});
       });

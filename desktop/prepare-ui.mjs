@@ -11,7 +11,7 @@ html = html.replace(/\.\.\//g, '').replace(/\?v=03e6e33/g, '')
   .replace(/<nav class="demo-navigation"[\s\S]*?<\/nav>/, '<nav class="demo-navigation"><span>StudioPrompter · Desktop preview</span><div><button id="help">Help</button><button id="privacy">Privacy</button></div></nav>')
   .replace('WEB DEMO', 'PREVIEW').replace(/<title>.*?<\/title>/, '<title>StudioPrompter</title>')
   .replace(/<div class="voice-teaser"[\s\S]*?<\/div>/, '')
-  .replace('Browser preview', 'Producer preview');
+  .replace('Browser preview', 'Producer preview').replace('Saved in this browser','Saved on this computer');
 await writeFile(`${root}desktop/ui/index.html`, html);
 let js = await readFile(`${root}website/app.js`, 'utf8');
 js = js.replace(/const demoAvailable = \(\) =>[\s\S]*?\.matches;/, 'const demoAvailable = () => true;');

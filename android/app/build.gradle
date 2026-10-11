@@ -12,7 +12,7 @@ android {
         ndk { abiFilters 'arm64-v8a', 'x86_64', 'armeabi-v7a', 'x86' }
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
-    packaging { resources { excludes += ['META-INF/versions/**/OSGI-INF/**'] } }
+    packaging { resources { excludes += ['META-INF/versions/**/OSGI-INF/**']; merges += ['META-INF/LICENSE.md', 'META-INF/NOTICE.md'] } }
     buildTypes { release { minifyEnabled false } }
     testOptions { unitTests.returnDefaultValues = true; unitTests.all { systemProperty "studio.repo", rootDir.parentFile.absolutePath } }
 }

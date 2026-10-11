@@ -1,17 +1,20 @@
 'use strict';
-const tokenize = text => (text.toLowerCase().match(/[\p{L}\p{N}]+/gu)||[]);
-// Require multiple ordered matches; search backward too after a producer retake.
-function align(script,heard,cursor) {
-  const words=tokenize(script),query=tokenize(heard).slice(-18); if(query.length<2)return null;
-  let best=null;
-  for(let start=Math.max(0,cursor-35);start<Math.min(words.length,cursor+90);start++) {
-    let matched=0,end=start,qi=0;
-    for(let wi=start;wi<Math.min(words.length,start+query.length+14)&&qi<query.length;wi++) {
-      const found=query.slice(qi,qi+4).indexOf(words[wi]);if(found>=0){matched++;qi+=found+1;end=wi+1;}
-    }
-    const confidence=matched/query.length,score=matched*3-confidence*Math.abs(start-cursor)*.03;
-    if(matched>=Math.min(3,query.length)&&confidence>=.55&&(!best||score>best.score))best={cursor:end,confidence,score};
-  }
-  return best;
+// Port of PrompterCore ScriptMatcher, ReadingPositions and FollowMotion.
+const tokenize = text => (text.toLowerCase().normalize('NFD').replace(/\p{M}/gu,'').replace(/’/g,"'").match(/[\p{L}\p{N}]+(?:'([\p{L}\p{N}]+))?/gu)||[]);
+function localAlign(heard,script,anchor){
+  const lower=Math.max(0,anchor-36),upper=Math.min(script.length,anchor+70),target=script.slice(lower,upper),rows=heard.length,columns=target.length;if(!columns)return null;
+  const grid=fill=>Array.from({length:rows+1},()=>Array(columns+1).fill(fill));const costs=grid(0),matches=grid(0),lastHeard=grid(-1),lastScript=grid(-1);
+  for(let i=1;i<=rows;i++){costs[i][0]=i*.9;for(let j=1;j<=columns;j++){
+    const equal=heard[i-1]===target[j-1],diagonal=costs[i-1][j-1]+(equal?0:1),insertion=costs[i-1][j]+.9,deletion=costs[i][j-1]+.65;
+    let pi,pj;if(diagonal<=insertion&&diagonal<=deletion){costs[i][j]=diagonal;pi=i-1;pj=j-1;matches[i][j]=matches[pi][pj]+(equal?1:0);lastHeard[i][j]=equal?i-1:lastHeard[pi][pj];lastScript[i][j]=equal?j-1:lastScript[pi][pj];}
+    else {if(insertion<=deletion){costs[i][j]=insertion;pi=i-1;pj=j;}else{costs[i][j]=deletion;pi=i;pj=j-1;}matches[i][j]=matches[pi][pj];lastHeard[i][j]=lastHeard[pi][pj];lastScript[i][j]=lastScript[pi][pj];}
+  }}
+  let best=null;for(let j=1;j<=columns;j++){const exact=lastScript[rows][j];if(exact<0||rows-1-lastHeard[rows][j]>4)continue;const index=lower+exact,confidence=1-costs[rows][j]/rows;if(matches[rows][j]<Math.max(3,Math.ceil(rows*.55))||confidence<.63)continue;const score=costs[rows][j]+Math.abs(index-anchor)*.012;if(!best||score<best.score)best={cursor:index+1,score,confidence};}return best;
 }
-module.exports={tokenize,align};
+function align(text,transcript,cursor){const script=tokenize(text),heard=tokenize(transcript).slice(-16);if(heard.length<3||!script.length)return null;let best=localAlign(heard,script,cursor);for(const count of [8,5,3])if(heard.length>count){const suffix=heard.slice(-count),candidate=localAlign(suffix,script,cursor);if(!candidate||candidate.confidence<(count===3?.999:.85)||candidate.cursor-1<cursor||candidate.cursor-1>cursor+32||best&&candidate.cursor<=best.cursor)continue;if(count===3){let occurrences=0;for(let i=Math.max(0,cursor-12);i<Math.min(script.length-2,cursor+33);i++)if(suffix.every((w,j)=>w===script[i+j]))occurrences++;if(occurrences!==1)continue;}best=candidate;}return best;}
+function spread(lineStarts,lineStep,limit){const result=[...lineStarts];let first=0;while(first<lineStarts.length){let next=first+1;while(next<lineStarts.length&&Math.abs(lineStarts[next]-lineStarts[first])<.5)next++;const end=next<lineStarts.length?lineStarts[next]:limit;for(let i=first;i<next;i++)result[i]=Math.max(0,lineStarts[first]+(end-lineStarts[first])*(i-first)/(next-first)-lineStep/2);if(next<lineStarts.length)result[next-1]=Math.max(0,end-lineStep/2);first=next;}return result;}
+class FollowMotion {
+  constructor(){this.velocity=0;}
+  advance(current,target,seconds,lineStep){const distance=Math.max(0,target-current);if(distance<=0){this.velocity=0;return current;}const omega=10,decay=Math.exp(-omega*seconds),coefficient=this.velocity-omega*distance,eased=distance+(-distance+coefficient*seconds)*decay;this.velocity=Math.min(lineStep*4,Math.max(0,(this.velocity-omega*coefficient*seconds)*decay));const step=Math.max(0,Math.min(distance,lineStep*4*seconds,eased));if(step>=distance)this.velocity=0;return current+step;}
+}
+module.exports={tokenize,align,spread,FollowMotion};
