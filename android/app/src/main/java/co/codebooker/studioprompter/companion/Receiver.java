@@ -31,14 +31,14 @@ public final class Receiver {
             public void onDiscoveryStopped(String type){}
             public void onStopDiscoveryFailed(String type,int error){}
             public void onServiceFound(NsdServiceInfo info){ui.post(()->{if(discovery!=null&&info.getServiceType().contains("_studioprompt._tcp")){resolveQueue.add(info);resolveNext();}});}
-            public void onServiceLost(NsdServiceInfo info){ui.post(()->{hosts.removeIf(h->h.getServiceName().equals(info.getServiceName()));listener.hosts(List.copyOf(hosts));});}
+            public void onServiceLost(NsdServiceInfo info){ui.post(()->{hosts.removeIf(h->h.getServiceName().equals(info.getServiceName()));listener.hosts(Collections.unmodifiableList(new ArrayList<>(hosts)));});}
         };
         try{nsd.discoverServices("_studioprompt._tcp.",NsdManager.PROTOCOL_DNS_SD,discovery);}catch(Exception e){status("Unable to discover producers on this network.",false);}
         if(saved!=null&&saved.optBoolean("removed"))status("This tablet was removed by the producer. Pair again to reconnect.",false);else status("Looking for StudioPrompter · use the same local network",false);
     }
     private void resolveNext(){if(resolving||resolveQueue.isEmpty())return;resolving=true;NsdServiceInfo info=resolveQueue.remove();nsd.resolveService(info,new NsdManager.ResolveListener(){
         public void onResolveFailed(NsdServiceInfo value,int error){ui.post(()->{resolving=false;resolveNext();});}
-        public void onServiceResolved(NsdServiceInfo value){ui.post(()->{if(discovery==null){resolving=false;return;}hosts.removeIf(h->h.getServiceName().equals(value.getServiceName()));hosts.add(value);listener.hosts(List.copyOf(hosts));resolving=false;resolveNext();if(automatic&&hasPairing()&&!connecting&&!connected&&value.getServiceName().startsWith(saved.optString("serviceName")))reconnect();});}
+        public void onServiceResolved(NsdServiceInfo value){ui.post(()->{if(discovery==null){resolving=false;return;}hosts.removeIf(h->h.getServiceName().equals(value.getServiceName()));hosts.add(value);listener.hosts(Collections.unmodifiableList(new ArrayList<>(hosts)));resolving=false;resolveNext();if(automatic&&hasPairing()&&!connecting&&!connected&&value.getServiceName().startsWith(saved.optString("serviceName")))reconnect();});}
     });}
     private void status(String text,boolean online){connected=online;listener.status(text,online);}
     public void pair(NsdServiceInfo host,String code){String key=Protocol.normalize(code);if(key.length()!=12){status("Enter the 12-character code shown on the producer computer.",false);return;}open(host,key,null);}

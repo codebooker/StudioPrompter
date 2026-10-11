@@ -1,7 +1,7 @@
 package co.codebooker.studioprompter.companion;
 import java.util.ArrayDeque;
 public final class RemoteMotion {
-    private record Sample(double time,double progress){}
+    private static final class Sample { final double time, progress; Sample(double time,double progress){this.time=time;this.progress=progress;} }
     private final ArrayDeque<Sample> samples=new ArrayDeque<>();
     public void clear(){samples.clear();}
     public void add(double progress,double time,boolean snap){if(snap||(!samples.isEmpty()&&Math.abs(samples.getLast().progress-progress)>.035))samples.clear();samples.add(new Sample(time,progress));while(samples.size()>8)samples.removeFirst();}

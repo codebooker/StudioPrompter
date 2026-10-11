@@ -10,7 +10,7 @@ import java.util.*;
 
 public final class MainActivity extends Activity implements Receiver.Listener {
     private Receiver receiver;private RemoteCanvas canvas;private LinearLayout controls;private TextView status;
-    private Spinner producers;private EditText code;private Button reconnect,disconnect;private List<NsdServiceInfo> hosts=List.of();
+    private Spinner producers;private EditText code;private Button reconnect,disconnect;private List<NsdServiceInfo> hosts=Collections.emptyList();
     private final Handler handler=new Handler(Looper.getMainLooper());private boolean connected=false;
     private final Runnable hide=()->{if(connected)controls.setVisibility(View.GONE);};
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
