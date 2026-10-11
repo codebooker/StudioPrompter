@@ -20,6 +20,9 @@ on:
       ]
 permissions:
   contents: read
+concurrency:
+  group: cross-platform-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   desktop:
     strategy:

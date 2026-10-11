@@ -290,6 +290,7 @@ $("voice-mode").onchange = () => {
   speechTarget = null;
 };
 function stopMic() {
+  const wasListening = micStream !== null;
   micGeneration++;
   micStream?.getTracks().forEach((t) => t.stop());
   micStream = null;
@@ -302,6 +303,8 @@ function stopMic() {
   recognizing = false;
   followMotion = new FollowMotion();
   if ($("mic-level")) $("mic-level").value = 0;
+  if (wasListening)
+    $("voice-status").textContent = "Microphone off · ready for Play";
 }
 function wav(samples) {
   const b = new ArrayBuffer(44 + samples.length * 2),
