@@ -136,17 +136,7 @@ jobs:
           profile: pixel_c
           disable-animations: true
           working-directory: android
-          script: |
-            mkdir -p ../.build
-            node ../desktop/test/android-fixture.cjs > ../.build/android-port.json &
-            fixture_pid=$!
-            trap 'kill "$fixture_pid"' EXIT
-            for attempt in $(seq 1 30); do
-              if test -s ../.build/android-port.json; then break; fi
-              sleep 0.2
-            done
-            port=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("../.build/android-port.json", "utf8")).port)')
-            gradle --no-daemon connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.studioPort="$port"
+          script: ./check-emulator.sh
       - uses: actions/upload-artifact@v7.0.1
         if: matrix.api == 35
         with:
