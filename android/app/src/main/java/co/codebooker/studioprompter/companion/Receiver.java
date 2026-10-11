@@ -30,7 +30,7 @@ public final class Receiver {
             public void onStartDiscoveryFailed(String type,int error){ui.post(()->status("Search unavailable. Check Wi-Fi, then reopen the companion.",false));}
             public void onDiscoveryStopped(String type){}
             public void onStopDiscoveryFailed(String type,int error){}
-            public void onServiceFound(NsdServiceInfo info){ui.post(()->{if(info.getServiceType().contains("_studioprompt._tcp")){resolveQueue.add(info);resolveNext();}});}
+            public void onServiceFound(NsdServiceInfo info){ui.post(()->{if(discovery!=null&&info.getServiceType().contains("_studioprompt._tcp")){resolveQueue.add(info);resolveNext();}});}
             public void onServiceLost(NsdServiceInfo info){ui.post(()->{hosts.removeIf(h->h.getServiceName().equals(info.getServiceName()));listener.hosts(List.copyOf(hosts));});}
         };
         try{nsd.discoverServices("_studioprompt._tcp.",NsdManager.PROTOCOL_DNS_SD,discovery);}catch(Exception e){status("Unable to discover producers on this network.",false);}
@@ -38,7 +38,7 @@ public final class Receiver {
     }
     private void resolveNext(){if(resolving||resolveQueue.isEmpty())return;resolving=true;NsdServiceInfo info=resolveQueue.remove();nsd.resolveService(info,new NsdManager.ResolveListener(){
         public void onResolveFailed(NsdServiceInfo value,int error){ui.post(()->{resolving=false;resolveNext();});}
-        public void onServiceResolved(NsdServiceInfo value){ui.post(()->{hosts.removeIf(h->h.getServiceName().equals(value.getServiceName()));hosts.add(value);listener.hosts(List.copyOf(hosts));resolving=false;resolveNext();if(automatic&&hasPairing()&&!connecting&&!connected&&value.getServiceName().startsWith(saved.optString("serviceName")))reconnect();});}
+        public void onServiceResolved(NsdServiceInfo value){ui.post(()->{if(discovery==null){resolving=false;return;}hosts.removeIf(h->h.getServiceName().equals(value.getServiceName()));hosts.add(value);listener.hosts(List.copyOf(hosts));resolving=false;resolveNext();if(automatic&&hasPairing()&&!connecting&&!connected&&value.getServiceName().startsWith(saved.optString("serviceName")))reconnect();});}
     });}
     private void status(String text,boolean online){connected=online;listener.status(text,online);}
     public void pair(NsdServiceInfo host,String code){String key=Protocol.normalize(code);if(key.length()!=12){status("Enter the 12-character code shown on the producer computer.",false);return;}open(host,key,null);}
@@ -80,6 +80,6 @@ public final class Receiver {
     private void persist(JSONObject value)throws IOException{FileOutputStream stream=null;try{stream=file.startWrite();stream.write(value.toString().getBytes(StandardCharsets.UTF_8));file.finishWrite(stream);}catch(Exception e){if(stream!=null)file.failWrite(stream);throw new IOException("Could not save pairing",e);}}
     public void disconnect(boolean deliberate){generation++;connecting=false;connected=false;if(deliberate)automatic=false;Socket old=socket;socket=null;try{if(old!=null)old.close();}catch(Exception ignored){}if(deliberate)status(hasPairing()?"Disconnected · pairing saved. Tap Reconnect when ready.":"Choose a producer to begin.",false);}
     public void forget(){disconnect(true);file.delete();saved=null;status("Pairing forgotten. Enter a new producer code.",false);}
-    public void stop(){disconnect(false);if(discovery!=null){try{nsd.stopServiceDiscovery(discovery);}catch(Exception ignored){}discovery=null;}if(multicast!=null&&multicast.isHeld())multicast.release();hosts.clear();resolveQueue.clear();resolving=false;}
+    public void stop(){automatic=false;disconnect(false);if(discovery!=null){try{nsd.stopServiceDiscovery(discovery);}catch(Exception ignored){}discovery=null;}if(multicast!=null&&multicast.isHeld())multicast.release();hosts.clear();resolveQueue.clear();resolving=false;}
     public void close(){stop();worker.shutdownNow();}
 }

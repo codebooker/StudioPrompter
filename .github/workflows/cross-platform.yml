@@ -55,11 +55,11 @@ jobs:
             if [ '${{ matrix.arch }}' = arm64 ]; then arch=ARM64; native=ON; fi
             args=(-A "$arch")
           fi
-          cmake -S .build/whisper-source -B .build/whisper-runtime "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE="$native" -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DGGML_OPENMP=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
-          cmake --build .build/whisper-runtime --config Release --target whisper-cli -j 4
+          cmake -S desktop/whisper-worker -DWHISPER_SOURCE="$PWD/.build/whisper-source" -B .build/whisper-runtime "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE="$native" -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DGGML_OPENMP=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
+          cmake --build .build/whisper-runtime --config Release --target studio-whisper -j 4
           mkdir -p desktop/runtime
           cp .build/whisper-source/LICENSE desktop/runtime/whisper.cpp-LICENSE.txt
-          find .build/whisper-runtime -name whisper-cli -o -name whisper-cli.exe | while read -r binary; do cp "$binary" desktop/runtime/; done
+          find .build/whisper-runtime -name studio-whisper -o -name studio-whisper.exe | while read -r binary; do cp "$binary" desktop/runtime/; done
       - name: Package desktop preview
         shell: bash
         env:
@@ -111,3 +111,19 @@ jobs:
           name: StudioPrompter-Companion-Android-preview
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 14
+
+  mac-link-interop:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm ci --omit=dev --ignore-scripts --prefix desktop
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify Android transport against native Mac TLS and framing
+        run: STUDIO_JAVA_BIN="$JAVA_HOME/bin" ./scripts/check-cross-platform-link.sh

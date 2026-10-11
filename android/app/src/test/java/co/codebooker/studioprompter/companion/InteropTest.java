@@ -2,7 +2,9 @@ package co.codebooker.studioprompter.companion;
 import org.junit.Test;import static org.junit.Assert.*;import java.io.*;import java.net.*;import org.json.*;import org.bouncycastle.tls.TlsClientProtocol;
 public class InteropTest {
  @Test public void pairsResumesAndReceivesOfflineRemovalOverRealTls()throws Exception{
-  Process server=new ProcessBuilder("node",new File(System.getProperty("studio.repo"),"desktop/test/android-fixture.cjs").getAbsolutePath()).redirectError(ProcessBuilder.Redirect.INHERIT).start();
+  String fixture=System.getProperty("studio.fixture");
+  ProcessBuilder command=fixture==null?new ProcessBuilder("node",new File(System.getProperty("studio.repo"),"desktop/test/android-fixture.cjs").getAbsolutePath()):new ProcessBuilder(fixture);
+  Process server=command.redirectError(ProcessBuilder.Redirect.INHERIT).start();
   try{
    JSONObject status=new JSONObject(new BufferedReader(new InputStreamReader(server.getInputStream())).readLine());int port=status.getInt("port");
    JSONObject saved;

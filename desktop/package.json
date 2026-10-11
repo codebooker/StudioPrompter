@@ -37,7 +37,8 @@
     ],
     "artifactName": "StudioPrompter-${version}-${os}-${arch}.${ext}",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "../iPad/StudioPrompterCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
     },
     "nsis": {
       "oneClick": false,

@@ -52,11 +52,14 @@ async function startMic(){
     const energy=Math.sqrt(input.reduce((a,v)=>a+v*v,0)/input.length);$('mic-level').value=Math.min(1,energy*8);if(energy>.004)lastEnergy=performance.now();
     for(let i=0;i<input.length;i++){resamplePhase+=16000;if(resamplePhase>=rate){resamplePhase-=rate;samples.push(input[i]);since++;}}
     if(samples.length>96000)samples=samples.slice(-96000);
-    if(since>=8000&&samples.length>=24000&&!recognizing&&performance.now()-lastEnergy<650){since=0;const chunk=Float32Array.from(samples);const rms=Math.sqrt(chunk.reduce((a,v)=>a+v*v,0)/chunk.length);if(rms<.004)return;
-      recognizing=true;api.transcribe($('voice-model').value,wav(chunk)).then(text=>{
-        if(generation!==micGeneration||!text)return;const result=align(plain(current().text),text,matchedWord);
-        $('voice-status').textContent=`Heard: ${text.slice(-160)}`;lastSpeech=performance.now();const rawPace=clamp(tokenize(text).length/(chunk.length/16000)*60,40,260);const paceDelta=rawPace-heardPace;heardPace+=clamp(paceDelta*(paceDelta>0?.15:.55),-30,6);
-        if(result){matchedWord=result.cursor;speechTarget=wordPosition(matchedWord);}
+    if(since>=4800&&samples.length>=16000&&!recognizing&&performance.now()-lastEnergy<650){since=0;const chunk=Float32Array.from(samples);const rms=Math.sqrt(chunk.reduce((a,v)=>a+v*v,0)/chunk.length);if(rms<.004)return;
+      recognizing=true;api.transcribe($('voice-model').value,wav(chunk)).then(recognition=>{
+        if(generation!==micGeneration||!recognition?.text)return;
+        const duration=chunk.length/16000,tokens=recognition.tokens.filter(t=>typeof t.text==='string'&&Number.isFinite(t.start)&&Number.isFinite(t.end)&&t.start>=0&&t.end>=t.start&&t.end<=duration+.5);
+        const end=tokens.at(-1)?.end??duration;if(duration-end>2)return;
+        const text=recognition.text;const result=align(plain(current().text),text,matchedWord);
+        $('voice-status').textContent=`Heard: ${text.slice(-160)}`;lastSpeech=performance.now()-Math.max(0,duration-end)*1000;const first=tokens[0]?.start??0;const rawPace=clamp(tokenize(text).length/Math.max(2,duration-first)*60,40,260);const paceDelta=rawPace-heardPace;heardPace+=clamp(paceDelta*(paceDelta>0?.15:.55),-30,6);
+        if(result&&result.cursor>=matchedWord){matchedWord=result.cursor;speechTarget=wordPosition(matchedWord);}
       }).catch(e=>{if(generation===micGeneration){pause();$('voice-status').textContent=e.message;}}).finally(()=>{if(generation===micGeneration)recognizing=false;});
     }
   };$('voice-status').textContent='Listening to selected microphone channel';await microphones();

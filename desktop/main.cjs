@@ -10,10 +10,11 @@ function authorized(event) {if(event.sender!==producer?.webContents) throw Error
 function sendOutput(channel,value) {if(output&&!output.isDestroyed()) output.webContents.send(channel,value);}
 app.whenReady().then(()=>{
   app.setName('StudioPrompter');
+  if(process.platform==='darwin')app.dock.setIcon(path.join(ui,'app-icon.png'));
   screen.on('display-removed',()=>{output?.close();output=null;});
   session.defaultSession.setPermissionRequestHandler((contents,permission,callback)=>callback(contents===producer?.webContents && permission==='media'));
   session.defaultSession.setPermissionCheckHandler((contents,permission)=>contents===producer?.webContents && permission==='media');
-  producer=new BrowserWindow(windowOptions({width:1440,height:920,minWidth:1024,minHeight:720,title:'StudioPrompter'}));safeWindow(producer);producer.loadFile(path.join(ui,'index.html'));
+  producer=new BrowserWindow(windowOptions({width:1440,height:920,minWidth:1024,minHeight:720,title:'StudioPrompter',icon:path.join(ui,'app-icon.png')}));safeWindow(producer);producer.loadFile(path.join(ui,'index.html'));
   const storage=app.getPath('userData');fs.mkdirSync(storage,{recursive:true,mode:0o700});
   link=new LinkServer(path.join(storage,'pairings.json'),os.hostname(),value=>producer?.webContents.send('pairing-status',value));
   speech=new Speech(path.join(storage,'models'),app.isPackaged?path.join(process.resourcesPath,'runtime'):path.join(__dirname,'runtime'),value=>producer?.webContents.send('model-progress',value));

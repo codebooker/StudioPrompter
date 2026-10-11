@@ -3,6 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const {spawn} = require('node:child_process');
+const {Decoder}=require('./protocol.cjs');
 const models = {
   'tiny.en': {size:77704715,hash:'921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f'},
   'base.en': {size:147964211,hash:'a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002'}
@@ -25,24 +26,35 @@ class Speech {
       await fs.rename(temp,file); return {ready:true};
     } finally { await handle?.close(); await fs.rm(temp,{force:true}); this.downloading=false; }
   }
-  async transcribe(name,bytes) {
-    if(this.busy) return null;
-    const audio=Buffer.from(bytes);
-    if(audio.length>320000 || audio.length<44 || audio.toString('ascii',0,4)!=='RIFF' || audio.toString('ascii',8,12)!=='WAVE') throw Error('Invalid audio');
-    if(!(await this.status(name)).ready) throw Error('Download the speech model first');
-    this.busy=true;
-    const dir=await fs.mkdtemp(path.join(this.directory,'audio-'));const file=path.join(dir,'chunk.wav'),out=path.join(dir,'result');
-    try {
-      await fs.writeFile(file,audio,{mode:0o600});
-      const exe=path.join(this.runtime,process.platform==='win32'?'whisper-cli.exe':'whisper-cli');
-      await new Promise((resolve,reject)=> {
-        const child=spawn(exe,['-m',this.model(name),'-f',file,'-l','en','-nt','-bs','1','-bo','1','-otxt','-of',out,'-t','4'],{windowsHide:true,stdio:'ignore'});
-        this.child=child;const timeout=setTimeout(()=>{child.kill();reject(Error('Speech processing took too long'));},20000);
-        child.once('error',e=>{clearTimeout(timeout);reject(e);});child.once('exit',code=>{clearTimeout(timeout);code===0?resolve():reject(Error('Speech engine failed'));});
-      });
-      return (await fs.readFile(out+'.txt','utf8')).trim().slice(0,4096);
-    } finally {this.child=null;this.busy=false;await fs.rm(dir,{recursive:true,force:true});}
+  worker(name) {
+    if(this.child && this.loaded===name)return this.child;
+    this.stop();
+    const exe=path.join(this.runtime,process.platform==='win32'?'studio-whisper.exe':'studio-whisper');
+    const child=spawn(exe,[this.model(name)],{windowsHide:true,stdio:['pipe','pipe','pipe']});
+    this.child=child;this.loaded=name;
+    const fail=error=>{if(this.child!==child)return;this.child=null;this.loaded=null;const pending=this.pending;this.pending=null;if(pending){clearTimeout(pending.timer);pending.reject(error);}};
+    const decoder=new Decoder(result=>{const pending=this.pending;if(!pending)return;this.pending=null;clearTimeout(pending.timer);if(result.error)pending.reject(Error(result.error));else if(typeof result.text!=='string'||result.text.length>4096||!Array.isArray(result.tokens)||result.tokens.length>1000)pending.reject(Error('Invalid speech result'));else pending.resolve(result);});
+    child.stdout.on('data',bytes=>{try{decoder.push(bytes);}catch{fail(Error('Invalid speech response'));child.kill();}});
+    child.stderr.on('data',()=>{});
+    child.on('error',error=>fail(error));child.on('exit',()=>fail(Error('Speech engine stopped')));child.stdin.on('error',error=>fail(error));
+    return child;
   }
-  stop() {this.child?.kill();}
+  async transcribe(name,bytes) {
+    if(this.busy)return null;
+    const audio=Buffer.from(bytes);
+    if(audio.length>320000||audio.length<44||audio.toString('ascii',0,4)!=='RIFF'||audio.toString('ascii',8,12)!=='WAVE')throw Error('Invalid audio');
+    if(!(await this.status(name)).ready)throw Error('Download the speech model first');
+    this.busy=true;const started=performance.now();
+    try{
+      const child=this.worker(name);
+      const result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{this.pending=null;child.kill();reject(Error('Speech processing took too long'));},20000);this.pending={resolve,reject,timer};const header=Buffer.alloc(4);header.writeUInt32BE(audio.length);child.stdin.write(Buffer.concat([header,audio]));});
+      return {...result,inferenceSeconds:(performance.now()-started)/1000};
+    }finally{this.busy=false;}
+  }
+  stop() {
+    const pending=this.pending;this.pending=null;
+    if(pending){clearTimeout(pending.timer);pending.reject(Error('Speech stopped'));}
+    this.child?.kill();this.child=null;this.loaded=null;
+  }
 }
 module.exports={Speech,models};
