@@ -1,0 +1,93 @@
+name: Cross-platform preview
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/cross-platform-preview']
+    paths: ['desktop/**', 'android/**', 'website/**', '.github/workflows/cross-platform.yml']
+  pull_request:
+    paths: ['desktop/**', 'android/**', 'website/**', '.github/workflows/cross-platform.yml']
+permissions:
+  contents: read
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
+          - runner: windows-2025
+            platform: win
+            arch: x64
+          - runner: windows-2025
+            platform: win
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install desktop dependencies
+        run: npm ci --prefix desktop
+      - name: Protocol and speech alignment checks
+        run: npm test --prefix desktop
+      - name: Get pinned Whisper runtime source
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: ggml-org/whisper.cpp
+          ref: d2a764c648779feb36d44363f212a29b00aad1af
+          path: .build/whisper-source
+      - name: Build portable CPU speech engine
+        shell: bash
+        run: |
+          args=()
+          if [ '${{ matrix.platform }}' = win ]; then
+            arch=x64
+            if [ '${{ matrix.arch }}' = arm64 ]; then arch=ARM64; fi
+            args=(-A "$arch")
+          fi
+          cmake -S .build/whisper-source -B .build/whisper-runtime "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
+          cmake --build .build/whisper-runtime --config Release --target whisper-cli -j 4
+          mkdir -p desktop/runtime
+          find .build/whisper-runtime -name whisper-cli -o -name whisper-cli.exe | while read -r binary; do cp "$binary" desktop/runtime/; done
+      - name: Package desktop preview
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run package --prefix desktop -- --${{ matrix.platform }} --${{ matrix.arch }}
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: StudioPrompter-${{ matrix.platform }}-${{ matrix.arch }}-preview
+          path: |
+            desktop/artifacts/*.exe
+            desktop/artifacts/*.AppImage
+            desktop/artifacts/*.deb
+          retention-days: 14
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build and test Android companion
+        working-directory: android
+        run: gradle --no-daemon testDebugUnitTest assembleDebug
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: StudioPrompter-Companion-Android-preview
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
