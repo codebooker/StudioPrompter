@@ -64,7 +64,7 @@ class LinkServer {
     );
     await new Promise((resolve, reject) => {
       this.server.once("error", reject);
-      this.server.listen(0, "0.0.0.0", resolve);
+      this.server.listen({ port: 0, ipv6Only: false }, resolve);
     });
     this.bonjour = new Bonjour();
     this.advert = this.bonjour.publish({
