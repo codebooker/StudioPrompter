@@ -52,6 +52,8 @@ jobs:
           cache-dependency-path: desktop/package-lock.json
       - name: Install desktop dependencies
         run: npm ci --prefix desktop
+      - name: Fetch verified network runtime
+        run: npm run fetch-network-runtime --prefix desktop
       - name: Protocol and speech alignment checks
         run: npm test --prefix desktop
       - name: Get pinned Whisper runtime source
@@ -80,6 +82,11 @@ jobs:
         env:
           STUDIO_WHISPER_TEST: "1"
         run: STUDIO_SPEECH_WAV="$PWD/.build/whisper-source/samples/jfk.wav" npm test --prefix desktop
+      - name: Verify tablet bridge inside Electron's runtime
+        shell: bash
+        env:
+          ELECTRON_RUN_AS_NODE: "1"
+        run: ./desktop/node_modules/.bin/electron --test desktop/test/network-runtime.test.cjs
       - name: Package desktop preview
         shell: bash
         env:

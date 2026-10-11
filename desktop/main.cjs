@@ -20,7 +20,7 @@ protocol.registerSchemesAsPrivileged([
 const path = require("node:path"),
   fs = require("node:fs"),
   os = require("node:os");
-const { LinkServer } = require("./link-server.cjs");
+const { LinkProcess } = require("./link-process.cjs");
 const { Speech } = require("./speech.cjs");
 let producer, output, link, speech, documentState, playbackState;
 const ui = path.join(__dirname, "ui");
@@ -85,9 +85,12 @@ app.whenReady().then(() => {
   producer.loadURL("studio://app/index.html");
   const storage = app.getPath("userData");
   fs.mkdirSync(storage, { recursive: true, mode: 0o700 });
-  link = new LinkServer(
+  link = new LinkProcess(
     path.join(storage, "pairings.json"),
     os.hostname(),
+    app.isPackaged
+      ? path.join(process.resourcesPath, "runtime")
+      : path.join(__dirname, "runtime"),
     (value) => producer?.webContents.send("pairing-status", value),
   );
   // Keep discovery available for saved tablets, including offline revocation notices.
@@ -181,10 +184,9 @@ ipcMain.handle("pairing", async (event) => {
   authorized(event);
   return link.start();
 });
-ipcMain.handle("remove-device", (event, id) => {
+ipcMain.handle("remove-device", async (event, id) => {
   authorized(event);
-  link.remove(id);
-  return link.status();
+  return link.remove(id);
 });
 ipcMain.handle("document", (event, value) => {
   authorized(event);

@@ -30,11 +30,12 @@ Requires Node.js 22+ and CMake/C++ tools to build the pinned whisper.cpp runtime
 cd desktop
 npm ci
 npm run prepare-ui
+npm run fetch-network-runtime
 npm test
 npm start
 ```
 
-`desktop/runtime/studio-whisper` (`studio-whisper.exe` on Windows) must be present to use voice. The **Cross-platform preview** GitHub Actions workflow compiles that runtime from a pinned commit, packages each desktop architecture on its target OS, and uploads installers as temporary build artifacts. Local development can use the same CMake flags from that workflow. Packages include whisper.cpp's license. They are unsigned previews and are not published as stable releases.
+`desktop/runtime/studio-whisper` (`studio-whisper.exe` on Windows) must be present to use voice. The **Cross-platform preview** GitHub Actions workflow compiles that runtime from a pinned commit, packages each desktop architecture on its target OS, and uploads installers as temporary build artifacts. Local development can use the same CMake flags from that workflow. Packages include whisper.cpp's license and the official Node runtime and license. Tablet networking runs in a separate local process because Electron's BoringSSL does not implement the Mac's AES-GCM PSK cipher. They are unsigned previews and are not published as stable releases.
 
 ## Android companion
 

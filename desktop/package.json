@@ -10,7 +10,8 @@
     "prepare-ui": "node prepare-ui.mjs",
     "start": "npm run prepare-ui && electron .",
     "test": "node --test test/*.test.cjs",
-    "package": "npm run prepare-ui && electron-builder --publish never"
+    "package": "npm run prepare-ui && electron-builder --publish never",
+    "fetch-network-runtime": "node fetch-node.mjs"
   },
   "dependencies": {
     "bonjour-service": "1.4.4"
@@ -52,7 +53,8 @@
       "category": "AudioVideo",
       "icon": "assets/icon.png",
       "maintainer": "StudioPrompter contributors"
-    }
+    },
+    "asar": false
   },
   "homepage": "https://studioprompter.app"
 }
