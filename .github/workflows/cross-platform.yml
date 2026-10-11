@@ -2,10 +2,22 @@ name: Cross-platform preview
 on:
   workflow_dispatch:
   push:
-    branches: ['codex/cross-platform-preview']
-    paths: ['desktop/**', 'android/**', 'website/**', '.github/workflows/cross-platform.yml']
+    branches: ["codex/cross-platform-preview"]
+    paths:
+      [
+        "desktop/**",
+        "android/**",
+        "website/**",
+        ".github/workflows/cross-platform.yml",
+      ]
   pull_request:
-    paths: ['desktop/**', 'android/**', 'website/**', '.github/workflows/cross-platform.yml']
+    paths:
+      [
+        "desktop/**",
+        "android/**",
+        "website/**",
+        ".github/workflows/cross-platform.yml",
+      ]
 permissions:
   contents: read
 jobs:
@@ -23,7 +35,7 @@ jobs:
           - runner: windows-2025
             platform: win
             arch: x64
-          - runner: windows-2025
+          - runner: windows-11-arm
             platform: win
             arch: arm64
     runs-on: ${{ matrix.runner }}
@@ -32,7 +44,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: "22"
           cache: npm
           cache-dependency-path: desktop/package-lock.json
       - name: Install desktop dependencies
@@ -60,10 +72,15 @@ jobs:
           mkdir -p desktop/runtime
           cp .build/whisper-source/LICENSE desktop/runtime/whisper.cpp-LICENSE.txt
           find .build/whisper-runtime -name studio-whisper -o -name studio-whisper.exe | while read -r binary; do cp "$binary" desktop/runtime/; done
+      - name: Verify model download and native speech engine
+        shell: bash
+        env:
+          STUDIO_WHISPER_TEST: "1"
+        run: STUDIO_SPEECH_WAV="$PWD/.build/whisper-source/samples/jfk.wav" npm test --prefix desktop
       - name: Package desktop preview
         shell: bash
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npm run package --prefix desktop -- --${{ matrix.platform }} --${{ matrix.arch }}
       - uses: actions/upload-artifact@v7.0.1
         with:
@@ -80,15 +97,15 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: "22"
       - run: npm ci --prefix desktop
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.11.1'
+          gradle-version: "8.11.1"
       - name: Build and test Android companion
         working-directory: android
         run: gradle --no-daemon testDebugUnitTest assembleDebug
@@ -119,11 +136,11 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: "22"
       - run: npm ci --omit=dev --ignore-scripts --prefix desktop
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
       - name: Verify Android transport against native Mac TLS and framing
         run: STUDIO_JAVA_BIN="$JAVA_HOME/bin" ./scripts/check-cross-platform-link.sh

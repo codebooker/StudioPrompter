@@ -1,1 +1,111 @@
-.demo-screen-message {display:none!important}.demo-desktop {display:flex!important}.demo-navigation{padding:8px 20px;height:36px;min-height:36px}.demo-navigation button{border:0;background:transparent;color:var(--muted);cursor:pointer}.demo-page .studio{min-height:0}.desktop-card{background:#1e2025;border-radius:14px;padding:16px;margin-bottom:24px}.desktop-card label{display:flex;align-items:center;gap:12px;margin-bottom:12px}.desktop-card select{width:100%;padding:10px;background:#131418;color:#eee;border:1px solid #34363b;border-radius:8px;margin-bottom:10px}.desktop-card p{color:var(--muted);font-size:12px;line-height:1.5}.desktop-card button{padding:10px;background:#292b30;border:1px solid #3a3b40;color:white;border-radius:8px;cursor:pointer}.desktop-card .status{color:#78d4ac}.output-options button{width:100%}#desktop-pairing{min-width:440px;max-width:640px;background:#181a1e;color:#eee;border:1px solid #3b3d43;border-radius:18px;padding:28px}#desktop-pairing::backdrop{background:#0009}.pair-code{font-size:30px;letter-spacing:4px;color:#ff824f}.pair-device{display:flex;justify-content:space-between;align-items:center;padding:10px 0}body.is-editing .settings{display:none}
+.demo-screen-message {
+  display: none !important;
+}
+.demo-desktop {
+  display: flex !important;
+}
+.demo-navigation {
+  padding: 8px 20px;
+  height: 36px;
+  min-height: 36px;
+}
+.demo-navigation button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.demo-page .studio {
+  min-height: 0;
+}
+.desktop-card {
+  background: #1e2025;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.desktop-card label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.desktop-card select {
+  width: 100%;
+  padding: 10px;
+  background: #131418;
+  color: #eee;
+  border: 1px solid #34363b;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.desktop-card p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.desktop-card button {
+  padding: 10px;
+  background: #292b30;
+  border: 1px solid #3a3b40;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.desktop-card .status {
+  color: #78d4ac;
+}
+.output-options button {
+  width: 100%;
+}
+#desktop-pairing {
+  min-width: 440px;
+  max-width: 640px;
+  background: #181a1e;
+  color: #eee;
+  border: 1px solid #3b3d43;
+  border-radius: 18px;
+  padding: 28px;
+}
+#desktop-pairing::backdrop {
+  background: #0009;
+}
+.pair-code {
+  font-size: 30px;
+  letter-spacing: 4px;
+  color: #ff824f;
+}
+.pair-device {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+body.is-editing .settings {
+  display: none;
+}
+
+.desktop-card .toggle-row {
+  margin-top: 0;
+  justify-content: space-between !important;
+}
+.desktop-card .toggle-row input {
+  width: 36px;
+  height: 22px;
+}
+.desktop-card .toggle-row input::before {
+  width: 16px;
+  height: 16px;
+  left: 2px;
+  top: 2px;
+}
+.desktop-card .toggle-row input:checked::before {
+  transform: translateX(14px);
+}
+.desktop-card meter {
+  width: 100%;
+  height: 10px;
+}
+.desktop-card select {
+  font-size: 12px;
+}
