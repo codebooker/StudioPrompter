@@ -38,7 +38,7 @@
     "artifactName": "StudioPrompter-${version}-${os}-${arch}.${ext}",
     "win": {
       "target": "nsis",
-      "icon": "../iPad/StudioPrompterCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
+      "icon": "assets/icon.png"
     },
     "nsis": {
       "oneClick": false,
@@ -50,7 +50,7 @@
         "deb"
       ],
       "category": "AudioVideo",
-      "icon": "../iPad/StudioPrompterCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+      "icon": "assets/icon.png",
       "maintainer": "StudioPrompter contributors"
     }
   },

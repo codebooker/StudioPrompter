@@ -48,7 +48,7 @@ await copyFile(`${root}desktop/output.html`, `${root}desktop/ui/output.html`);
 await copyFile(`${root}desktop/output.js`, `${root}desktop/ui/output.js`);
 
 await copyFile(
-  `${root}iPad/StudioPrompterCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png`,
+  `${root}desktop/assets/icon.png`,
   `${root}desktop/ui/app-icon.png`,
 );
 
