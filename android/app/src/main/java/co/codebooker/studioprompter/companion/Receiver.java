@@ -4,7 +4,7 @@ import android.net.nsd.*;
 import android.net.wifi.WifiManager;
 import android.os.*;
 import android.util.AtomicFile;
-import org.conscrypt.Conscrypt;
+import org.bouncycastle.tls.TlsClientProtocol;
 import org.json.*;
 import java.io.*;
 import java.net.*;
@@ -18,7 +18,7 @@ public final class Receiver {
     private final Context context;private final Listener listener;private final Handler ui=new Handler(Looper.getMainLooper());
     private final ExecutorService worker=Executors.newSingleThreadExecutor();private final NsdManager nsd;private final AtomicFile file;
     private final List<NsdServiceInfo> hosts=new ArrayList<>();private final ArrayDeque<NsdServiceInfo> resolveQueue=new ArrayDeque<>();private boolean resolving=false;
-    private NsdManager.DiscoveryListener discovery;private WifiManager.MulticastLock multicast;private volatile SSLSocket socket;private volatile long generation=0;
+    private NsdManager.DiscoveryListener discovery;private WifiManager.MulticastLock multicast;private volatile Socket socket;private volatile long generation=0;
     private JSONObject saved;private boolean automatic=true,connecting=false,connected=false;private String revision=null;
     public Receiver(Context context,Listener listener){this.context=context;this.listener=listener;nsd=(NsdManager)context.getSystemService(Context.NSD_SERVICE);file=new AtomicFile(new File(context.getFilesDir(),"paired-producer.json"));try{saved=new JSONObject(new String(file.readFully(),StandardCharsets.UTF_8));}catch(Exception ignored){} }
     public boolean hasPairing(){return saved!=null&&!saved.optBoolean("removed");}
@@ -46,21 +46,20 @@ public final class Receiver {
     private void open(NsdServiceInfo host,String key,JSONObject prior){
         disconnect(false);automatic=true;connecting=true;final long run=++generation;status("Connecting securely…",false);
         worker.execute(()->{
-            SSLSocket active=null;boolean authorized=false;String finalStatus="Connection lost · script held in place";
+            Socket active=null;boolean authorized=false;String finalStatus="Connection lost · script held in place";
             try{
-                SSLContext ssl=SSLContext.getInstance("TLS",Conscrypt.newProvider());ssl.init(new KeyManager[]{new PskManager(key)},new TrustManager[0],null);
-                active=(SSLSocket)ssl.getSocketFactory().createSocket();socket=active;active.setEnabledProtocols(new String[]{"TLSv1.2"});active.setEnabledCipherSuites(new String[]{"TLS_PSK_WITH_AES_128_GCM_SHA256"});active.setTcpNoDelay(true);active.setSoTimeout(15000);active.connect(new InetSocketAddress(host.getHost(),host.getPort()),10000);active.startHandshake();
+                active=new Socket();socket=active;active.setTcpNoDelay(true);active.setSoTimeout(15000);active.connect(new InetSocketAddress(host.getHost(),host.getPort()),10000);TlsClientProtocol transport=PskTransport.connect(active,key);
                 if(run!=generation)return;
-                DataInputStream in=new DataInputStream(active.getInputStream());DataOutputStream out=new DataOutputStream(active.getOutputStream());
+                DataInputStream in=new DataInputStream(transport.getInputStream());DataOutputStream out=new DataOutputStream(transport.getOutputStream());
                 JSONObject request=prior==null?Protocol.message("pair",new JSONObject().put("version",2).put("name",Build.MANUFACTURER+" "+Build.MODEL).put("code",key)):
                     Protocol.message("resume",new JSONObject().put("version",2).put("deviceID",prior.getString("deviceID")).put("token",prior.getString("token")));
                 Protocol.write(out,request);
-                while(run==generation){JSONObject message=Protocol.read(in);
+                while(run==generation){JSONObject message=Protocol.read(in);if(run!=generation)break;
                     if(message.has("paired")){
                         if(authorized)throw new IOException("Duplicate authorization");JSONObject value=message.getJSONObject("paired").getJSONObject("_0");String token=value.getString("token"),hostID=value.getString("hostID"),deviceID=value.getString("deviceID");
                         UUID.fromString(hostID);UUID.fromString(deviceID);
                         if(value.optBoolean("removed")||!token.matches("[A-Fa-f0-9]{64}")||value.getString("name").length()>256||!value.getString("serviceName").equals("StudioPrompter-"+hostID.substring(0,8))||prior!=null&&(!prior.getString("hostID").equals(hostID)||!prior.getString("deviceID").equals(deviceID)||!prior.getString("token").equals(token)))throw new IOException("Invalid pairing");
-                        persist(value);authorized=true;ui.post(()->{if(run==generation)saved=value;});active.setSoTimeout(2500);
+                        persist(value);saved=value;authorized=true;ui.post(()->{if(run==generation)saved=value;});active.setSoTimeout(2500);
                     }else if(message.has("document")){
                         JSONObject d=message.getJSONObject("document").getJSONObject("_0");if(!authorized||!Protocol.validDocument(d))throw new IOException("Invalid document");revision=d.getString("revision");ui.post(()->{if(run==generation)listener.document(d);});
                     }else if(message.has("playback")){
@@ -79,7 +78,7 @@ public final class Receiver {
         });
     }
     private void persist(JSONObject value)throws IOException{FileOutputStream stream=null;try{stream=file.startWrite();stream.write(value.toString().getBytes(StandardCharsets.UTF_8));file.finishWrite(stream);}catch(Exception e){if(stream!=null)file.failWrite(stream);throw new IOException("Could not save pairing",e);}}
-    public void disconnect(boolean deliberate){generation++;connecting=false;connected=false;if(deliberate)automatic=false;SSLSocket old=socket;socket=null;try{if(old!=null)old.close();}catch(Exception ignored){}if(deliberate)status(hasPairing()?"Disconnected · pairing saved. Tap Reconnect when ready.":"Choose a producer to begin.",false);}
+    public void disconnect(boolean deliberate){generation++;connecting=false;connected=false;if(deliberate)automatic=false;Socket old=socket;socket=null;try{if(old!=null)old.close();}catch(Exception ignored){}if(deliberate)status(hasPairing()?"Disconnected · pairing saved. Tap Reconnect when ready.":"Choose a producer to begin.",false);}
     public void forget(){disconnect(true);file.delete();saved=null;status("Pairing forgotten. Enter a new producer code.",false);}
     public void stop(){disconnect(false);if(discovery!=null){try{nsd.stopServiceDiscovery(discovery);}catch(Exception ignored){}discovery=null;}if(multicast!=null&&multicast.isHeld())multicast.release();hosts.clear();resolveQueue.clear();resolving=false;}
     public void close(){stop();worker.shutdownNow();}

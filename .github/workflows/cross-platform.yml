@@ -49,12 +49,13 @@ jobs:
         shell: bash
         run: |
           args=()
+          native=OFF
           if [ '${{ matrix.platform }}' = win ]; then
             arch=x64
-            if [ '${{ matrix.arch }}' = arm64 ]; then arch=ARM64; fi
+            if [ '${{ matrix.arch }}' = arm64 ]; then arch=ARM64; native=ON; fi
             args=(-A "$arch")
           fi
-          cmake -S .build/whisper-source -B .build/whisper-runtime "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
+          cmake -S .build/whisper-source -B .build/whisper-runtime "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE="$native" -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DGGML_OPENMP=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
           cmake --build .build/whisper-runtime --config Release --target whisper-cli -j 4
           mkdir -p desktop/runtime
           find .build/whisper-runtime -name whisper-cli -o -name whisper-cli.exe | while read -r binary; do cp "$binary" desktop/runtime/; done
@@ -76,6 +77,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm ci --prefix desktop
       - uses: actions/setup-java@v5
         with:
           distribution: temurin

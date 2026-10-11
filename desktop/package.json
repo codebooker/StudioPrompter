@@ -1,15 +1,57 @@
 {
-  "name": "studioprompter-desktop", "productName": "StudioPrompter", "version": "0.3.0-preview.1",
-  "description": "StudioPrompter producer app for Windows and Linux", "license": "AGPL-3.0-only",
-  "author": "StudioPrompter contributors", "main": "main.cjs",
-  "scripts": {"prepare-ui": "node prepare-ui.mjs", "start": "npm run prepare-ui && electron .", "test": "node --test test/*.test.cjs", "package": "npm run prepare-ui && electron-builder --publish never"},
-  "dependencies": {"bonjour-service": "1.4.4"},
-  "devDependencies": {"electron": "44.7.0", "electron-builder": "26.15.3"},
+  "name": "studioprompter-desktop",
+  "productName": "StudioPrompter",
+  "version": "0.3.0-preview.1",
+  "description": "StudioPrompter producer app for Windows and Linux",
+  "license": "AGPL-3.0-only",
+  "author": "StudioPrompter contributors",
+  "main": "main.cjs",
+  "scripts": {
+    "prepare-ui": "node prepare-ui.mjs",
+    "start": "npm run prepare-ui && electron .",
+    "test": "node --test test/*.test.cjs",
+    "package": "npm run prepare-ui && electron-builder --publish never"
+  },
+  "dependencies": {
+    "bonjour-service": "1.4.4"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3"
+  },
   "build": {
-    "appId": "co.codebooker.studioprompter.desktop", "directories": {"output": "artifacts"},
-    "files": ["*.cjs", "ui/**", "package.json"], "extraResources": [{"from": "runtime", "to": "runtime"}],
+    "appId": "co.codebooker.studioprompter.desktop",
+    "directories": {
+      "output": "artifacts"
+    },
+    "files": [
+      "*.cjs",
+      "ui/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime",
+        "to": "runtime"
+      }
+    ],
     "artifactName": "StudioPrompter-${version}-${os}-${arch}.${ext}",
-    "win": {"target": "nsis"}, "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true},
-    "linux": {"target": ["AppImage", "deb"], "category": "AudioVideo", "icon": "../iPad/StudioPrompterCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png"}
-  }
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo",
+      "icon": "../iPad/StudioPrompterCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+      "maintainer": "StudioPrompter contributors"
+    }
+  },
+  "homepage": "https://studioprompter.app"
 }
