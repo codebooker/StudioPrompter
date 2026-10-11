@@ -7,7 +7,16 @@ const {
   Menu,
   session,
   shell,
+  protocol,
+  net,
 } = require("electron");
+const { pathToFileURL } = require("node:url");
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "studio",
+    privileges: { standard: true, secure: true, supportFetchAPI: true },
+  },
+]);
 const path = require("node:path"),
   fs = require("node:fs"),
   os = require("node:os");
@@ -40,6 +49,13 @@ function sendOutput(channel, value) {
 }
 app.whenReady().then(() => {
   app.setName("StudioPrompter");
+  protocol.handle("studio", (request) => {
+    const url = new URL(request.url);
+    if (url.hostname !== "app" || !/^\/[a-zA-Z0-9.-]+$/.test(url.pathname))
+      return new Response("Not found", { status: 404 });
+    const file = path.join(ui, url.pathname.slice(1));
+    return net.fetch(pathToFileURL(file).toString());
+  });
   if (process.platform === "darwin")
     app.dock.setIcon(path.join(ui, "app-icon.png"));
   screen.on("display-removed", () => {
@@ -65,7 +81,7 @@ app.whenReady().then(() => {
     }),
   );
   safeWindow(producer);
-  producer.loadFile(path.join(ui, "index.html"));
+  producer.loadURL("studio://app/index.html");
   const storage = app.getPath("userData");
   fs.mkdirSync(storage, { recursive: true, mode: 0o700 });
   link = new LinkServer(
@@ -117,13 +133,11 @@ app.whenReady().then(() => {
 });
 ipcMain.handle("displays", (event) => {
   authorized(event);
-  return screen
-    .getAllDisplays()
-    .map((d) => ({
-      id: d.id,
-      label: d.label || `Display ${d.id}`,
-      primary: d.id === screen.getPrimaryDisplay().id,
-    }));
+  return screen.getAllDisplays().map((d) => ({
+    id: d.id,
+    label: d.label || `Display ${d.id}`,
+    primary: d.id === screen.getPrimaryDisplay().id,
+  }));
 });
 ipcMain.handle("output", async (event, id) => {
   authorized(event);
@@ -144,7 +158,7 @@ ipcMain.handle("output", async (event, id) => {
     }),
   );
   safeWindow(output);
-  await output.loadFile(path.join(ui, "output.html"));
+  await output.loadURL("studio://app/output.html");
   sendOutput("document", documentState);
   sendOutput("playback", playbackState);
 });
