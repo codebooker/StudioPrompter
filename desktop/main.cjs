@@ -89,6 +89,14 @@ app.whenReady().then(() => {
     os.hostname(),
     (value) => producer?.webContents.send("pairing-status", value),
   );
+  // Keep discovery available for saved tablets, including offline revocation notices.
+  if (link.saved.devices.length > 0) {
+    link
+      .start()
+      .catch((error) =>
+        console.error("Tablet output could not start:", error.message),
+      );
+  }
   speech = new Speech(
     path.join(storage, "models"),
     app.isPackaged
