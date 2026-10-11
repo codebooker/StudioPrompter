@@ -139,3 +139,30 @@ test("follow motion keeps velocity between recognition updates without overshoot
   }
   assert.ok(value > 115);
 });
+test("audio capture isolates the selected mixer channel and never plays the microphone back", () => {
+  const vm = require("node:vm");
+  let Capture;
+  const messages = [];
+  vm.runInNewContext(
+    fs.readFileSync(path.join(__dirname, "../capture-worklet.js"), "utf8"),
+    {
+      AudioWorkletProcessor: class {
+        constructor() {
+          this.port = { postMessage: (value) => messages.push(value) };
+        }
+      },
+      Float32Array,
+      registerProcessor: (_name, ctor) => (Capture = ctor),
+    },
+  );
+  const capture = new Capture({ processorOptions: { channel: 1 } });
+  const output = [new Float32Array(128).fill(0.5)];
+  for (let i = 0; i < 8; i++)
+    capture.process(
+      [[new Float32Array(128).fill(1), new Float32Array(128).fill(0.25)]],
+      [output],
+    );
+  assert.equal(messages.length, 1);
+  assert.ok(messages[0].every((value) => value === 0.25));
+  assert.ok(output[0].every((value) => value === 0));
+});

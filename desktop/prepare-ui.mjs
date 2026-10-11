@@ -51,3 +51,8 @@ await copyFile(
   `${root}iPad/StudioPrompterCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png`,
   `${root}desktop/ui/app-icon.png`,
 );
+
+await copyFile(
+  `${root}desktop/capture-worklet.js`,
+  `${root}desktop/ui/capture-worklet.js`,
+);

@@ -148,6 +148,8 @@ class FollowMotion {
 }
 
 const api = window.studio;
+const captureURL = new URL("capture-worklet.js", document.currentScript.src)
+  .href;
 let mirrorHorizontal = false,
   mirrorVertical = false,
   revision = null,
@@ -293,7 +295,7 @@ function stopMic() {
   micStream = null;
   processor?.disconnect();
   processor = null;
-  audioContext?.close();
+  audioContext?.close().catch(() => {});
   audioContext = null;
   api.stopSpeech();
   speechTarget = null;
@@ -344,7 +346,10 @@ async function startMic() {
     return;
   }
   micStream = stream;
-  audioContext = new AudioContext();
+  audioContext = new AudioContext({
+    sampleRate: 16000,
+    latencyHint: "interactive",
+  });
   await audioContext.resume();
   const source = audioContext.createMediaStreamSource(stream);
   const channels = stream.getAudioTracks()[0].getSettings().channelCount || 1;
@@ -354,30 +359,33 @@ async function startMic() {
   for (let n = 0; n < channels; n++)
     selector.add(new Option(`Channel ${n + 1}`, String(n)));
   selector.value = String(Math.min(picked, channels - 1));
-  processor = audioContext.createScriptProcessor(4096, channels, 1);
+  const captureContext = audioContext;
+  await captureContext.audioWorklet.addModule(captureURL);
+  if (generation !== micGeneration) return;
+  processor = new AudioWorkletNode(captureContext, "studio-capture", {
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    outputChannelCount: [1],
+    channelCount: channels,
+    channelCountMode: "explicit",
+    channelInterpretation: "discrete",
+    processorOptions: { channel: Number(selector.value) },
+  });
   source.connect(processor);
   processor.connect(audioContext.destination);
   let samples = [],
     since = 0,
     lastEnergy = 0;
-  const rate = audioContext.sampleRate;
-  let resamplePhase = 0;
-  processor.onaudioprocess = (event) => {
-    event.outputBuffer.getChannelData(0).fill(0);
-    const input = event.inputBuffer.getChannelData(Number(selector.value));
+  processor.port.onmessage = (event) => {
+    if (generation !== micGeneration) return;
+    const input = event.data;
     const energy = Math.sqrt(
       input.reduce((a, v) => a + v * v, 0) / input.length,
     );
     $("mic-level").value = Math.min(1, energy * 8);
     if (energy > 0.004) lastEnergy = performance.now();
-    for (let i = 0; i < input.length; i++) {
-      resamplePhase += 16000;
-      if (resamplePhase >= rate) {
-        resamplePhase -= rate;
-        samples.push(input[i]);
-        since++;
-      }
-    }
+    samples.push(...input);
+    since += input.length;
     if (samples.length > 96000) samples = samples.slice(-96000);
     if (
       since >= 4800 &&
