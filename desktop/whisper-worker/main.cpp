@@ -5,6 +5,30 @@
 #include <cmath>
 #include <cstring>
 #include <algorithm>
+#include <thread>
+#if defined(_MSC_VER) && defined(_M_X64)
+#include <intrin.h>
+#elif defined(__x86_64__)
+#include <cpuid.h>
+#endif
+
+// Probe from the baseline binary before ever loading the optimized engine.
+// AVX requires OS support for preserving YMM registers as well as CPU support.
+static bool supports_avx2() {
+#if defined(_MSC_VER) && defined(_M_X64)
+    int info[4]; __cpuid(info, 0); if (info[0] < 7) return false;
+    __cpuidex(info, 1, 0);
+    const unsigned required=(1u<<20)|(1u<<12)|(1u<<27)|(1u<<28)|(1u<<29);
+    if ((static_cast<unsigned>(info[2]) & required) != required) return false;
+    if ((_xgetbv(0) & 6) != 6) return false;
+    __cpuidex(info, 7, 0); return (info[1] & ((1<<5)|(1<<8))) == ((1<<5)|(1<<8));
+#elif defined(__x86_64__)
+    __builtin_cpu_init();
+    return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma") && __builtin_cpu_supports("f16c") && __builtin_cpu_supports("bmi2") && __builtin_cpu_supports("sse4.2");
+#else
+    return false;
+#endif
+}
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
@@ -30,6 +54,7 @@ int main(int argc,char **argv) {
     _setmode(_fileno(stdin),_O_BINARY);_setmode(_fileno(stdout),_O_BINARY);
 #endif
     if(argc!=2)return 2;
+    if(std::strcmp(argv[1],"--capabilities")==0){std::cout<<(supports_avx2()?"avx2":"baseline");return 0;}
     whisper_context_params options=whisper_context_default_params();options.use_gpu=false;
     auto *context=whisper_init_from_file_with_params(argv[1],options);if(!context)return 3;
     while(true) {
@@ -39,7 +64,10 @@ int main(int argc,char **argv) {
         std::vector<unsigned char> wav(size);if(!std::cin.read(reinterpret_cast<char*>(wav.data()),size))break;
         if(std::memcmp(wav.data(),"RIFF",4)||std::memcmp(wav.data()+8,"WAVE",4)||std::memcmp(wav.data()+12,"fmt ",4)||std::memcmp(wav.data()+36,"data",4)||wav[20]!=1||wav[22]!=1||wav[24]!=0x80||wav[25]!=0x3e||wav[34]!=16||(size-44)%2){reply("{\"error\":\"Invalid PCM audio\"}");continue;}
         std::vector<float> samples((size-44)/2);for(size_t i=0;i<samples.size();i++){uint16_t value=uint16_t(wav[44+i*2])|(uint16_t(wav[45+i*2])<<8);samples[i]=static_cast<int16_t>(value)/32768.f;}
-        auto params=whisper_full_default_params(WHISPER_SAMPLING_GREEDY);params.language="en";params.n_threads=4;params.no_context=true;params.token_timestamps=true;params.max_tokens=160;params.suppress_blank=true;params.suppress_nst=true;params.temperature_inc=0;params.greedy.best_of=1;params.print_realtime=false;params.print_progress=false;params.print_timestamps=false;
+        auto params=whisper_full_default_params(WHISPER_SAMPLING_GREEDY);params.language="en";params.n_threads=std::max(1u,std::min(4u,std::thread::hardware_concurrency()));params.no_context=true;params.token_timestamps=true;params.max_tokens=160;params.suppress_blank=true;params.suppress_nst=true;params.temperature_inc=0;params.greedy.best_of=1;params.print_realtime=false;params.print_progress=false;params.print_timestamps=false;
+        // A six-second live window does not need the default thirty-second
+        // encoder context. Keep ten seconds of context including padding.
+        params.audio_ctx=512;
         if(whisper_full(context,params,samples.data(),static_cast<int>(samples.size()))!=0){reply("{\"error\":\"Speech processing failed\"}");continue;}
         std::string text;std::ostringstream tokens;bool first=true;
         for(int segment=0;segment<whisper_full_n_segments(context);segment++) {

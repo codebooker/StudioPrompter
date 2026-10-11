@@ -22,6 +22,8 @@ The producer interface shares the browser demo's tested script editor and visual
 
 The preview.2 audio path accepts quiet microphone speech and adjusts gain on the copy sent to Whisper. The voice card shows recognized words, inference time, and script-match status; empty recognition results and worker failures are visible. Token timestamp estimates no longer suppress an otherwise valid transcript. Automated checks feed low-gain speech through the renderer capture pipeline into the native worker on every desktop architecture.
 
+Preview.3 bundles a separate AVX2 engine for x64 CPUs. The baseline executable probes CPU features and operating-system AVX support before the app selects it; older CPUs retain the compatible engine. Live recognition uses a ten-second encoder context for the six-second rolling window instead of Whisper’s default thirty seconds. First-call loading has a separate timeout, and native checks measure cold and warm inference for both Tiny and Base rather than accepting transcription at any speed.
+
 This port's speech motion needs live tuning on Windows and Linux. Phrase matching, reading-position spreading, and damped motion are ported from the Mac core; the audio capture and transcription back end are separate. It does not yet have hands-free LLM commands, Webcam Layout, DOCX/PDF import, or automatic in-app updates. Font availability differs by OS. Output uses producer-computed line breaks; check emphasis and spacing on the target display during a take.
 
 ### Run and build

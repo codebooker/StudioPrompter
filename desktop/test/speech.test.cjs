@@ -64,7 +64,25 @@ test(
         );
         if (i) assert.equal(speech.child, child);
         child = speech.child;
-        assert.ok(result.inferenceSeconds < 20);
+        console.log(
+          `${process.platform}/${process.arch} ${result.engine}: ${result.inferenceSeconds.toFixed(2)} s (${i ? "warm" : "cold"})`,
+        );
+        assert.ok(
+          result.inferenceSeconds < (i ? 3 : 15),
+          "live recognition must be fast enough to follow a reader",
+        );
+      }
+      await speech.download("base.en");
+      for (let i = 0; i < 2; i++) {
+        const result = await speech.transcribe("base.en", audio);
+        assert.match(result.text, /Americans|country/i);
+        console.log(
+          `${process.platform}/${process.arch} Base ${result.engine}: ${result.inferenceSeconds.toFixed(2)} s (${i ? "warm" : "cold"})`,
+        );
+        assert.ok(
+          result.inferenceSeconds < (i ? 3 : 15),
+          "Base must keep up with live speech too",
+        );
       }
       // Reproduce a low-gain laptop mic through the actual renderer pipeline,
       // not just a loud prerecorded WAV sent directly to the worker.

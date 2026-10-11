@@ -441,7 +441,7 @@ async function startMic() {
           const result = align(plain(current().text), text, matchedWord);
           $("voice-status").textContent = `Heard: ${text.slice(-160)}`;
           $("voice-detail").textContent =
-            `${recognition.inferenceSeconds.toFixed(2)} s · ${result && result.cursor >= matchedWord ? "Following script" : "Waiting for words that match the script"}`;
+            `${recognition.inferenceSeconds.toFixed(2)} s${recognition.engine ? ` · ${recognition.engine}` : ""} · ${result && result.cursor >= matchedWord ? "Following script" : "Waiting for words that match the script"}`;
           lastSpeech = lastEnergy;
           const first = tokens[0]?.start ?? 0;
           const rawPace = clamp(

@@ -1,7 +1,7 @@
 {
   "name": "studioprompter-desktop",
   "productName": "StudioPrompter",
-  "version": "0.3.0-preview.2",
+  "version": "0.3.0-preview.3",
   "description": "StudioPrompter producer app for Windows and Linux",
   "license": "AGPL-3.0-only",
   "author": "StudioPrompter contributors",

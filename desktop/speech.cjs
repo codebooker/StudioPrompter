@@ -2,7 +2,7 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { spawn } = require("node:child_process");
+const { spawn, spawnSync } = require("node:child_process");
 const { Decoder } = require("./protocol.cjs");
 const models = {
   "tiny.en": {
@@ -77,10 +77,30 @@ class Speech {
   worker(name) {
     if (this.child && this.loaded === name) return this.child;
     this.stop();
-    const exe = path.join(
+    let exe = path.join(
       this.runtime,
       process.platform === "win32" ? "studio-whisper.exe" : "studio-whisper",
     );
+    this.engine = "CPU";
+    if (process.arch === "x64") {
+      const optimized = path.join(
+        this.runtime,
+        process.platform === "win32"
+          ? "studio-whisper-avx2.exe"
+          : "studio-whisper-avx2",
+      );
+      if (require("node:fs").existsSync(optimized)) {
+        const probe = spawnSync(exe, ["--capabilities"], {
+          windowsHide: true,
+          encoding: "utf8",
+          timeout: 5000,
+        });
+        if (probe.status === 0 && probe.stdout === "avx2") {
+          exe = optimized;
+          this.engine = "CPU · AVX2";
+        }
+      }
+    }
     const child = spawn(exe, [this.model(name)], {
       windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"],
@@ -155,13 +175,21 @@ class Speech {
     this.busy = true;
     const started = performance.now();
     try {
+      const cold = !this.child || this.loaded !== name;
       const child = this.worker(name);
       const result = await new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          this.pending = null;
-          child.kill();
-          reject(Error("Speech processing took too long"));
-        }, 20000);
+        const timer = setTimeout(
+          () => {
+            this.pending = null;
+            child.kill();
+            reject(
+              Error(
+                "Whisper could not keep up. Select Tiny English for faster voice prompting.",
+              ),
+            );
+          },
+          cold ? 60000 : 20000,
+        );
         this.pending = { resolve, reject, timer };
         const header = Buffer.alloc(4);
         header.writeUInt32BE(audio.length);
@@ -169,6 +197,7 @@ class Speech {
       });
       return {
         ...result,
+        engine: this.engine,
         inferenceSeconds: (performance.now() - started) / 1000,
       };
     } finally {

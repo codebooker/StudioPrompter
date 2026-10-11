@@ -77,6 +77,19 @@ jobs:
           mkdir -p desktop/runtime
           cp .build/whisper-source/LICENSE desktop/runtime/whisper.cpp-LICENSE.txt
           find .build/whisper-runtime -name studio-whisper -o -name studio-whisper.exe | while read -r binary; do cp "$binary" desktop/runtime/; done
+      - name: Build accelerated x64 speech engine
+        if: matrix.arch == 'x64'
+        shell: bash
+        run: |
+          args=()
+          if [ '${{ matrix.platform }}' = win ]; then args=(-A x64); fi
+          cmake -S desktop/whisper-worker -DWHISPER_SOURCE="$PWD/.build/whisper-source" -B .build/whisper-avx2 "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DGGML_BMI2=ON -DGGML_SSE42=ON -DGGML_OPENMP=OFF
+          cmake --build .build/whisper-avx2 --config Release --target studio-whisper -j 4
+          if [ '${{ matrix.platform }}' = win ]; then
+            cp .build/whisper-avx2/Release/studio-whisper.exe desktop/runtime/studio-whisper-avx2.exe
+          else
+            cp .build/whisper-avx2/studio-whisper desktop/runtime/studio-whisper-avx2
+          fi
       - name: Verify model download and native speech engine
         shell: bash
         env:
