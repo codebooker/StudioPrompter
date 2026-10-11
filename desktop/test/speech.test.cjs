@@ -66,6 +66,25 @@ test(
         child = speech.child;
         assert.ok(result.inferenceSeconds < 20);
       }
+      // Reproduce a low-gain laptop mic through the actual renderer pipeline,
+      // not just a loud prerecorded WAV sent directly to the worker.
+      const { captureHarness } = require("./capture-harness.cjs");
+      const microphone = await captureHarness((model, bytes) =>
+        speech.transcribe(model, bytes),
+      );
+      const quiet = new Float32Array((audio.length - 44) / 2);
+      for (let i = 0; i < quiet.length; i++)
+        quiet[i] = (audio.readInt16LE(44 + i * 2) / 32768) * 0.02;
+      await microphone.feed(new Float32Array(32000)); // silence before speaking
+      await microphone.feed(quiet);
+      assert.match(
+        microphone.elements["voice-status"].textContent,
+        /Heard:.*(Americans|country)/i,
+      );
+      assert.ok(
+        microphone.context.matchedWord >= 4,
+        "quiet microphone speech advances the script",
+      );
       await assert.rejects(
         speech.transcribe("tiny.en", Buffer.alloc(44)),
         /Invalid audio/,

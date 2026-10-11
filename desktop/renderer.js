@@ -168,7 +168,7 @@ let audioContext = null,
 const voice = document.createElement("section");
 voice.className = "desktop-card";
 voice.innerHTML =
-  '<label class="toggle-row"><b>Voice prompting</b><input id="voice-enabled" type="checkbox" role="switch"></label><select id="voice-mode" aria-label="Voice mode"><option value="follow">Follow script</option><option value="adaptive">Adaptive pace</option></select><select id="voice-model" aria-label="Speech model"><option value="tiny.en">Tiny English · fastest</option><option value="base.en">Base English · accurate</option></select><button id="download-model">Download model</button><p id="voice-status" class="status">Checking local model…</p><select id="mic" aria-label="Microphone"><option value="">System default microphone</option></select><select id="mic-channel" aria-label="Microphone channel"><option value="0">Channel 1</option><option value="1">Channel 2</option></select><meter id="mic-level" min="0" max="1" value="0" aria-label="Selected microphone level"></meter><p>Processes speech locally. Play starts the mic; Pause stops it. This preview has no hands-free commands.</p>';
+  '<label class="toggle-row"><b>Voice prompting</b><input id="voice-enabled" type="checkbox" role="switch"></label><select id="voice-mode" aria-label="Voice mode"><option value="follow">Follow script</option><option value="adaptive">Adaptive pace</option></select><select id="voice-model" aria-label="Speech model"><option value="tiny.en">Tiny English · fastest</option><option value="base.en">Base English · accurate</option></select><button id="download-model">Download model</button><p id="voice-status" class="status">Checking local model…</p><p id="voice-detail" aria-live="polite"></p><select id="mic" aria-label="Microphone"><option value="">System default microphone</option></select><select id="mic-channel" aria-label="Microphone channel"><option value="0">Channel 1</option><option value="1">Channel 2</option></select><meter id="mic-level" min="0" max="1" value="0" aria-label="Selected microphone level"></meter><p>Processes speech locally. Play starts the mic; Pause stops it. This preview has no hands-free commands.</p>';
 document.querySelector(".settings").prepend(voice);
 const mirror = document.createElement("section");
 mirror.className = "desktop-card";
@@ -299,6 +299,7 @@ function stopMic() {
   audioContext?.close().catch(() => {});
   audioContext = null;
   api.stopSpeech();
+  if ($("voice-detail")) $("voice-detail").textContent = "";
   speechTarget = null;
   recognizing = false;
   followMotion = new FollowMotion();
@@ -353,6 +354,8 @@ async function startMic() {
     sampleRate: 16000,
     latencyHint: "interactive",
   });
+  if (audioContext.sampleRate !== 16000)
+    throw Error("Microphone capture could not initialize at 16 kHz");
   await audioContext.resume();
   const source = audioContext.createMediaStreamSource(stream);
   const channels = stream.getAudioTracks()[0].getSettings().channelCount || 1;
@@ -378,15 +381,15 @@ async function startMic() {
   processor.connect(audioContext.destination);
   let samples = [],
     since = 0,
-    lastEnergy = 0;
+    lastEnergy = -Infinity,
+    requests = 0,
+    emptyResults = 0;
   processor.port.onmessage = (event) => {
     if (generation !== micGeneration) return;
     const input = event.data;
-    const energy = Math.sqrt(
-      input.reduce((a, v) => a + v * v, 0) / input.length,
-    );
+    const energy = StudioAudio.rms(input);
     $("mic-level").value = Math.min(1, energy * 8);
-    if (energy > 0.004) lastEnergy = performance.now();
+    if (energy > StudioAudio.speechFloor) lastEnergy = performance.now();
     samples.push(...input);
     since += input.length;
     if (samples.length > 96000) samples = samples.slice(-96000);
@@ -397,16 +400,31 @@ async function startMic() {
       performance.now() - lastEnergy < 650
     ) {
       since = 0;
-      const chunk = Float32Array.from(samples);
-      const rms = Math.sqrt(
-        chunk.reduce((a, v) => a + v * v, 0) / chunk.length,
-      );
-      if (rms < 0.004) return;
+      // Recent activity is enough: averaging a short phrase with the silence
+      // in this rolling window used to block quiet laptop microphones.
+      const chunk = StudioAudio.normalize(samples);
       recognizing = true;
+      requests++;
+      $("voice-detail").textContent = `Transcribing locally · pass ${requests}`;
       api
         .transcribe($("voice-model").value, wav(chunk))
         .then((recognition) => {
-          if (generation !== micGeneration || !recognition?.text) return;
+          if (generation !== micGeneration) return;
+          if (!recognition) {
+            $("voice-detail").textContent =
+              "Speech engine busy · waiting for next audio";
+            return;
+          }
+          if (!recognition.text.trim()) {
+            emptyResults++;
+            $("voice-detail").textContent =
+              `Audio processed · no clear words yet (${recognition.inferenceSeconds.toFixed(2)} s)`;
+            if (emptyResults >= 3)
+              $("voice-status").textContent =
+                "Whisper hears audio but cannot identify words. Check the microphone channel or try Base English.";
+            return;
+          }
+          emptyResults = 0;
           const duration = chunk.length / 16000,
             tokens = recognition.tokens.filter(
               (t) =>
@@ -417,12 +435,14 @@ async function startMic() {
                 t.end >= t.start &&
                 t.end <= duration + 0.5,
             );
-          const end = tokens.at(-1)?.end ?? duration;
-          if (duration - end > 2) return;
+          // Token timestamps are estimates. An early timestamp must not hide
+          // a valid transcript or suppress a reliable script match.
           const text = recognition.text;
           const result = align(plain(current().text), text, matchedWord);
           $("voice-status").textContent = `Heard: ${text.slice(-160)}`;
-          lastSpeech = performance.now() - Math.max(0, duration - end) * 1000;
+          $("voice-detail").textContent =
+            `${recognition.inferenceSeconds.toFixed(2)} s · ${result && result.cursor >= matchedWord ? "Following script" : "Waiting for words that match the script"}`;
+          lastSpeech = lastEnergy;
           const first = tokens[0]?.start ?? 0;
           const rawPace = clamp(
             (tokenize(text).length / Math.max(2, duration - first)) * 60,

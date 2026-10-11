@@ -121,9 +121,22 @@ class Speech {
         child.kill();
       }
     });
-    child.stderr.on("data", () => {});
+    let diagnostics = "";
+    child.stderr.on("data", (bytes) => {
+      diagnostics = (diagnostics + bytes.toString()).slice(-4096);
+    });
     child.on("error", (error) => fail(error));
-    child.on("exit", () => fail(Error("Speech engine stopped")));
+    child.on("exit", (code, signal) => {
+      const detail = diagnostics
+        .split(/\r?\n/)
+        .filter((line) => /error|failed|cannot/i.test(line))
+        .at(-1);
+      fail(
+        Error(
+          `Speech engine stopped (${signal || code})${detail ? `: ${detail.slice(0, 240)}` : ". Try Tiny English or reinstall this preview."}`,
+        ),
+      );
+    });
     child.stdin.on("error", (error) => fail(error));
     return child;
   }

@@ -11,7 +11,7 @@ html = html
   .replace(/<script src="release.js" defer><\/script>/, "")
   .replace(
     '<script src="app.js" defer></script>',
-    '<script src="app.js" defer></script><script src="desktop.js" defer></script>',
+    '<script src="app.js" defer></script><script src="audio.js" defer></script><script src="desktop.js" defer></script>',
   )
   .replace(
     "</head>",
@@ -56,3 +56,5 @@ await copyFile(
   `${root}desktop/capture-worklet.js`,
   `${root}desktop/ui/capture-worklet.js`,
 );
+
+await copyFile(`${root}desktop/audio.cjs`, `${root}desktop/ui/audio.js`);
