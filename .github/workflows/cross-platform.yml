@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           repository: ggml-org/whisper.cpp
-          ref: d2a764c648779feb36d44363f212a29b00aad1af
+          ref: d1be6fde11ac6e0407606b4e42fe72d34add8037
           path: .build/whisper-source
       - name: Build portable CPU speech engine
         shell: bash
@@ -55,9 +55,10 @@ jobs:
             if [ '${{ matrix.arch }}' = arm64 ]; then arch=ARM64; native=ON; fi
             args=(-A "$arch")
           fi
-          cmake -S .build/whisper-source -B .build/whisper-runtime "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE="$native" -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DGGML_OPENMP=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
+          cmake -S .build/whisper-source -B .build/whisper-runtime "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE="$native" -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DGGML_OPENMP=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
           cmake --build .build/whisper-runtime --config Release --target whisper-cli -j 4
           mkdir -p desktop/runtime
+          cp .build/whisper-source/LICENSE desktop/runtime/whisper.cpp-LICENSE.txt
           find .build/whisper-runtime -name whisper-cli -o -name whisper-cli.exe | while read -r binary; do cp "$binary" desktop/runtime/; done
       - name: Package desktop preview
         shell: bash
@@ -74,7 +75,7 @@ jobs:
           retention-days: 14
   android:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v5
@@ -91,6 +92,20 @@ jobs:
       - name: Build and test Android companion
         working-directory: android
         run: gradle --no-daemon testDebugUnitTest assembleDebug
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android tablet rendering smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_c
+          disable-animations: true
+          working-directory: android
+          script: gradle --no-daemon connectedDebugAndroidTest
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: StudioPrompter-Companion-Android-preview

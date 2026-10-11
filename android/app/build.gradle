@@ -6,16 +6,21 @@ android {
         applicationId 'co.codebooker.studioprompter.companion'
         minSdk 26
         targetSdk 35
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         versionCode 1
         versionName '0.1.0-preview.1'
         ndk { abiFilters 'arm64-v8a', 'x86_64', 'armeabi-v7a', 'x86' }
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    packaging { resources { excludes += ['META-INF/versions/**/OSGI-INF/**'] } }
     buildTypes { release { minifyEnabled false } }
     testOptions { unitTests.returnDefaultValues = true; unitTests.all { systemProperty "studio.repo", rootDir.parentFile.absolutePath } }
 }
 dependencies {
     implementation 'org.bouncycastle:bctls-jdk18on:1.85'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:core:1.6.1'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20240303'
 }

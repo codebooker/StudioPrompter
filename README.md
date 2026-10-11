@@ -15,6 +15,10 @@
 
 ---
 
+## Windows, Linux, and Android previews
+
+Development previews now include a producer app for **Windows and Linux on x86-64 and ARM64**, plus **StudioPrompter Companion for Android tablets**. They share the existing encrypted tablet protocol. These ports are being validated separately from the Mac release; [build instructions, supported features, and testing status](docs/CROSS-PLATFORM.md) describe the current limits.
+
 ## Your studio, in sync
 
 Record solo with a compact script near your webcam, or keep the controls on your Mac while a clean, full-screen script appears on the talent monitor. Choose either from **Prompter Output**. Adjust the type, move the reading guide, or take over the scroll from the producer workspace.

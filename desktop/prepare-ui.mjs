@@ -15,6 +15,7 @@ html = html.replace(/\.\.\//g, '').replace(/\?v=03e6e33/g, '')
 await writeFile(`${root}desktop/ui/index.html`, html);
 let js = await readFile(`${root}website/app.js`, 'utf8');
 js = js.replace(/const demoAvailable = \(\) =>[\s\S]*?\.matches;/, 'const demoAvailable = () => true;');
+js = js.replaceAll('Browser library','Local library').replaceAll('Saved in this browser','Saved on this computer').replaceAll('This browser library','This library');
 js = js.replace(/document.addEventListener\("visibilitychange",[\s\S]*?\n\}\);/, '');
 await writeFile(`${root}desktop/ui/app.js`, js);
 await copyFile(`${root}desktop/renderer.js`, `${root}desktop/ui/desktop.js`);
