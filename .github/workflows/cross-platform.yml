@@ -1,0 +1,174 @@
+name: Cross-platform preview
+on:
+  workflow_dispatch:
+  push:
+    branches: ["codex/cross-platform-preview"]
+    paths:
+      [
+        "desktop/**",
+        "android/**",
+        "website/**",
+        ".github/workflows/cross-platform.yml",
+      ]
+  pull_request:
+    paths:
+      [
+        "desktop/**",
+        "android/**",
+        "website/**",
+        ".github/workflows/cross-platform.yml",
+      ]
+permissions:
+  contents: read
+concurrency:
+  group: cross-platform-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
+          - runner: windows-2025
+            platform: win
+            arch: x64
+          - runner: windows-11-arm
+            platform: win
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install desktop dependencies
+        run: npm ci --prefix desktop
+      - name: Fetch verified network runtime
+        run: npm run fetch-network-runtime --prefix desktop
+      - name: Protocol and speech alignment checks
+        run: npm test --prefix desktop
+      - name: Get pinned Whisper runtime source
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: ggml-org/whisper.cpp
+          ref: d1be6fde11ac6e0407606b4e42fe72d34add8037
+          path: .build/whisper-source
+      - name: Build portable CPU speech engine
+        shell: bash
+        run: |
+          args=()
+          native=OFF
+          if [ '${{ matrix.platform }}' = win ]; then
+            arch=x64
+            if [ '${{ matrix.arch }}' = arm64 ]; then arch=ARM64; native=ON; fi
+            args=(-A "$arch")
+          fi
+          cmake -S desktop/whisper-worker -DWHISPER_SOURCE="$PWD/.build/whisper-source" -B .build/whisper-runtime "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE="$native" -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DGGML_OPENMP=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
+          cmake --build .build/whisper-runtime --config Release --target studio-whisper -j 4
+          mkdir -p desktop/runtime
+          cp .build/whisper-source/LICENSE desktop/runtime/whisper.cpp-LICENSE.txt
+          find .build/whisper-runtime -name studio-whisper -o -name studio-whisper.exe | while read -r binary; do cp "$binary" desktop/runtime/; done
+      - name: Build accelerated x64 speech engine
+        if: matrix.arch == 'x64'
+        shell: bash
+        run: |
+          args=()
+          if [ '${{ matrix.platform }}' = win ]; then args=(-A x64); fi
+          cmake -S desktop/whisper-worker -DWHISPER_SOURCE="$PWD/.build/whisper-source" -B .build/whisper-avx2 "${args[@]}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DGGML_BMI2=ON -DGGML_SSE42=ON -DGGML_OPENMP=OFF
+          cmake --build .build/whisper-avx2 --config Release --target studio-whisper -j 4
+          if [ '${{ matrix.platform }}' = win ]; then
+            cp .build/whisper-avx2/Release/studio-whisper.exe desktop/runtime/studio-whisper-avx2.exe
+          else
+            cp .build/whisper-avx2/studio-whisper desktop/runtime/studio-whisper-avx2
+          fi
+      - name: Verify model download and native speech engine
+        shell: bash
+        env:
+          STUDIO_WHISPER_TEST: "1"
+        run: STUDIO_SPEECH_WAV="$PWD/.build/whisper-source/samples/jfk.wav" npm test --prefix desktop
+      - name: Verify tablet bridge inside Electron's runtime
+        shell: bash
+        env:
+          ELECTRON_RUN_AS_NODE: "1"
+        run: ./desktop/node_modules/.bin/electron --test desktop/test/network-runtime.test.cjs
+      - name: Package desktop preview
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run package --prefix desktop -- --${{ matrix.platform }} --${{ matrix.arch }}
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: StudioPrompter-${{ matrix.platform }}-${{ matrix.arch }}-preview
+          path: |
+            desktop/artifacts/*.exe
+            desktop/artifacts/*.AppImage
+            desktop/artifacts/*.deb
+          retention-days: 14
+  android:
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [26, 35]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: npm ci --prefix desktop
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Build and test Android companion
+        working-directory: android
+        run: gradle --no-daemon testDebugUnitTest assembleDebug
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android tablet rendering smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          profile: pixel_c
+          disable-animations: true
+          working-directory: android
+          script: ./check-emulator.sh
+      - uses: actions/upload-artifact@v7.0.1
+        if: matrix.api == 35
+        with:
+          name: StudioPrompter-Companion-Android-preview
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+  mac-link-interop:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: npm ci --omit=dev --ignore-scripts --prefix desktop
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Verify Android transport against native Mac TLS and framing
+        run: STUDIO_JAVA_BIN="$JAVA_HOME/bin" ./scripts/check-cross-platform-link.sh

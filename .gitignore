@@ -8,3 +8,12 @@ __pycache__/
 # Local Xcode state and signing preferences
 xcuserdata/
 *.xcuserstate
+
+# Cross-platform build products
+node_modules/
+desktop/ui/
+desktop/runtime/
+desktop/artifacts/
+android/.gradle/
+android/local.properties
+android/**/build/
