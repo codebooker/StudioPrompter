@@ -15,6 +15,11 @@ const StudioPresentation = {
     }
     return { top: Math.max(0, top), bottom: Math.min(height, bottom) };
   },
+  adaptiveActive(now, lastVoice, lastRecognition, pace) {
+    return (
+      pace !== null && now - lastVoice < 500 && now - lastRecognition < 4000
+    );
+  },
   scrollRemainder(desired, actual) {
     return actual - desired;
   },

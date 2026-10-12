@@ -32,6 +32,7 @@ async function captureHarness(transcribe) {
     wordPositions: Array(20).fill(0),
     maxScroll: () => 200,
     matchedAt: 0,
+    lastVoice: -Infinity,
     Float32Array,
     Uint8Array,
     ArrayBuffer,

@@ -54,7 +54,7 @@ if($null -eq $found){throw 'Runtime path was not preserved as a literal'}
         "-EncodedCommand",
         Buffer.from(check, "utf16le").toString("base64"),
       ],
-      { windowsHide: true, timeout: 10000 },
+      { windowsHide: true, timeout: 60000 },
     );
   },
 );

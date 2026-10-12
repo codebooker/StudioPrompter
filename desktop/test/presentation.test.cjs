@@ -54,3 +54,11 @@ test("overlapping transcripts change cadence by elapsed audio time instead of re
     "cadence eases down promptly when the reader slows",
   );
 });
+
+test("adaptive motion holds promptly on silence and waits for a measured cadence", () => {
+  const { adaptiveActive } = require("../presentation.cjs");
+  assert.equal(adaptiveActive(1000, 900, 900, 120), true);
+  assert.equal(adaptiveActive(1500, 900, 900, 120), false);
+  assert.equal(adaptiveActive(6000, 5900, 1000, 120), false);
+  assert.equal(adaptiveActive(1000, 900, 900, null), false);
+});

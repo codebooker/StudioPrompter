@@ -152,3 +152,20 @@ body.is-editing .settings {
 .reader-stage .script-content p:last-child {
   margin-bottom: 0;
 }
+
+/* Live text must never move the microphone or appearance controls. */
+#voice-status {
+  height: 4.5em;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+}
+#voice-detail {
+  height: 3em;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+}
+.settings {
+  overflow-anchor: none;
+}

@@ -158,6 +158,7 @@ let mirrorHorizontal = false,
   matchedWord = 0,
   heardPace = 130,
   lastSpeech = 0,
+  lastVoice = -Infinity,
   matchedAt = -Infinity,
   renderedLineStep = 60,
   paceEstimator = new StudioPresentation.PaceEstimator();
@@ -311,6 +312,7 @@ function stopMic() {
   followMotion = new FollowMotion();
   paceEstimator = new StudioPresentation.PaceEstimator();
   matchedAt = -Infinity;
+  lastVoice = -Infinity;
   if ($("mic-level")) $("mic-level").value = 0;
   if (wasListening)
     $("voice-status").textContent = "Microphone off · ready for Play";
@@ -398,7 +400,8 @@ async function startMic() {
     const input = event.data;
     const energy = StudioAudio.rms(input);
     $("mic-level").value = Math.min(1, energy * 8);
-    if (energy > StudioAudio.speechFloor) lastEnergy = performance.now();
+    if (energy > StudioAudio.speechFloor)
+      lastVoice = lastEnergy = performance.now();
     samples.push(...input);
     since += input.length;
     captured += input.length;
@@ -589,7 +592,12 @@ tick = function (now) {
       playhead + (limit / Math.max(duration(), 1)) * dt,
     );
   else if (speechTarget !== null && now - matchedAt < 2000) {
-    const active = now - lastSpeech < 3000;
+    const active = StudioPresentation.adaptiveActive(
+      now,
+      lastVoice,
+      lastSpeech,
+      paceEstimator.value,
+    );
     const target = Math.max(playhead, speechTarget);
     if ($("voice-mode").value === "follow")
       playhead = followMotion.advance(playhead, target, dt, renderedLineStep);
@@ -610,7 +618,7 @@ tick = function (now) {
         Math.max(playhead, target + renderedLineStep * 0.25),
         limit,
       );
-    }
+    } else followMotion = new FollowMotion();
   } else followMotion = new FollowMotion();
   presentScroll(playhead);
   // Timing labels need no more than ten updates per second. Text motion
@@ -901,3 +909,11 @@ reader.addEventListener("scroll", () => {
   if (!playing) updateFocusBand();
 });
 requestAnimationFrame(updateFocusBand);
+
+for (const id of ["voice-status", "voice-detail"]) {
+  const message = $(id);
+  new MutationObserver(() => {
+    message.title = message.textContent;
+    message.scrollTop = message.scrollHeight;
+  }).observe(message, { childList: true, subtree: true, characterData: true });
+}
