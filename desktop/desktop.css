@@ -186,3 +186,13 @@ body.is-editing .settings {
 #voice-transcript {
   color: #78d4ac;
 }
+
+#desktop-pairing .producer-name {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+#pair-service {
+  font-family: ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}

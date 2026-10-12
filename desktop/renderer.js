@@ -653,7 +653,7 @@ $("help").onclick = () =>
 const pairDialog = document.createElement("dialog");
 pairDialog.id = "desktop-pairing";
 pairDialog.innerHTML =
-  '<h2>Connect a tablet</h2><p>Connect this computer and your tablet to the same local network. Open StudioPrompter Companion and enter this code.</p><p class="pair-code" id="pair-code"></p><p id="pair-network-status"></p><div id="paired-devices"></div><section id="windows-network" hidden><p>If pairing cannot connect, allow the tablet service on your trusted private network. Windows will ask for administrator approval.</p><button id="allow-tablet-network">Allow tablet connections…</button><p id="network-setup-result"></p></section><button id="pair-close">Done</button>';
+  '<h2>Connect a tablet</h2><p class="producer-name" id="pair-producer"></p><p>In Companion, choose <strong id="pair-service"></strong>.</p><p>Connect this computer and your tablet to the same local network. Open StudioPrompter Companion and enter this code.</p><p class="pair-code" id="pair-code"></p><p id="pair-network-status"></p><div id="paired-devices"></div><section id="windows-network" hidden><p>If pairing cannot connect, allow the tablet service on your trusted private network. Windows will ask for administrator approval.</p><button id="allow-tablet-network">Allow tablet connections…</button><p id="network-setup-result"></p></section><button id="pair-close">Done</button>';
 document.body.append(pairDialog);
 $("windows-network").hidden = api.platform !== "win32";
 $("allow-tablet-network").onclick = async () => {
@@ -675,6 +675,8 @@ $("allow-tablet-network").onclick = async () => {
 $("pair-close").onclick = () => pairDialog.close();
 function pairingStatus(value) {
   $("pair-code").textContent = value.code;
+  $("pair-producer").textContent = value.name || "This computer";
+  $("pair-service").textContent = value.serviceName || "StudioPrompter";
   $("pair-network-status").textContent =
     value.connectionStatus || "Waiting for a tablet to connect…";
   const devices = $("paired-devices");

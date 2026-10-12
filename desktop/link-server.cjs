@@ -39,6 +39,8 @@ class LinkServer {
   status() {
     return {
       code: this.saved.pairingCode,
+      name: this.name,
+      serviceName: this.serviceName,
       devices: this.saved.devices
         .filter((d) => !d.removed)
         .map(({ id, name }) => ({ id, name })),

@@ -75,6 +75,8 @@ test(
         countdown: 0,
       });
       const status = await link.start();
+      assert.equal(status.name, "Runtime producer");
+      assert.match(status.serviceName, /^StudioPrompter-[A-F0-9]{8}$/);
       const paired = await client(status.port, status.code, "pair");
       assert.equal(paired.document.script.text, "Hello 👋 world");
       assert.equal(paired.playback.progress, 0.42);
