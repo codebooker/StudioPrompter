@@ -27,6 +27,11 @@ async function captureHarness(transcribe) {
   let processor;
   const context = vm.createContext({
     StudioAudio,
+    StudioPresentation: require("../presentation.cjs"),
+    paceEstimator: new (require("../presentation.cjs").PaceEstimator)(),
+    wordPositions: Array(20).fill(0),
+    maxScroll: () => 200,
+    matchedAt: 0,
     Float32Array,
     Uint8Array,
     ArrayBuffer,

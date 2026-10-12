@@ -157,9 +157,15 @@ let mirrorHorizontal = false,
   speechTarget = null,
   matchedWord = 0,
   heardPace = 130,
-  lastSpeech = 0;
+  lastSpeech = 0,
+  matchedAt = -Infinity,
+  renderedLineStep = 60,
+  paceEstimator = new StudioPresentation.PaceEstimator();
 let followMotion = new FollowMotion(),
-  wordPositions = [];
+  wordPositions = [],
+  focusLines = [],
+  layoutDirty = true,
+  lastMetricsFrame = 0;
 let audioContext = null,
   micStream = null,
   processor = null,
@@ -303,6 +309,8 @@ function stopMic() {
   speechTarget = null;
   recognizing = false;
   followMotion = new FollowMotion();
+  paceEstimator = new StudioPresentation.PaceEstimator();
+  matchedAt = -Infinity;
   if ($("mic-level")) $("mic-level").value = 0;
   if (wasListening)
     $("voice-status").textContent = "Microphone off · ready for Play";
@@ -382,6 +390,7 @@ async function startMic() {
   let samples = [],
     since = 0,
     lastEnergy = -Infinity,
+    captured = 0,
     requests = 0,
     emptyResults = 0;
   processor.port.onmessage = (event) => {
@@ -392,6 +401,7 @@ async function startMic() {
     if (energy > StudioAudio.speechFloor) lastEnergy = performance.now();
     samples.push(...input);
     since += input.length;
+    captured += input.length;
     if (samples.length > 96000) samples = samples.slice(-96000);
     if (
       since >= 4800 &&
@@ -403,6 +413,7 @@ async function startMic() {
       // Recent activity is enough: averaging a short phrase with the silence
       // in this rolling window used to block quiet laptop microphones.
       const chunk = StudioAudio.normalize(samples);
+      const audioEnd = captured / 16000;
       recognizing = true;
       requests++;
       $("voice-detail").textContent = `Transcribing locally · pass ${requests}`;
@@ -444,16 +455,19 @@ async function startMic() {
             `${recognition.inferenceSeconds.toFixed(2)} s${recognition.engine ? ` · ${recognition.engine}` : ""} · ${result && result.cursor >= matchedWord ? "Following script" : "Waiting for words that match the script"}`;
           lastSpeech = lastEnergy;
           const first = tokens[0]?.start ?? 0;
-          const rawPace = clamp(
-            (tokenize(text).length / Math.max(2, duration - first)) * 60,
-            40,
-            260,
+          const pace = paceEstimator.observe(
+            tokenize(text).length,
+            duration - first,
+            audioEnd,
           );
-          const paceDelta = rawPace - heardPace;
-          heardPace += clamp(paceDelta * (paceDelta > 0 ? 0.15 : 0.55), -30, 6);
+          if (pace !== null) heardPace = pace;
           if (result && result.cursor >= matchedWord) {
+            if (result.cursor > matchedWord) matchedAt = performance.now();
             matchedWord = result.cursor;
-            speechTarget = wordPosition(matchedWord);
+            speechTarget =
+              matchedWord >= wordPositions.length
+                ? maxScroll()
+                : wordPosition(matchedWord);
           }
         })
         .catch((e) => {
@@ -471,11 +485,17 @@ async function startMic() {
   await microphones();
 }
 function measureWordPositions() {
-  const starts = [],
-    walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+  stage.style.setProperty("--scroll-remainder", "0px");
+  stage.style.setProperty("--viewport-height", `${stage.clientHeight}px`);
+  stage.style.setProperty("--script-size", `${state.settings.size}px`);
+  stage.style.setProperty("--script-spacing", state.settings.spacing);
+  renderedLineStep = parseFloat(getComputedStyle(content).lineHeight);
+  const starts = [];
+  focusLines = [];
+  let firstTop;
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
   let node;
-  const origin = stage.getBoundingClientRect().top,
-    guide = parseFloat(stage.style.getPropertyValue("--guide-y"));
+  const origin = stage.getBoundingClientRect().top;
   while ((node = walker.nextNode())) {
     for (const m of node.textContent.matchAll(
       /[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)?/gu,
@@ -483,19 +503,20 @@ function measureWordPositions() {
       const range = document.createRange();
       range.setStart(node, m.index);
       range.setEnd(node, m.index + m[0].length);
-      starts.push(
-        Math.max(
-          0,
-          reader.scrollTop + range.getBoundingClientRect().top - origin - guide,
-        ),
-      );
+      const rect = range.getBoundingClientRect();
+      const top = reader.scrollTop + rect.top - origin;
+      if (firstTop === undefined) firstTop = top;
+      // Keep unbounded line starts until spreading. Clamping here merges
+      // distinct rows above the guide into one row after a manual retake.
+      starts.push(top - firstTop);
+      const previous = focusLines.at(-1);
+      if (previous && Math.abs(previous.top - top) < 0.5)
+        previous.height = Math.max(previous.height, rect.height);
+      else focusLines.push({ top, height: rect.height });
     }
   }
-  wordPositions = spread(
-    starts,
-    state.settings.size * state.settings.spacing,
-    maxScroll(),
-  );
+  layoutDirty = false;
+  wordPositions = spread(starts, renderedLineStep, maxScroll());
 }
 function wordPosition(index) {
   return clamp(
@@ -504,10 +525,35 @@ function wordPosition(index) {
     maxScroll(),
   );
 }
+function updateFocusBand() {
+  if (editing) return;
+  if (layoutDirty) measureWordPositions();
+  const guide = parseFloat(stage.style.getPropertyValue("--guide-y"));
+  const band = StudioPresentation.focusBand(
+    guide,
+    renderedLineStep,
+    state.settings.guideHeight,
+    focusLines,
+    playing ? playhead : reader.scrollTop,
+    stage.clientHeight,
+  );
+  stage.style.setProperty("--focus-top", `${band.top}px`);
+  stage.style.setProperty("--focus-bottom", `${band.bottom}px`);
+}
+function presentScroll(value) {
+  reader.scrollTop = Math.floor(value);
+  stage.style.setProperty(
+    "--scroll-remainder",
+    `${StudioPresentation.scrollRemainder(value, reader.scrollTop)}px`,
+  );
+  updateFocusBand();
+}
 const originalPlay = play,
   originalPause = pause;
 pause = function (message) {
+  stage.style.setProperty("--scroll-remainder", "0px");
   originalPause(message);
+  updateFocusBand();
   stopMic();
 };
 play = async function () {
@@ -532,30 +578,47 @@ tick = function (now) {
   const dt = Math.min((now - lastFrame) / 1000, 0.08);
   lastFrame = now;
   elapsed += dt;
+  if (layoutDirty) {
+    measureWordPositions();
+    if (speechTarget !== null) speechTarget = wordPosition(matchedWord);
+  }
   const limit = maxScroll();
   if (!$("voice-enabled").checked)
     playhead = Math.min(
       limit,
       playhead + (limit / Math.max(duration(), 1)) * dt,
     );
-  else if (speechTarget !== null) {
+  else if (speechTarget !== null && now - matchedAt < 2000) {
     const active = now - lastSpeech < 3000;
     const target = Math.max(playhead, speechTarget);
     if ($("voice-mode").value === "follow")
-      playhead = followMotion.advance(
-        playhead,
-        target,
-        dt,
-        state.settings.size * state.settings.spacing,
-      );
+      playhead = followMotion.advance(playhead, target, dt, renderedLineStep);
     else if (active) {
       const pace =
         ((limit / Math.max(words(current().text), 1)) * heardPace) / 60;
-      playhead = Math.min(target, playhead + pace * dt);
+      // Match native adaptive transport: cadence supplies ordinary movement,
+      // and a damped correction keeps it within a quarter line of the match.
+      const lower = Math.max(0, target - renderedLineStep * 0.25);
+      const correction = followMotion.advance(
+        playhead,
+        lower,
+        dt,
+        renderedLineStep,
+      );
+      playhead = Math.min(
+        Math.max(playhead + pace * dt, correction),
+        Math.max(playhead, target + renderedLineStep * 0.25),
+        limit,
+      );
     }
+  } else followMotion = new FollowMotion();
+  presentScroll(playhead);
+  // Timing labels need no more than ten updates per second. Text motion
+  // retains a frame callback for every display refresh.
+  if (now - lastMetricsFrame >= 100) {
+    metrics(limit);
+    lastMetricsFrame = now;
   }
-  reader.scrollTop = playhead;
-  metrics(limit);
   if (playhead >= limit && limit > 0) {
     pause("That’s a wrap.");
     return;
@@ -583,11 +646,30 @@ $("help").onclick = () =>
 const pairDialog = document.createElement("dialog");
 pairDialog.id = "desktop-pairing";
 pairDialog.innerHTML =
-  '<h2>Connect a tablet</h2><p>Connect this computer and your tablet to the same local network. Open StudioPrompter Companion and enter this code.</p><p class="pair-code" id="pair-code"></p><div id="paired-devices"></div><button id="pair-close">Done</button>';
+  '<h2>Connect a tablet</h2><p>Connect this computer and your tablet to the same local network. Open StudioPrompter Companion and enter this code.</p><p class="pair-code" id="pair-code"></p><p id="pair-network-status"></p><div id="paired-devices"></div><section id="windows-network" hidden><p>If pairing cannot connect, allow the tablet service on your trusted private network. Windows will ask for administrator approval.</p><button id="allow-tablet-network">Allow tablet connections…</button><p id="network-setup-result"></p></section><button id="pair-close">Done</button>';
 document.body.append(pairDialog);
+$("windows-network").hidden = api.platform !== "win32";
+$("allow-tablet-network").onclick = async () => {
+  const button = $("allow-tablet-network");
+  button.disabled = true;
+  $("network-setup-result").textContent =
+    "Approve Windows network setup to continue…";
+  try {
+    const result = await api.allowTabletNetwork();
+    $("network-setup-result").textContent = result.privateNetwork
+      ? "Tablet connections allowed. Try pairing again on the iPad."
+      : "Access configured for private networks. Set this trusted Wi-Fi network to Private in Windows Settings, then try pairing again.";
+  } catch (error) {
+    $("network-setup-result").textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+};
 $("pair-close").onclick = () => pairDialog.close();
 function pairingStatus(value) {
   $("pair-code").textContent = value.code;
+  $("pair-network-status").textContent =
+    value.connectionStatus || "Waiting for a tablet to connect…";
   const devices = $("paired-devices");
   devices.replaceChildren();
   for (const d of value.devices) {
@@ -644,8 +726,9 @@ function updateDocument() {
     emphasis = [];
   let offset = 0;
   const scale = 1000 / Math.max(1, reader.clientWidth);
-  const base = content.querySelector("p")?.getBoundingClientRect().top || 0;
-  for (const p of content.querySelectorAll("p")) {
+  const paragraphs = [...content.querySelectorAll("p")];
+  const base = paragraphs[0]?.getBoundingClientRect().top || 0;
+  for (const p of paragraphs) {
     const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode())) {
@@ -720,14 +803,19 @@ function updateDocument() {
     lines,
     textHeight: Math.max(
       fontSize * 1.2,
-      (lines.at(-1)?.y || 0) + (lines.at(-1)?.height || fontSize),
+      ((paragraphs.at(-1)?.getBoundingClientRect().bottom ??
+        base + state.settings.size * 1.2) -
+        base) *
+        scale,
     ),
-    lineHeight: fontSize * s.spacing,
+    lineHeight: renderedLineStep * scale,
   };
   api.document(remote).catch((e) => toast(e.message));
 }
 let documentTimer;
 const observer = new MutationObserver(() => {
+  layoutDirty = true;
+  requestAnimationFrame(updateFocusBand);
   clearTimeout(documentTimer);
   documentTimer = setTimeout(updateDocument, 120);
 });
@@ -738,6 +826,8 @@ observer.observe(content, {
   characterData: true,
 });
 window.addEventListener("resize", () => {
+  layoutDirty = true;
+  requestAnimationFrame(updateFocusBand);
   clearTimeout(documentTimer);
   documentTimer = setTimeout(updateDocument, 200);
 });
@@ -757,7 +847,8 @@ setInterval(() => {
         0,
         stage.getBoundingClientRect().top +
           guide -
-          first.getBoundingClientRect().top,
+          first.getBoundingClientRect().top -
+          state.settings.size * 0.2,
       )
     : 0;
   const progress = clamp(
@@ -799,3 +890,14 @@ api
     }
   })
   .catch((e) => toast(e.message));
+
+// Changes to reader geometry also happen when entering/leaving the editor or
+// focus view, without a window resize. Rebuild positions once, never per frame.
+new ResizeObserver(() => {
+  layoutDirty = true;
+  requestAnimationFrame(updateFocusBand);
+}).observe(reader);
+reader.addEventListener("scroll", () => {
+  if (!playing) updateFocusBand();
+});
+requestAnimationFrame(updateFocusBand);

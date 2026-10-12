@@ -184,6 +184,14 @@ ipcMain.handle("pairing", async (event) => {
   authorized(event);
   return link.start();
 });
+ipcMain.handle("allow-tablet-network", async (event) => {
+  authorized(event);
+  return require("./windows-network.cjs").allowTabletNetwork(
+    process.resourcesPath && app.isPackaged
+      ? path.join(process.resourcesPath, "runtime")
+      : path.join(__dirname, "runtime"),
+  );
+});
 ipcMain.handle("remove-device", async (event, id) => {
   authorized(event);
   return link.remove(id);

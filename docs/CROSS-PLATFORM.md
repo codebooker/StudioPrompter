@@ -24,6 +24,10 @@ The preview.2 audio path accepts quiet microphone speech and adjusts gain on the
 
 Preview.3 bundles a separate AVX2 engine for x64 CPUs. The baseline executable probes CPU features and operating-system AVX support before the app selects it; older CPUs retain the compatible engine. Live recognition uses a ten-second encoder context for the six-second rolling window instead of Whisper’s default thirty seconds. First-call loading has a separate timeout, and native checks measure cold and warm inference for both Tiny and Base rather than accepting transcription at any speed.
 
+Preview.4 brings the native whole-line focus-band rule to the producer preview, reduces paragraph gaps, preserves fractional text motion, and uses elapsed-audio cadence smoothing with the native quarter-line drift correction. Transport labels update separately from text animation.
+
+For Windows tablet pairing, open **Prompter Output → Connect a tablet** and use **Allow tablet connections…** if discovery works but pairing does not. Windows asks for administrator approval to allow the bundled tablet service on private networks from the local subnet. If your trusted Wi-Fi is marked Public, change its category to Private in Windows Settings. The pairing panel reports whether a tablet reached the server and whether its pairing code was accepted. The iPad’s actual Apple TLS/Codable code is now checked against the desktop server in addition to the Android and Node clients. A physical iPad-to-Windows retest is still required.
+
 This port's speech motion needs live tuning on Windows and Linux. Phrase matching, reading-position spreading, and damped motion are ported from the Mac core; the audio capture and transcription back end are separate. It does not yet have hands-free LLM commands, Webcam Layout, DOCX/PDF import, or automatic in-app updates. Font availability differs by OS. Output uses producer-computed line breaks; check emphasis and spacing on the target display during a take.
 
 ### Run and build

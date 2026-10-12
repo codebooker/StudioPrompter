@@ -6,6 +6,8 @@ const on = (channel, callback) => {
   return () => ipcRenderer.removeListener(channel, fn);
 };
 contextBridge.exposeInMainWorld("studio", {
+  platform: process.platform,
+  allowTabletNetwork: () => ipcRenderer.invoke("allow-tablet-network"),
   displays: () => ipcRenderer.invoke("displays"),
   output: (id) => ipcRenderer.invoke("output", id),
   pairing: () => ipcRenderer.invoke("pairing"),

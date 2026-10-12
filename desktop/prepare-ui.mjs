@@ -11,7 +11,7 @@ html = html
   .replace(/<script src="release.js" defer><\/script>/, "")
   .replace(
     '<script src="app.js" defer></script>',
-    '<script src="app.js" defer></script><script src="audio.js" defer></script><script src="desktop.js" defer></script>',
+    '<script src="app.js" defer></script><script src="audio.js" defer></script><script src="presentation.js" defer></script><script src="desktop.js" defer></script>',
   )
   .replace(
     "</head>",
@@ -58,3 +58,5 @@ await copyFile(
 );
 
 await copyFile(`${root}desktop/audio.cjs`, `${root}desktop/ui/audio.js`);
+
+await copyFile(`${root}desktop/presentation.cjs`, `${root}desktop/ui/presentation.js`);

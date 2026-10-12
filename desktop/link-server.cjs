@@ -43,6 +43,8 @@ class LinkServer {
         .filter((d) => !d.removed)
         .map(({ id, name }) => ({ id, name })),
       port: this.server?.address()?.port,
+      connectionStatus:
+        this.connectionStatus || "Waiting for a tablet to connect…",
     };
   }
   async start() {
@@ -57,11 +59,20 @@ class LinkServer {
             this.saved.pairingCode,
             ...this.saved.devices.map((d) => d.token),
           ].find((k) => identity(k) === label);
+          this.connectionStatus = key
+            ? "Tablet reached this computer · checking pairing…"
+            : "A tablet reached this computer, but its pairing code was not accepted.";
+          this.changed(this.status());
           return key ? secret(key) : null;
         },
       },
       (socket) => this.accept(socket),
     );
+    this.server.on("tlsClientError", (error) => {
+      if (!this.connectionStatus?.includes("not accepted"))
+        this.connectionStatus = `Tablet connection could not complete (${error.code || "TLS error"}). Check its pairing code.`;
+      this.changed(this.status());
+    });
     await new Promise((resolve, reject) => {
       this.server.once("error", reject);
       this.server.listen({ port: 0, ipv6Only: false }, resolve);
@@ -120,6 +131,7 @@ class LinkServer {
           }),
         );
       client.id = device.id;
+      this.connectionStatus = `Connected to ${device.name}`;
       socket.setTimeout(0);
       socket.write(
         frame({

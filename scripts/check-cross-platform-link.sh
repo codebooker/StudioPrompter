@@ -17,3 +17,9 @@ curl -fsSL https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-core/1.3/h
   android/app/src/test/java/co/codebooker/studioprompter/companion/*.java
 "${STUDIO_JAVA_BIN:-/usr/bin}/java" -Dstudio.repo="$PWD" -Dstudio.fixture="$folder/native-fixture" -cp "$folder/*:$folder" \
   org.junit.runner.JUnitCore co.codebooker.studioprompter.companion.ProtocolTest co.codebooker.studioprompter.companion.InteropTest
+
+# Verify the opposite direction with the iPad's actual Apple connection code.
+node desktop/fetch-node.mjs
+swiftc -I "$folder" -L "$folder" -lPrompterCore -lPrompterLink -Xlinker -rpath -Xlinker "$folder" \
+  Tests/CrossPlatformLink/Client.swift -o "$folder/apple-client"
+STUDIO_APPLE_CLIENT="$folder/apple-client" node --test desktop/test/apple-client.test.cjs
