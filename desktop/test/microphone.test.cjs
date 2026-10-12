@@ -20,10 +20,15 @@ test("quiet selected-channel audio reaches Whisper and valid words survive early
   await harness.feed(new Float32Array(96000).fill(0.002));
   assert.ok(count > 1);
   assert.match(
-    harness.elements["voice-status"].textContent,
+    harness.elements["voice-transcript"].textContent,
     /Heard:.*Americans/,
   );
   assert.ok(harness.context.matchedWord >= 4);
+  assert.equal(
+    harness.elements["voice-status"].textContent,
+    "Listening · local Whisper",
+    "normal status stays steady across live transcript revisions",
+  );
 });
 test("digital silence is not sent to Whisper", async () => {
   const harness = await captureHarness(async () =>

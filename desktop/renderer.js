@@ -175,7 +175,7 @@ let audioContext = null,
 const voice = document.createElement("section");
 voice.className = "desktop-card";
 voice.innerHTML =
-  '<label class="toggle-row"><b>Voice prompting</b><input id="voice-enabled" type="checkbox" role="switch"></label><select id="voice-mode" aria-label="Voice mode"><option value="follow">Follow script</option><option value="adaptive">Adaptive pace</option></select><select id="voice-model" aria-label="Speech model"><option value="tiny.en">Tiny English · fastest</option><option value="base.en">Base English · accurate</option></select><button id="download-model">Download model</button><p id="voice-status" class="status">Checking local model…</p><p id="voice-detail" aria-live="polite"></p><select id="mic" aria-label="Microphone"><option value="">System default microphone</option></select><select id="mic-channel" aria-label="Microphone channel"><option value="0">Channel 1</option><option value="1">Channel 2</option></select><meter id="mic-level" min="0" max="1" value="0" aria-label="Selected microphone level"></meter><p>Processes speech locally. Play starts the mic; Pause stops it. This preview has no hands-free commands.</p>';
+  '<label class="toggle-row"><b>Voice prompting</b><input id="voice-enabled" type="checkbox" role="switch"></label><select id="voice-mode" aria-label="Voice mode"><option value="follow">Follow script</option><option value="adaptive">Adaptive pace</option></select><select id="voice-model" aria-label="Speech model"><option value="tiny.en">Tiny English · fastest</option><option value="base.en">Base English · accurate</option></select><button id="download-model">Download model</button><p id="voice-status" class="status">Checking local model…</p><select id="mic" aria-label="Microphone"><option value="">System default microphone</option></select><select id="mic-channel" aria-label="Microphone channel"><option value="0">Channel 1</option><option value="1">Channel 2</option></select><meter id="mic-level" min="0" max="1" value="0" aria-label="Selected microphone level"></meter><p>Play starts listening. Pause stops the mic.</p><details class="voice-diagnostics"><summary>Recognition details</summary><p id="voice-transcript" tabindex="0"></p><p id="voice-detail"></p></details>';
 document.querySelector(".settings").prepend(voice);
 const mirror = document.createElement("section");
 mirror.className = "desktop-card";
@@ -307,6 +307,7 @@ function stopMic() {
   audioContext = null;
   api.stopSpeech();
   if ($("voice-detail")) $("voice-detail").textContent = "";
+  if ($("voice-transcript")) $("voice-transcript").textContent = "";
   speechTarget = null;
   recognizing = false;
   followMotion = new FollowMotion();
@@ -393,7 +394,6 @@ async function startMic() {
     since = 0,
     lastEnergy = -Infinity,
     captured = 0,
-    requests = 0,
     emptyResults = 0;
   processor.port.onmessage = (event) => {
     if (generation !== micGeneration) return;
@@ -418,8 +418,7 @@ async function startMic() {
       const chunk = StudioAudio.normalize(samples);
       const audioEnd = captured / 16000;
       recognizing = true;
-      requests++;
-      $("voice-detail").textContent = `Transcribing locally · pass ${requests}`;
+
       api
         .transcribe($("voice-model").value, wav(chunk))
         .then((recognition) => {
@@ -434,8 +433,8 @@ async function startMic() {
             $("voice-detail").textContent =
               `Audio processed · no clear words yet (${recognition.inferenceSeconds.toFixed(2)} s)`;
             if (emptyResults >= 3)
-              $("voice-status").textContent =
-                "Whisper hears audio but cannot identify words. Check the microphone channel or try Base English.";
+              $("voice-transcript").textContent =
+                "No clear words detected. Check the microphone channel or try Base English.";
             return;
           }
           emptyResults = 0;
@@ -453,7 +452,7 @@ async function startMic() {
           // a valid transcript or suppress a reliable script match.
           const text = recognition.text;
           const result = align(plain(current().text), text, matchedWord);
-          $("voice-status").textContent = `Heard: ${text.slice(-160)}`;
+          $("voice-transcript").textContent = `Heard: ${text.slice(-160)}`;
           $("voice-detail").textContent =
             `${recognition.inferenceSeconds.toFixed(2)} s${recognition.engine ? ` · ${recognition.engine}` : ""} · ${result && result.cursor >= matchedWord ? "Following script" : "Waiting for words that match the script"}`;
           lastSpeech = lastEnergy;
@@ -484,7 +483,7 @@ async function startMic() {
         });
     }
   };
-  $("voice-status").textContent = "Listening to selected microphone channel";
+  $("voice-status").textContent = "Listening · local Whisper";
   await microphones();
 }
 function measureWordPositions() {
@@ -910,10 +909,10 @@ reader.addEventListener("scroll", () => {
 });
 requestAnimationFrame(updateFocusBand);
 
-for (const id of ["voice-status", "voice-detail"]) {
+for (const id of ["voice-status", "voice-transcript", "voice-detail"]) {
   const message = $(id);
   new MutationObserver(() => {
     message.title = message.textContent;
-    message.scrollTop = message.scrollHeight;
+    if (id === "voice-transcript") message.scrollTop = message.scrollHeight;
   }).observe(message, { childList: true, subtree: true, characterData: true });
 }

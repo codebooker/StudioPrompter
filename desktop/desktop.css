@@ -155,17 +155,34 @@ body.is-editing .settings {
 
 /* Live text must never move the microphone or appearance controls. */
 #voice-status {
-  height: 4.5em;
-  overflow-y: auto;
-  overflow-wrap: anywhere;
-  scrollbar-width: thin;
-}
-#voice-detail {
   height: 3em;
   overflow-y: auto;
   overflow-wrap: anywhere;
   scrollbar-width: thin;
 }
+#voice-transcript {
+  height: 6em;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+#voice-detail {
+  height: 4.5em;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+}
 .settings {
   overflow-anchor: none;
+}
+
+.voice-diagnostics summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+.voice-diagnostics {
+  margin-top: 14px;
+}
+#voice-transcript {
+  color: #78d4ac;
 }

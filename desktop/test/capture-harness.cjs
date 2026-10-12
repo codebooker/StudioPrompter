@@ -13,6 +13,7 @@ async function captureHarness(transcribe) {
       "mic-channel",
       "mic-level",
       "voice-status",
+      "voice-transcript",
       "voice-detail",
     ].map((id) => [
       id,

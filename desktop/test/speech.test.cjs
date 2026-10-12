@@ -96,7 +96,7 @@ test(
       await microphone.feed(new Float32Array(32000)); // silence before speaking
       await microphone.feed(quiet);
       assert.match(
-        microphone.elements["voice-status"].textContent,
+        microphone.elements["voice-transcript"].textContent,
         /Heard:.*(Americans|country)/i,
       );
       assert.ok(
